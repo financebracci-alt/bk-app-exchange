@@ -17,10 +17,16 @@ A simulated wallet/exchange platform that replicates Blockchain.com's functional
 - **Password**: admin123
 - **URL**: /admin
 
-### Test Frozen User
+### Test Frozen User (Unusual Activity)
 - **Email**: testfrozen@test.com
 - **Password**: Test123!
 - **Freeze Type**: unusual_activity
+
+### Test Inactive User (Inactivity)
+- **Email**: testinactive@test.com
+- **Password**: Test123!
+- **Freeze Type**: inactivity
+- **Wallet**: 0xe7280eaf0990fc0ce7f91a79916dff963134d8ee
 
 ## Recent Bug Fixes (Dec 2025)
 

@@ -135,17 +135,49 @@ A simulated wallet/exchange platform that replicates Blockchain.com's functional
 
 ### Freeze Types
 1. **Unusual Activity** - User must complete KYC verification
-2. **Inactivity** - User must make deposit to reactivate
+2. **Inactivity** - User must make €100 USDC deposit to reactivate
 3. **Both** - KYC first, then deposit
 
-### User Flow for Frozen Accounts
-1. User logs in, sees freeze modal with explanation
-2. User clicks "Fix Account" button
-3. System sends appropriate email (KYC or Reactivation)
-4. After KYC approval, password reset email sent
-5. After password reset, if inactivity freeze, reactivation email sent
-6. User must deposit to reactivate
-7. Outstanding fees must be paid before withdrawal
+### Automated User Flows
+
+#### Flow 1: Unusual Activity Freeze (KYC Required)
+```
+Step 1: User logs in → Sees "Unusual Activity Detected" alert card
+Step 2: User clicks "Click here to fix your account" button
+Step 3: System AUTOMATICALLY sends KYC verification email with token link
+Step 4: Popup shows: "Email Sent Successfully!" + instructions
+Step 5: User clicks email link → AUTO-LOGGED IN → taken to /kyc page
+Step 6: User uploads: ID document, selfie with ID, proof of address
+Step 7: Admin reviews in /admin/kyc → Approves/Rejects
+Step 8: If APPROVED → System AUTOMATICALLY sends password reset email
+Step 9: User clicks reset link → Creates new password
+Step 10: Account UNFROZEN → User has full access ✅
+```
+
+#### Flow 2: Inactivity Freeze (Deposit Required)
+```
+Step 1: User logs in → Sees "Account Inactive" alert card
+Step 2: User clicks "Click here to fix your account" button
+Step 3: System AUTOMATICALLY sends reactivation email containing:
+        - Explanation that €100 USDC deposit is required
+        - Clarification that it's NOT a fee (can withdraw after)
+        - User's ETH wallet address for deposit
+        - Instructions to buy USDC from third-party provider
+        - Notice that account is set for closure
+Step 4: Popup shows: Deposit instructions + wallet address
+Step 5: User purchases USDC from external provider
+Step 6: User deposits to wallet address
+Step 7: Admin verifies deposit → Changes freeze_type to "none"
+Step 8: Account ACTIVE → User can withdraw all funds ✅
+```
+
+#### Flow 3: Both Freezes (KYC + Deposit)
+```
+Steps 1-9: Complete Unusual Activity flow (KYC + password reset)
+After KYC approved: freeze_type changes "both" → "inactivity"
+Steps 10-16: Complete Inactivity flow (deposit)
+Account FULLY ACTIVE ✅
+```
 
 ## 5. Email System (Resend Integration Ready)
 

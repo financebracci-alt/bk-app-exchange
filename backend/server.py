@@ -1404,7 +1404,7 @@ async def admin_get_stats(admin: dict = Depends(require_admin)):
     total_transactions = await db.transactions.count_documents({})
     
     # Calculate total balances
-    wallets = await db.wallets.find({}).to_list(10000)
+    wallets = await db.wallets.find({}, {"_id": 0}).to_list(10000)
     total_usdc = sum(Decimal(w["balance"]) for w in wallets if w["asset"] == "USDC")
     total_eur = sum(Decimal(w["balance"]) for w in wallets if w["asset"] == "EUR")
     

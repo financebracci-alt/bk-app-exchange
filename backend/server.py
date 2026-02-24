@@ -880,7 +880,7 @@ async def admin_create_transaction(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
-    wallet = await db.wallets.find_one({"user_id": tx_data.user_id, "asset": tx_data.asset})
+    wallet = await db.wallets.find_one({"user_id": tx_data.user_id, "asset": tx_data.asset}, {"_id": 0})
     if not wallet:
         raise HTTPException(status_code=404, detail="Wallet not found")
     

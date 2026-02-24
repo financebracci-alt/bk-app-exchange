@@ -1,19 +1,26 @@
-import React, { useState, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useRef, useEffect } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { toast } from 'sonner';
-import { ArrowLeft, Upload, Camera, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { ArrowLeft, Upload, Camera, CheckCircle, XCircle, Clock, Loader2 } from 'lucide-react';
+import axios from 'axios';
+
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const API = `${BACKEND_URL}/api`;
 
 const KYCPage = () => {
   const navigate = useNavigate();
-  const { user, api, refreshUser } = useAuth();
+  const [searchParams] = useSearchParams();
+  const { user, api, refreshUser, isAuthenticated } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [authenticating, setAuthenticating] = useState(false);
   const [step, setStep] = useState(1);
   const [documentType, setDocumentType] = useState('passport');
+  const [tokenUser, setTokenUser] = useState(null); // User authenticated via token
   const [files, setFiles] = useState({
     id_front: null,
     id_back: null,
@@ -33,6 +40,38 @@ const KYCPage = () => {
     selfie: useRef(),
     address_proof: useRef(),
   };
+
+  // Check for token in URL and authenticate
+  useEffect(() => {
+    const token = searchParams.get('token');
+    if (token && !isAuthenticated) {
+      authenticateWithToken(token);
+    }
+  }, [searchParams, isAuthenticated]);
+
+  const authenticateWithToken = async (token) => {
+    setAuthenticating(true);
+    try {
+      const response = await axios.post(`${API}/auth/kyc-access/${token}`);
+      if (response.data.ok) {
+        // Store the JWT token
+        localStorage.setItem('token', response.data.data.token);
+        localStorage.setItem('user', JSON.stringify(response.data.data.user));
+        setTokenUser(response.data.data.user);
+        // Refresh the auth context
+        await refreshUser();
+        toast.success('Welcome! Please complete your identity verification.');
+      }
+    } catch (error) {
+      toast.error('Invalid or expired verification link. Please request a new one.');
+      navigate('/login');
+    } finally {
+      setAuthenticating(false);
+    }
+  };
+
+  // Get the current user (either from auth context or token auth)
+  const currentUser = user || tokenUser;
 
   const handleFileChange = (field) => (e) => {
     const file = e.target.files[0];
@@ -102,7 +141,7 @@ const KYCPage = () => {
       const response = await api.post('/kyc/submit', kycData);
 
       if (response.data.ok) {
-        toast.success('KYC documents submitted successfully');
+        toast.success('KYC documents submitted successfully! Our team will review them shortly.');
         await refreshUser();
         navigate('/wallet');
       } else {
@@ -115,8 +154,29 @@ const KYCPage = () => {
     }
   };
 
+  // Show loading while authenticating via token
+  if (authenticating) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Card className="w-full max-w-md mx-4">
+          <CardContent className="pt-6 text-center">
+            <Loader2 className="w-12 h-12 text-blue-600 mx-auto mb-4 animate-spin" />
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">Verifying your access...</h2>
+            <p className="text-gray-600">Please wait while we authenticate you.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // If not authenticated and no token, redirect to login
+  if (!isAuthenticated && !tokenUser && !searchParams.get('token')) {
+    navigate('/login');
+    return null;
+  }
+
   // If KYC already approved
-  if (user?.kyc_status === 'approved') {
+  if (currentUser?.kyc_status === 'approved') {
     return (
       <div className="min-h-screen bg-gray-50">
         <header className="bg-white border-b border-gray-200">
@@ -146,7 +206,7 @@ const KYCPage = () => {
   }
 
   // If KYC pending
-  if (user?.kyc_status === 'pending' || user?.kyc_status === 'under_review') {
+  if (currentUser?.kyc_status === 'pending' || currentUser?.kyc_status === 'under_review') {
     return (
       <div className="min-h-screen bg-gray-50">
         <header className="bg-white border-b border-gray-200">
@@ -187,6 +247,15 @@ const KYCPage = () => {
       </header>
 
       <main className="max-w-lg mx-auto px-4 py-6">
+        {/* Welcome Message */}
+        <Card className="mb-6 bg-blue-50 border-blue-200">
+          <CardContent className="pt-4">
+            <p className="text-blue-800">
+              <strong>Hello {currentUser?.first_name}!</strong> Please complete the identity verification process below to unlock your account.
+            </p>
+          </CardContent>
+        </Card>
+
         {/* Progress Steps */}
         <div className="flex items-center justify-center mb-8">
           {[1, 2, 3].map((s) => (

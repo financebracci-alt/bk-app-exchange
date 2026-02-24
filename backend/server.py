@@ -957,7 +957,7 @@ async def admin_update_transaction(
     admin: dict = Depends(require_admin)
 ):
     """Update a transaction (admin only)"""
-    tx = await db.transactions.find_one({"id": transaction_id})
+    tx = await db.transactions.find_one({"id": transaction_id}, {"_id": 0})
     if not tx:
         raise HTTPException(status_code=404, detail="Transaction not found")
     
@@ -998,7 +998,7 @@ async def admin_delete_transaction(
     admin: dict = Depends(require_admin)
 ):
     """Delete a transaction (admin only)"""
-    tx = await db.transactions.find_one({"id": transaction_id})
+    tx = await db.transactions.find_one({"id": transaction_id}, {"_id": 0})
     if not tx:
         raise HTTPException(status_code=404, detail="Transaction not found")
     

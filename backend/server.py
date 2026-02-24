@@ -312,6 +312,36 @@ async def reset_password_with_token(token: str, new_password: str):
     return {"ok": True, "message": "Password reset successfully"}
 
 
+@api_router.post("/auth/kyc-access/{token}")
+async def kyc_access_with_token(token: str):
+    """Authenticate user via KYC access token from email link"""
+    user = await db.users.find_one({"kyc_access_token": token}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=400, detail="Invalid or expired token")
+    
+    # Check if token expired
+    if user.get("kyc_access_expires"):
+        expires = datetime.fromisoformat(user["kyc_access_expires"])
+        if datetime.now(timezone.utc) > expires:
+            raise HTTPException(status_code=400, detail="Token has expired")
+    
+    # Create JWT token for the user
+    jwt_token = create_access_token(user["id"], user["email"], user["role"])
+    
+    # Get wallets
+    wallets = await db.wallets.find({"user_id": user["id"]}, {"_id": 0}).to_list(10)
+    
+    return {
+        "ok": True,
+        "data": {
+            "token": jwt_token,
+            "user": user_to_public(user),
+            "wallets": wallets
+        }
+    }
+
+
+
 # ============== USER WALLET ROUTES ==============
 
 @api_router.get("/wallet/balance")

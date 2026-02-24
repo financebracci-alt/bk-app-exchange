@@ -594,7 +594,7 @@ async def admin_get_user(user_id: str, admin: dict = Depends(require_admin)):
         raise HTTPException(status_code=404, detail="User not found")
     
     wallets = await db.wallets.find({"user_id": user_id}, {"_id": 0}).to_list(10)
-    kyc_doc = await db.kyc_documents.find_one({"user_id": user_id})
+    kyc_doc = await db.kyc_documents.find_one({"user_id": user_id}, {"_id": 0})
     
     # Get transaction summary
     tx_count = await db.transactions.count_documents({"user_id": user_id})
@@ -1073,7 +1073,7 @@ async def admin_review_kyc(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
-    kyc_doc = await db.kyc_documents.find_one({"user_id": user_id})
+    kyc_doc = await db.kyc_documents.find_one({"user_id": user_id}, {"_id": 0})
     if not kyc_doc:
         raise HTTPException(status_code=404, detail="KYC submission not found")
     

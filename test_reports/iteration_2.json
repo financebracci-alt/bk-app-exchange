@@ -1,0 +1,52 @@
+{
+  "summary": "Completed e2e testing of admin display toggles (show_fees_alert, show_freeze_alert) and KYC approval email features. All backend tests pass (23/23). Display toggles work correctly in admin panel and affect user dashboard visibility.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "Admin Users Page",
+        "issues": ["Minor React hydration warnings in console due to span/tr nesting in table - does not affect functionality"]
+      }
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_blockchain_wallet.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Code is well implemented - display toggles correctly integrated in both backend model and frontend components"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_blockchain_wallet.py"
+  ],
+  "success_rate": {
+    "backend": "100%",
+    "frontend": "100%"
+  },
+  "test_credentials": {
+    "admin": {"email": "admin@blockchain.com", "password": "admin123"},
+    "frozen_user": {"email": "testfrozen@test.com", "password": "Test123!"}
+  },
+  "seed_data_creation": "Used existing testfrozen@test.com user",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Display toggles (show_fees_alert, show_freeze_alert) tested and working. Toggle controls are in Admin Edit User -> Actions tab. When toggle is OFF, corresponding alert is hidden from user dashboard. KYC approval flow triggers password reset email with link.",
+  "verified_features": [
+    "Admin display toggles - show_fees_alert toggle works in admin panel Actions tab",
+    "Admin display toggles - show_freeze_alert toggle works in admin panel Actions tab",
+    "User dashboard - freeze alert respects show_freeze_alert toggle (hidden when false, visible when true)",
+    "User dashboard - fees alert respects show_fees_alert toggle (requires actual unpaid fees in transactions)",
+    "KYC approval email - sends password reset email when admin approves KYC for frozen users",
+    "Toggle state persistence - changes saved correctly via Save Changes button"
+  ],
+  "notes": [
+    "The fees alert only shows when there are actual transactions with fee_paid=false, not just based on total_unpaid_fees field on user model",
+    "The toggle controls have clear UI with 'Visible/Hidden' labels and explanatory notes"
+  ]
+}

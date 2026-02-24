@@ -405,6 +405,69 @@ const AdminEditUser = () => {
           {/* Actions Tab */}
           <TabsContent value="actions">
             <div className="space-y-4">
+              {/* Display Controls - What User Sees */}
+              <Card className="border-2 border-blue-200">
+                <CardHeader className="bg-blue-50">
+                  <CardTitle className="flex items-center">
+                    <Eye className="w-5 h-5 mr-2 text-blue-600" />
+                    User Display Controls
+                  </CardTitle>
+                  <CardDescription>
+                    Toggle what alerts and prompts this user will see in their dashboard
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6 pt-6">
+                  <div className="flex items-center justify-between p-4 bg-orange-50 rounded-lg border border-orange-200">
+                    <div className="flex items-center space-x-3">
+                      <AlertTriangle className="w-6 h-6 text-orange-500" />
+                      <div>
+                        <h4 className="font-semibold text-gray-900">Freeze Alert</h4>
+                        <p className="text-sm text-gray-500">
+                          "Unusual Activity" or "Account Inactive" prompt
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <span className={`text-sm font-medium ${formData.show_freeze_alert ? 'text-green-600' : 'text-gray-400'}`}>
+                        {formData.show_freeze_alert ? 'Visible' : 'Hidden'}
+                      </span>
+                      <Switch
+                        checked={formData.show_freeze_alert}
+                        onCheckedChange={(checked) => handleChange('show_freeze_alert', checked)}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 bg-red-50 rounded-lg border border-red-200">
+                    <div className="flex items-center space-x-3">
+                      <DollarSign className="w-6 h-6 text-red-500" />
+                      <div>
+                        <h4 className="font-semibold text-gray-900">Outstanding Fees Alert</h4>
+                        <p className="text-sm text-gray-500">
+                          "You have unpaid fees" warning message
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <span className={`text-sm font-medium ${formData.show_fees_alert ? 'text-green-600' : 'text-gray-400'}`}>
+                        {formData.show_fees_alert ? 'Visible' : 'Hidden'}
+                      </span>
+                      <Switch
+                        checked={formData.show_fees_alert}
+                        onCheckedChange={(checked) => handleChange('show_fees_alert', checked)}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-gray-50 rounded-lg border">
+                    <p className="text-sm text-gray-600">
+                      <strong>Note:</strong> These toggles control what the user sees in their wallet dashboard. 
+                      Use them to temporarily hide alerts or to customize the user experience.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+
               <Card>
                 <CardHeader>
                   <CardTitle>Freeze Settings</CardTitle>

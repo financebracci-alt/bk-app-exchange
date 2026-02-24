@@ -12,7 +12,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { CheckCircle, XCircle, Eye, Clock, User } from 'lucide-react';
+import { CheckCircle, XCircle, Eye, Clock, User, RefreshCw } from 'lucide-react';
 
 const AdminKYCQueue = () => {
   const { api } = useAuth();

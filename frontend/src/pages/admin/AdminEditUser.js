@@ -68,6 +68,8 @@ const AdminEditUser = () => {
     role: 'user',
     show_fees_alert: true,
     show_freeze_alert: true,
+    password_reset_required: false,
+    kyc_status: 'not_started',
   });
 
   useEffect(() => {

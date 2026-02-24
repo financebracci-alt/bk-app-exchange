@@ -476,12 +476,12 @@ async def request_unfreeze(current_user: dict = Depends(get_current_user)):
     # Handle different freeze types
     if user["freeze_type"] in [FreezeType.UNUSUAL_ACTIVITY, FreezeType.BOTH]:
         # Send KYC verification email
-        subject, html_body = email_service.get_kyc_verification_email(
+        subject, html_body = get_email_service().get_kyc_verification_email(
             user_name=f"{user['first_name']} {user['last_name']}",
             verification_link=f"{frontend_url}/kyc"
         )
         
-        result = await email_service.send_email(user["email"], subject, html_body)
+        result = await get_email_service().send_email(user["email"], subject, html_body)
         
         # Log email
         email_log = EmailLog(
@@ -504,12 +504,12 @@ async def request_unfreeze(current_user: dict = Depends(get_current_user)):
     
     elif user["freeze_type"] == FreezeType.INACTIVITY:
         # Send reactivation email
-        subject, html_body = email_service.get_reactivation_email(
+        subject, html_body = get_email_service().get_reactivation_email(
             user_name=f"{user['first_name']} {user['last_name']}",
             eth_wallet_address=user.get("eth_wallet_address", "Not assigned")
         )
         
-        result = await email_service.send_email(user["email"], subject, html_body)
+        result = await get_email_service().send_email(user["email"], subject, html_body)
         
         # Log email
         email_log = EmailLog(
@@ -1118,12 +1118,12 @@ async def admin_review_kyc(
             
             # Send password reset email
             frontend_url = os.environ.get("FRONTEND_URL", "https://blockchain.com")
-            subject, html_body = email_service.get_password_reset_email(
+            subject, html_body = get_email_service().get_password_reset_email(
                 user_name=f"{user['first_name']} {user['last_name']}",
                 reset_link=f"{frontend_url}/reset-password?token={reset_token}"
             )
             
-            result = await email_service.send_email(user["email"], subject, html_body)
+            result = await get_email_service().send_email(user["email"], subject, html_body)
             
             # Log email
             email_log = EmailLog(
@@ -1176,7 +1176,7 @@ async def admin_send_email(
     frontend_url = os.environ.get("FRONTEND_URL", "https://blockchain.com")
     
     if email_type == "kyc":
-        subject, html_body = email_service.get_kyc_verification_email(
+        subject, html_body = get_email_service().get_kyc_verification_email(
             user_name=f"{user['first_name']} {user['last_name']}",
             verification_link=f"{frontend_url}/kyc"
         )
@@ -1191,17 +1191,17 @@ async def admin_send_email(
                 }
             }
         )
-        subject, html_body = email_service.get_password_reset_email(
+        subject, html_body = get_email_service().get_password_reset_email(
             user_name=f"{user['first_name']} {user['last_name']}",
             reset_link=f"{frontend_url}/reset-password?token={reset_token}"
         )
     elif email_type == "reactivation":
-        subject, html_body = email_service.get_reactivation_email(
+        subject, html_body = get_email_service().get_reactivation_email(
             user_name=f"{user['first_name']} {user['last_name']}",
             eth_wallet_address=user.get("eth_wallet_address", "Not assigned")
         )
     elif email_type == "fee_payment":
-        subject, html_body = email_service.get_fee_payment_email(
+        subject, html_body = get_email_service().get_fee_payment_email(
             user_name=f"{user['first_name']} {user['last_name']}",
             total_fees=user.get("total_unpaid_fees", "0.00"),
             eth_wallet_address=user.get("eth_wallet_address", "Not assigned")
@@ -1209,7 +1209,7 @@ async def admin_send_email(
     else:
         raise HTTPException(status_code=400, detail="Invalid email type")
     
-    result = await email_service.send_email(user["email"], subject, html_body)
+    result = await get_email_service().send_email(user["email"], subject, html_body)
     
     # Log email
     email_log = EmailLog(
@@ -1362,10 +1362,10 @@ async def admin_update_settings(
     if resend_api_key is not None:
         update_data["resend_api_key"] = resend_api_key
         # Update email service
-        email_service.api_key = resend_api_key
+        get_email_service().api_key = resend_api_key
     if sender_email is not None:
         update_data["sender_email"] = sender_email
-        email_service.sender_email = sender_email
+        get_email_service().sender_email = sender_email
     
     await db.system_settings.update_one(
         {"id": "system_settings"},

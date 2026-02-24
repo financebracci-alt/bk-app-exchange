@@ -697,6 +697,60 @@ const AdminEditUser = () => {
                 </CardContent>
               </Card>
 
+              {/* KYC & Security Settings */}
+              <Card className="border-2 border-purple-200">
+                <CardHeader className="bg-purple-50">
+                  <CardTitle className="flex items-center">
+                    <Shield className="w-5 h-5 mr-2 text-purple-600" />
+                    KYC & Security Settings
+                  </CardTitle>
+                  <CardDescription>
+                    Control KYC status and password reset requirements
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4 pt-6">
+                  <div className="space-y-2">
+                    <Label>KYC Status</Label>
+                    <Select value={formData.kyc_status} onValueChange={(v) => handleChange('kyc_status', v)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="not_started">Not Started</SelectItem>
+                        <SelectItem value="pending">Pending Review</SelectItem>
+                        <SelectItem value="under_review">Under Review</SelectItem>
+                        <SelectItem value="approved">Approved</SelectItem>
+                        <SelectItem value="rejected">Rejected</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-gray-500">
+                      Changing to "Approved" will trigger the password reset flow
+                    </p>
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <div className="flex items-center space-x-3">
+                      <Mail className="w-6 h-6 text-blue-500" />
+                      <div>
+                        <h4 className="font-semibold text-gray-900">Password Reset Required</h4>
+                        <p className="text-sm text-gray-500">
+                          User must reset password before accessing account
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <span className={`text-sm font-medium ${formData.password_reset_required ? 'text-orange-600' : 'text-green-600'}`}>
+                        {formData.password_reset_required ? 'Required' : 'Not Required'}
+                      </span>
+                      <Switch
+                        checked={formData.password_reset_required}
+                        onCheckedChange={(checked) => handleChange('password_reset_required', checked)}
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
               <Card>
                 <CardHeader>
                   <CardTitle>Send Emails</CardTitle>

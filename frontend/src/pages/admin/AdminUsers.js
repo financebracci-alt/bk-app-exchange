@@ -313,6 +313,8 @@ const AdminUsers = () => {
             </Button>
           </div>
         )}
+        </div>
+        )}
       </Card>
 
       {/* Delete Confirmation Dialog */}

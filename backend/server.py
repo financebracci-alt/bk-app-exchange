@@ -568,7 +568,7 @@ async def admin_list_users(
     total = await db.users.count_documents(query)
     skip = (page - 1) * page_size
     
-    users = await db.users.find(query, {"password_hash": 0})\
+    users = await db.users.find(query, {"password_hash": 0, "_id": 0})\
         .sort("created_at", -1)\
         .skip(skip)\
         .limit(page_size)\

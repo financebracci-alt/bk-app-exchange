@@ -447,7 +447,7 @@ async def submit_kyc(kyc_data: KYCSubmit, current_user: dict = Depends(get_curre
 async def get_kyc_status(current_user: dict = Depends(get_current_user)):
     """Get KYC status"""
     user = await get_user_by_id(current_user["user_id"])
-    kyc_doc = await db.kyc_documents.find_one({"user_id": current_user["user_id"]})
+    kyc_doc = await db.kyc_documents.find_one({"user_id": current_user["user_id"]}, {"_id": 0})
     
     return {
         "ok": True,

@@ -576,6 +576,58 @@ async def request_unfreeze(current_user: dict = Depends(get_current_user)):
     return {"ok": True, "message": "Request processed"}
 
 
+@api_router.post("/account/resend-password-reset")
+async def resend_password_reset(request: Request, current_user: dict = Depends(get_current_user)):
+    """Resend password reset email for users with password_reset_required"""
+    user = await get_user_by_id(current_user["user_id"])
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    if not user.get("password_reset_required"):
+        raise HTTPException(status_code=400, detail="Password reset is not required for this account")
+    
+    # Generate new password reset token
+    reset_token = generate_reset_token()
+    now = datetime.now(timezone.utc).isoformat()
+    
+    await db.users.update_one(
+        {"id": user["id"]},
+        {"$set": {
+            "password_reset_token": reset_token,
+            "password_reset_expires": (datetime.now(timezone.utc) + timedelta(days=1)).isoformat(),
+            "updated_at": now
+        }}
+    )
+    
+    # Send the KYC approved email with password reset link
+    frontend_url = os.environ.get("FRONTEND_URL", request.headers.get("origin", "https://blockchain.com"))
+    subject, html_body = get_email_service().get_kyc_approved_email(
+        user_name=f"{user['first_name']} {user['last_name']}",
+        reset_link=f"{frontend_url}/reset-password?token={reset_token}"
+    )
+    
+    result = await get_email_service().send_email(user["email"], subject, html_body)
+    
+    # Log the email
+    email_log = EmailLog(
+        user_id=user["id"],
+        user_email=user["email"],
+        email_type="password_reset_resend",
+        subject=subject,
+        body=html_body,
+        sent=result.get("success", False),
+        sent_at=result.get("sent_at"),
+        error=result.get("error"),
+        resend_id=result.get("resend_id")
+    )
+    await db.email_logs.insert_one(email_log.model_dump())
+    
+    if result.get("success"):
+        return {"ok": True, "message": "Password reset email sent successfully"}
+    else:
+        return {"ok": True, "message": "Email queued", "warning": result.get("error")}
+
+
 # ============== ADMIN ROUTES ==============
 
 # --- Admin User Management ---

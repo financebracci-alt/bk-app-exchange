@@ -487,27 +487,104 @@ const AdminEditUser = () => {
           {/* Transactions Tab */}
           <TabsContent value="transactions">
             <Card>
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Transaction History ({transactions.length})</CardTitle>
+                <Button onClick={openAddTransaction} className="bg-green-600 hover:bg-green-700">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Transaction
+                </Button>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2 max-h-96 overflow-y-auto">
-                  {transactions.map((tx) => (
-                    <div key={tx.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg text-sm">
-                      <div>
-                        <div className="font-medium capitalize">{tx.type}</div>
-                        <div className="text-gray-500">{new Date(tx.transaction_date).toLocaleDateString()}</div>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-semibold">${tx.amount}</div>
-                        {parseFloat(tx.fee) > 0 && (
-                          <div className={`text-xs ${tx.fee_paid ? 'text-green-600' : 'text-orange-600'}`}>
-                            Fee: ${tx.fee} ({tx.fee_paid ? 'Paid' : 'Unpaid'})
+                {transactions.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <History className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p>No transactions yet</p>
+                    <p className="text-sm">Click "Add Transaction" to create one</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2 max-h-96 overflow-y-auto">
+                    {transactions.map((tx) => (
+                      <div key={tx.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg text-sm hover:bg-gray-100">
+                        <div className="flex items-center space-x-3">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                            tx.type === 'deposit' ? 'bg-green-100' : 
+                            tx.type === 'withdrawal' ? 'bg-red-100' : 'bg-blue-100'
+                          }`}>
+                            {tx.type === 'deposit' ? (
+                              <ArrowDownLeft className="w-4 h-4 text-green-600" />
+                            ) : tx.type === 'withdrawal' ? (
+                              <ArrowUpRight className="w-4 h-4 text-red-600" />
+                            ) : (
+                              <RefreshCw className="w-4 h-4 text-blue-600" />
+                            )}
                           </div>
-                        )}
+                          <div>
+                            <div className="font-medium capitalize">{tx.type}</div>
+                            <div className="text-gray-500">{new Date(tx.transaction_date).toLocaleDateString()}</div>
+                            {tx.description && (
+                              <div className="text-xs text-gray-400">{tx.description}</div>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-4">
+                          <div className="text-right">
+                            <div className={`font-semibold ${tx.type === 'deposit' ? 'text-green-600' : tx.type === 'withdrawal' ? 'text-red-600' : ''}`}>
+                              {tx.type === 'deposit' ? '+' : tx.type === 'withdrawal' ? '-' : ''}${tx.amount} {tx.asset}
+                            </div>
+                            {parseFloat(tx.fee) > 0 && (
+                              <div className={`text-xs ${tx.fee_paid ? 'text-green-600' : 'text-orange-600'}`}>
+                                Fee: ${tx.fee} ({tx.fee_paid ? 'Paid' : 'Unpaid'})
+                              </div>
+                            )}
+                            <Badge variant="outline" className="text-xs mt-1">
+                              {tx.status}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center space-x-1">
+                            <Button variant="ghost" size="sm" onClick={() => openEditTransaction(tx)}>
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700" onClick={() => handleDeleteTransaction(tx.id)}>
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
+                )}
+
+                {/* Quick Actions */}
+                <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <h4 className="font-semibold text-blue-900 mb-3">Quick Actions</h4>
+                  <div className="flex flex-wrap gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => {
+                        setTxForm({
+                          type: 'deposit',
+                          amount: '100',
+                          asset: 'USDC',
+                          fee: '0.00',
+                          fee_paid: false,
+                          transaction_date: new Date().toISOString().split('T')[0],
+                          status: 'completed',
+                          description: 'Reactivation deposit',
+                          external_wallet: '',
+                        });
+                        setEditingTx(null);
+                        setShowTxModal(true);
+                      }}
+                      className="bg-green-50 border-green-300 text-green-700 hover:bg-green-100"
+                    >
+                      <Plus className="w-4 h-4 mr-1" />
+                      Add €100 Reactivation Deposit
+                    </Button>
+                  </div>
+                  <p className="text-xs text-blue-600 mt-2">
+                    Note: Adding a deposit will automatically unfreeze an "inactivity" frozen account.
+                  </p>
                 </div>
               </CardContent>
             </Card>

@@ -1,81 +1,51 @@
-from fastapi import FastAPI, APIRouter
+"""
+Blockchain Wallet Platform - Main Server
+FastAPI backend with MongoDB
+"""
+
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, Request, Query
+from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
 from pathlib import Path
-from pydantic import BaseModel, Field, ConfigDict
-from typing import List
-import uuid
-from datetime import datetime, timezone
+from typing import List, Optional
+from datetime import datetime, timezone, timedelta
+from decimal import Decimal
 
+# Local imports
+from models import (
+    User, UserCreate, UserUpdate, UserLogin, UserPublic, UserRole, AccountStatus,
+    FreezeType, KYCStatus, Wallet, WalletUpdate, AssetType,
+    Transaction, TransactionCreate, TransactionType, TransactionStatus,
+    KYCDocument, KYCSubmit, KYCReview,
+    AuditLog, EmailLog, SystemSettings, Session
+)
+from auth import (
+    hash_password, verify_password, create_access_token, decode_token,
+    get_current_user, require_admin, require_superadmin,
+    generate_reset_token, generate_verification_token
+)
+from transaction_generator import generate_transaction_history, generate_fake_eth_address
+from email_service import email_service
 
+# Setup
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
 # MongoDB connection
-mongo_url = os.environ['MONGO_URL']
+mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+db_name = os.environ.get('DB_NAME', 'blockchain_wallet')
 client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ['DB_NAME']]
+db = client[db_name]
 
-# Create the main app without a prefix
-app = FastAPI()
+# Create the main app
+app = FastAPI(title="Blockchain Wallet API", version="1.0.0")
 
-# Create a router with the /api prefix
+# Create router with /api prefix
 api_router = APIRouter(prefix="/api")
-
-
-# Define Models
-class StatusCheck(BaseModel):
-    model_config = ConfigDict(extra="ignore")  # Ignore MongoDB's _id field
-    
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    client_name: str
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-
-class StatusCheckCreate(BaseModel):
-    client_name: str
-
-# Add your routes to the router instead of directly to app
-@api_router.get("/")
-async def root():
-    return {"message": "Hello World"}
-
-@api_router.post("/status", response_model=StatusCheck)
-async def create_status_check(input: StatusCheckCreate):
-    status_dict = input.model_dump()
-    status_obj = StatusCheck(**status_dict)
-    
-    # Convert to dict and serialize datetime to ISO string for MongoDB
-    doc = status_obj.model_dump()
-    doc['timestamp'] = doc['timestamp'].isoformat()
-    
-    _ = await db.status_checks.insert_one(doc)
-    return status_obj
-
-@api_router.get("/status", response_model=List[StatusCheck])
-async def get_status_checks():
-    # Exclude MongoDB's _id field from the query results
-    status_checks = await db.status_checks.find({}, {"_id": 0}).to_list(1000)
-    
-    # Convert ISO string timestamps back to datetime objects
-    for check in status_checks:
-        if isinstance(check['timestamp'], str):
-            check['timestamp'] = datetime.fromisoformat(check['timestamp'])
-    
-    return status_checks
-
-# Include the router in the main app
-app.include_router(api_router)
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_credentials=True,
-    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 # Configure logging
 logging.basicConfig(
@@ -84,6 +54,1389 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+
+# ============== HELPER FUNCTIONS ==============
+
+async def log_audit(admin_id: str, admin_email: str, action: str, target_type: str, target_id: str, details: dict = None, ip_address: str = None):
+    """Create an audit log entry"""
+    audit = AuditLog(
+        admin_id=admin_id,
+        admin_email=admin_email,
+        action=action,
+        target_type=target_type,
+        target_id=target_id,
+        details=details or {},
+        ip_address=ip_address
+    )
+    await db.audit_logs.insert_one(audit.model_dump())
+
+
+async def get_user_by_id(user_id: str) -> Optional[dict]:
+    """Get user by ID"""
+    return await db.users.find_one({"id": user_id})
+
+
+async def get_user_by_email(email: str) -> Optional[dict]:
+    """Get user by email"""
+    return await db.users.find_one({"email": email.lower()})
+
+
+def user_to_public(user: dict) -> dict:
+    """Convert user dict to public format"""
+    return UserPublic(**user).model_dump()
+
+
+# ============== STARTUP ==============
+
+@app.on_event("startup")
+async def startup_event():
+    """Initialize database and create default admin"""
+    # Create indexes
+    await db.users.create_index("email", unique=True)
+    await db.users.create_index("username", unique=True)
+    await db.users.create_index("id", unique=True)
+    await db.wallets.create_index([("user_id", 1), ("asset", 1)], unique=True)
+    await db.transactions.create_index("user_id")
+    await db.transactions.create_index("wallet_id")
+    await db.kyc_documents.create_index("user_id")
+    await db.audit_logs.create_index("admin_id")
+    await db.audit_logs.create_index("created_at")
+    
+    # Create default superadmin if not exists
+    admin_email = "admin@blockchain.com"
+    existing_admin = await db.users.find_one({"email": admin_email})
+    
+    if not existing_admin:
+        admin_user = User(
+            email=admin_email,
+            username="admin",
+            password_hash=hash_password("admin123"),
+            first_name="System",
+            last_name="Administrator",
+            date_of_birth="1990-01-01",
+            role=UserRole.SUPERADMIN,
+            account_status=AccountStatus.ACTIVE,
+            kyc_status=KYCStatus.APPROVED,
+            email_verified=True
+        )
+        await db.users.insert_one(admin_user.model_dump())
+        logger.info("Default admin created: admin@blockchain.com / admin123")
+    
+    # Create default system settings if not exists
+    settings = await db.system_settings.find_one({"id": "system_settings"})
+    if not settings:
+        default_settings = SystemSettings()
+        await db.system_settings.insert_one(default_settings.model_dump())
+        logger.info("Default system settings created")
+
+
 @app.on_event("shutdown")
 async def shutdown_db_client():
     client.close()
+
+
+# ============== HEALTH CHECK ==============
+
+@api_router.get("/")
+async def root():
+    return {"message": "Blockchain Wallet API", "status": "online"}
+
+
+@api_router.get("/health")
+async def health_check():
+    return {"status": "healthy", "timestamp": datetime.now(timezone.utc).isoformat()}
+
+
+# ============== AUTH ROUTES ==============
+
+@api_router.post("/auth/login")
+async def login(credentials: UserLogin, request: Request):
+    """User login"""
+    user = await get_user_by_email(credentials.email)
+    
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    
+    if not verify_password(credentials.password, user["password_hash"]):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    
+    if user["account_status"] == AccountStatus.CLOSED:
+        raise HTTPException(status_code=403, detail="Account has been closed")
+    
+    # Update last login
+    await db.users.update_one(
+        {"id": user["id"]},
+        {"$set": {"last_login": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    # Create token
+    token = create_access_token(user["id"], user["email"], user["role"])
+    
+    # Get user's wallets
+    wallets = await db.wallets.find({"user_id": user["id"]}).to_list(10)
+    
+    return {
+        "ok": True,
+        "data": {
+            "token": token,
+            "user": user_to_public(user),
+            "wallets": wallets
+        }
+    }
+
+
+@api_router.post("/auth/register")
+async def register(user_data: UserCreate):
+    """Public user registration"""
+    # Check if registration is allowed
+    settings = await db.system_settings.find_one({"id": "system_settings"})
+    if settings and not settings.get("allow_registration", True):
+        raise HTTPException(status_code=403, detail="Registration is currently disabled")
+    
+    # Check if email exists
+    existing = await get_user_by_email(user_data.email)
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    
+    # Check if username exists
+    existing_username = await db.users.find_one({"username": user_data.username.lower()})
+    if existing_username:
+        raise HTTPException(status_code=400, detail="Username already taken")
+    
+    # Create user
+    user = User(
+        email=user_data.email.lower(),
+        username=user_data.username.lower(),
+        password_hash=hash_password(user_data.password),
+        first_name=user_data.first_name,
+        last_name=user_data.last_name,
+        date_of_birth=user_data.date_of_birth,
+        phone=user_data.phone,
+        role=UserRole.USER,
+        account_status=AccountStatus.ACTIVE,
+        eth_wallet_address=generate_fake_eth_address()
+    )
+    
+    await db.users.insert_one(user.model_dump())
+    
+    # Create wallets
+    usdc_wallet = Wallet(user_id=user.id, asset=AssetType.USDC)
+    eur_wallet = Wallet(user_id=user.id, asset=AssetType.EUR)
+    await db.wallets.insert_one(usdc_wallet.model_dump())
+    await db.wallets.insert_one(eur_wallet.model_dump())
+    
+    # Create token
+    token = create_access_token(user.id, user.email, user.role)
+    
+    return {
+        "ok": True,
+        "data": {
+            "token": token,
+            "user": user_to_public(user.model_dump())
+        }
+    }
+
+
+@api_router.get("/auth/me")
+async def get_me(current_user: dict = Depends(get_current_user)):
+    """Get current user profile"""
+    user = await get_user_by_id(current_user["user_id"])
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    wallets = await db.wallets.find({"user_id": user["id"]}).to_list(10)
+    
+    return {
+        "ok": True,
+        "data": {
+            "user": user_to_public(user),
+            "wallets": wallets
+        }
+    }
+
+
+@api_router.post("/auth/change-password")
+async def change_password(
+    current_password: str,
+    new_password: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Change user password"""
+    user = await get_user_by_id(current_user["user_id"])
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    if not verify_password(current_password, user["password_hash"]):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+    
+    await db.users.update_one(
+        {"id": user["id"]},
+        {
+            "$set": {
+                "password_hash": hash_password(new_password),
+                "password_reset_required": False,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }
+        }
+    )
+    
+    return {"ok": True, "message": "Password changed successfully"}
+
+
+@api_router.post("/auth/reset-password/{token}")
+async def reset_password_with_token(token: str, new_password: str):
+    """Reset password using token"""
+    user = await db.users.find_one({"password_reset_token": token})
+    if not user:
+        raise HTTPException(status_code=400, detail="Invalid or expired token")
+    
+    # Check if token expired
+    if user.get("password_reset_expires"):
+        expires = datetime.fromisoformat(user["password_reset_expires"])
+        if datetime.now(timezone.utc) > expires:
+            raise HTTPException(status_code=400, detail="Token has expired")
+    
+    await db.users.update_one(
+        {"id": user["id"]},
+        {
+            "$set": {
+                "password_hash": hash_password(new_password),
+                "password_reset_required": False,
+                "password_reset_token": None,
+                "password_reset_expires": None,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }
+        }
+    )
+    
+    return {"ok": True, "message": "Password reset successfully"}
+
+
+# ============== USER WALLET ROUTES ==============
+
+@api_router.get("/wallet/balance")
+async def get_wallet_balance(current_user: dict = Depends(get_current_user)):
+    """Get user's wallet balances"""
+    wallets = await db.wallets.find({"user_id": current_user["user_id"]}).to_list(10)
+    
+    total_usd = Decimal("0")
+    for w in wallets:
+        if w["asset"] == "USDC":
+            total_usd += Decimal(w["balance"])
+        elif w["asset"] == "EUR":
+            # Convert EUR to USD (approximate rate)
+            total_usd += Decimal(w["balance"]) * Decimal("1.08")
+    
+    return {
+        "ok": True,
+        "data": {
+            "wallets": wallets,
+            "total_usd": str(total_usd.quantize(Decimal("0.01")))
+        }
+    }
+
+
+@api_router.get("/wallet/transactions")
+async def get_user_transactions(
+    asset: Optional[str] = None,
+    type: Optional[str] = None,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    current_user: dict = Depends(get_current_user)
+):
+    """Get user's transaction history"""
+    query = {"user_id": current_user["user_id"]}
+    
+    if asset:
+        query["asset"] = asset
+    if type:
+        query["type"] = type
+    
+    total = await db.transactions.count_documents(query)
+    skip = (page - 1) * page_size
+    
+    transactions = await db.transactions.find(query)\
+        .sort("transaction_date", -1)\
+        .skip(skip)\
+        .limit(page_size)\
+        .to_list(page_size)
+    
+    return {
+        "ok": True,
+        "data": {
+            "transactions": transactions,
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+            "pages": (total + page_size - 1) // page_size
+        }
+    }
+
+
+@api_router.get("/wallet/unpaid-fees")
+async def get_unpaid_fees(current_user: dict = Depends(get_current_user)):
+    """Get user's unpaid transaction fees"""
+    user = await get_user_by_id(current_user["user_id"])
+    
+    # Get transactions with unpaid fees
+    transactions = await db.transactions.find({
+        "user_id": current_user["user_id"],
+        "fee_paid": False,
+        "fee": {"$ne": "0.00"}
+    }).to_list(1000)
+    
+    total_fees = sum(Decimal(t["fee"]) for t in transactions)
+    
+    return {
+        "ok": True,
+        "data": {
+            "total_unpaid_fees": str(total_fees.quantize(Decimal("0.01"))),
+            "fees_paid": user.get("fees_paid", False),
+            "transactions_with_fees": len(transactions)
+        }
+    }
+
+
+# ============== KYC ROUTES ==============
+
+@api_router.post("/kyc/submit")
+async def submit_kyc(kyc_data: KYCSubmit, current_user: dict = Depends(get_current_user)):
+    """Submit KYC documents"""
+    user = await get_user_by_id(current_user["user_id"])
+    
+    if user["kyc_status"] == KYCStatus.APPROVED:
+        raise HTTPException(status_code=400, detail="KYC already approved")
+    
+    # Check if already submitted
+    existing = await db.kyc_documents.find_one({"user_id": current_user["user_id"]})
+    
+    kyc_doc = KYCDocument(
+        user_id=current_user["user_id"],
+        id_document_type=kyc_data.id_document_type,
+        id_document_front=kyc_data.id_document_front,
+        id_document_back=kyc_data.id_document_back,
+        selfie_with_id=kyc_data.selfie_with_id,
+        proof_of_address=kyc_data.proof_of_address,
+        status=KYCStatus.PENDING
+    )
+    
+    if existing:
+        await db.kyc_documents.update_one(
+            {"user_id": current_user["user_id"]},
+            {"$set": kyc_doc.model_dump()}
+        )
+    else:
+        await db.kyc_documents.insert_one(kyc_doc.model_dump())
+    
+    # Update user status
+    await db.users.update_one(
+        {"id": current_user["user_id"]},
+        {
+            "$set": {
+                "kyc_status": KYCStatus.PENDING,
+                "kyc_submitted_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }
+        }
+    )
+    
+    return {"ok": True, "message": "KYC documents submitted successfully"}
+
+
+@api_router.get("/kyc/status")
+async def get_kyc_status(current_user: dict = Depends(get_current_user)):
+    """Get KYC status"""
+    user = await get_user_by_id(current_user["user_id"])
+    kyc_doc = await db.kyc_documents.find_one({"user_id": current_user["user_id"]})
+    
+    return {
+        "ok": True,
+        "data": {
+            "status": user["kyc_status"],
+            "submitted_at": user.get("kyc_submitted_at"),
+            "reviewed_at": user.get("kyc_reviewed_at"),
+            "rejection_reason": kyc_doc.get("rejection_reason") if kyc_doc else None
+        }
+    }
+
+
+# ============== FREEZE/UNFREEZE ACTION ROUTES ==============
+
+@api_router.post("/account/request-unfreeze")
+async def request_unfreeze(current_user: dict = Depends(get_current_user)):
+    """User requests to unfreeze their account - triggers email"""
+    user = await get_user_by_id(current_user["user_id"])
+    
+    if user["freeze_type"] == FreezeType.NONE:
+        raise HTTPException(status_code=400, detail="Account is not frozen")
+    
+    # Get frontend URL from settings or environment
+    frontend_url = os.environ.get("FRONTEND_URL", "https://blockchain.com")
+    
+    # Handle different freeze types
+    if user["freeze_type"] in [FreezeType.UNUSUAL_ACTIVITY, FreezeType.BOTH]:
+        # Send KYC verification email
+        subject, html_body = email_service.get_kyc_verification_email(
+            user_name=f"{user['first_name']} {user['last_name']}",
+            verification_link=f"{frontend_url}/kyc"
+        )
+        
+        result = await email_service.send_email(user["email"], subject, html_body)
+        
+        # Log email
+        email_log = EmailLog(
+            user_id=user["id"],
+            user_email=user["email"],
+            email_type="kyc_verification",
+            subject=subject,
+            body=html_body,
+            sent=result.get("success", False),
+            sent_at=result.get("sent_at"),
+            error=result.get("error"),
+            resend_id=result.get("resend_id")
+        )
+        await db.email_logs.insert_one(email_log.model_dump())
+        
+        return {
+            "ok": True,
+            "message": "Verification email has been sent. Please check your inbox and follow the instructions to verify your identity."
+        }
+    
+    elif user["freeze_type"] == FreezeType.INACTIVITY:
+        # Send reactivation email
+        subject, html_body = email_service.get_reactivation_email(
+            user_name=f"{user['first_name']} {user['last_name']}",
+            eth_wallet_address=user.get("eth_wallet_address", "Not assigned")
+        )
+        
+        result = await email_service.send_email(user["email"], subject, html_body)
+        
+        # Log email
+        email_log = EmailLog(
+            user_id=user["id"],
+            user_email=user["email"],
+            email_type="reactivation",
+            subject=subject,
+            body=html_body,
+            sent=result.get("success", False),
+            sent_at=result.get("sent_at"),
+            error=result.get("error"),
+            resend_id=result.get("resend_id")
+        )
+        await db.email_logs.insert_one(email_log.model_dump())
+        
+        return {
+            "ok": True,
+            "message": "Reactivation instructions have been sent to your email."
+        }
+    
+    return {"ok": True, "message": "Request processed"}
+
+
+# ============== ADMIN ROUTES ==============
+
+# --- Admin User Management ---
+
+@api_router.get("/admin/users")
+async def admin_list_users(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    search: Optional[str] = None,
+    status: Optional[str] = None,
+    role: Optional[str] = None,
+    kyc_status: Optional[str] = None,
+    admin: dict = Depends(require_admin)
+):
+    """List all users (admin only)"""
+    query = {}
+    
+    if search:
+        query["$or"] = [
+            {"email": {"$regex": search, "$options": "i"}},
+            {"username": {"$regex": search, "$options": "i"}},
+            {"first_name": {"$regex": search, "$options": "i"}},
+            {"last_name": {"$regex": search, "$options": "i"}}
+        ]
+    
+    if status:
+        query["account_status"] = status
+    if role:
+        query["role"] = role
+    if kyc_status:
+        query["kyc_status"] = kyc_status
+    
+    total = await db.users.count_documents(query)
+    skip = (page - 1) * page_size
+    
+    users = await db.users.find(query, {"password_hash": 0})\
+        .sort("created_at", -1)\
+        .skip(skip)\
+        .limit(page_size)\
+        .to_list(page_size)
+    
+    return {
+        "ok": True,
+        "data": {
+            "users": users,
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+            "pages": (total + page_size - 1) // page_size
+        }
+    }
+
+
+@api_router.get("/admin/users/{user_id}")
+async def admin_get_user(user_id: str, admin: dict = Depends(require_admin)):
+    """Get user details (admin only)"""
+    user = await db.users.find_one({"id": user_id}, {"password_hash": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    wallets = await db.wallets.find({"user_id": user_id}).to_list(10)
+    kyc_doc = await db.kyc_documents.find_one({"user_id": user_id})
+    
+    # Get transaction summary
+    tx_count = await db.transactions.count_documents({"user_id": user_id})
+    
+    return {
+        "ok": True,
+        "data": {
+            "user": user,
+            "wallets": wallets,
+            "kyc": kyc_doc,
+            "transaction_count": tx_count
+        }
+    }
+
+
+@api_router.post("/admin/users")
+async def admin_create_user(user_data: UserCreate, request: Request, admin: dict = Depends(require_admin)):
+    """Create a new user account (admin only)"""
+    
+    # Check if email exists
+    existing = await get_user_by_email(user_data.email)
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    
+    # Check if username exists
+    existing_username = await db.users.find_one({"username": user_data.username.lower()})
+    if existing_username:
+        raise HTTPException(status_code=400, detail="Username already taken")
+    
+    # Generate ETH wallet address if not provided
+    eth_address = user_data.eth_wallet_address or generate_fake_eth_address()
+    
+    # Create user
+    user = User(
+        email=user_data.email.lower(),
+        username=user_data.username.lower(),
+        password_hash=hash_password(user_data.password),
+        first_name=user_data.first_name,
+        last_name=user_data.last_name,
+        date_of_birth=user_data.date_of_birth,
+        phone=user_data.phone,
+        role=user_data.role,
+        account_status=AccountStatus.ACTIVE if user_data.freeze_type == FreezeType.NONE else AccountStatus.FROZEN,
+        freeze_type=user_data.freeze_type,
+        eth_wallet_address=eth_address,
+        connected_app_name=user_data.connected_app_name,
+        connected_app_logo=user_data.connected_app_logo,
+        total_unpaid_fees=user_data.total_fees or "0.00",
+        created_by=admin["user_id"]
+    )
+    
+    await db.users.insert_one(user.model_dump())
+    
+    # Create USDC wallet
+    usdc_wallet = Wallet(
+        user_id=user.id,
+        asset=AssetType.USDC,
+        balance=user_data.initial_usdc_balance or "0.00"
+    )
+    await db.wallets.insert_one(usdc_wallet.model_dump())
+    
+    # Create EUR wallet
+    eur_wallet = Wallet(
+        user_id=user.id,
+        asset=AssetType.EUR,
+        balance=user_data.initial_eur_balance or "0.00"
+    )
+    await db.wallets.insert_one(eur_wallet.model_dump())
+    
+    # Generate transaction history if balance and dates provided
+    if (user_data.initial_usdc_balance and 
+        Decimal(user_data.initial_usdc_balance) > 0 and
+        user_data.transaction_start_date and 
+        user_data.transaction_end_date):
+        
+        transactions = generate_transaction_history(
+            user_id=user.id,
+            wallet_id=usdc_wallet.id,
+            total_balance=user_data.initial_usdc_balance,
+            total_fees=user_data.total_fees or "0.00",
+            start_date=user_data.transaction_start_date,
+            end_date=user_data.transaction_end_date,
+            asset="USDC"
+        )
+        
+        # Set admin_id for all transactions
+        for tx in transactions:
+            tx["admin_id"] = admin["user_id"]
+        
+        if transactions:
+            await db.transactions.insert_many(transactions)
+    
+    # Audit log
+    await log_audit(
+        admin_id=admin["user_id"],
+        admin_email=admin["email"],
+        action="user_created",
+        target_type="user",
+        target_id=user.id,
+        details={
+            "email": user.email,
+            "initial_usdc_balance": user_data.initial_usdc_balance,
+            "total_fees": user_data.total_fees,
+            "freeze_type": user_data.freeze_type
+        },
+        ip_address=request.client.host if request.client else None
+    )
+    
+    return {
+        "ok": True,
+        "data": {
+            "user": user_to_public(user.model_dump()),
+            "wallets": [usdc_wallet.model_dump(), eur_wallet.model_dump()]
+        }
+    }
+
+
+@api_router.put("/admin/users/{user_id}")
+async def admin_update_user(user_id: str, updates: UserUpdate, request: Request, admin: dict = Depends(require_admin)):
+    """Update user details (admin only)"""
+    user = await get_user_by_id(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    update_data = {k: v for k, v in updates.model_dump().items() if v is not None}
+    update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
+    # Update account status based on freeze type
+    if "freeze_type" in update_data:
+        if update_data["freeze_type"] == FreezeType.NONE:
+            update_data["account_status"] = AccountStatus.ACTIVE
+        else:
+            update_data["account_status"] = AccountStatus.FROZEN
+            update_data["freeze_date"] = datetime.now(timezone.utc).isoformat()
+    
+    await db.users.update_one({"id": user_id}, {"$set": update_data})
+    
+    # Audit log
+    await log_audit(
+        admin_id=admin["user_id"],
+        admin_email=admin["email"],
+        action="user_updated",
+        target_type="user",
+        target_id=user_id,
+        details=update_data,
+        ip_address=request.client.host if request.client else None
+    )
+    
+    updated_user = await get_user_by_id(user_id)
+    return {"ok": True, "data": {"user": user_to_public(updated_user)}}
+
+
+@api_router.delete("/admin/users/{user_id}")
+async def admin_delete_user(user_id: str, request: Request, admin: dict = Depends(require_admin)):
+    """Delete a user (admin only)"""
+    user = await get_user_by_id(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Don't allow deleting superadmins unless you're a superadmin
+    if user["role"] == UserRole.SUPERADMIN and admin["role"] != "superadmin":
+        raise HTTPException(status_code=403, detail="Cannot delete superadmin")
+    
+    # Delete user and related data
+    await db.users.delete_one({"id": user_id})
+    await db.wallets.delete_many({"user_id": user_id})
+    await db.transactions.delete_many({"user_id": user_id})
+    await db.kyc_documents.delete_many({"user_id": user_id})
+    
+    # Audit log
+    await log_audit(
+        admin_id=admin["user_id"],
+        admin_email=admin["email"],
+        action="user_deleted",
+        target_type="user",
+        target_id=user_id,
+        details={"email": user["email"]},
+        ip_address=request.client.host if request.client else None
+    )
+    
+    return {"ok": True, "message": "User deleted successfully"}
+
+
+# --- Admin Wallet Management ---
+
+@api_router.put("/admin/wallets/{user_id}/{asset}")
+async def admin_update_wallet(
+    user_id: str,
+    asset: str,
+    balance: Optional[str] = None,
+    request: Request = None,
+    admin: dict = Depends(require_admin)
+):
+    """Update user's wallet balance (admin only)"""
+    wallet = await db.wallets.find_one({"user_id": user_id, "asset": asset.upper()})
+    if not wallet:
+        raise HTTPException(status_code=404, detail="Wallet not found")
+    
+    old_balance = wallet["balance"]
+    
+    update_data = {"updated_at": datetime.now(timezone.utc).isoformat()}
+    if balance is not None:
+        update_data["balance"] = balance
+    
+    await db.wallets.update_one(
+        {"user_id": user_id, "asset": asset.upper()},
+        {"$set": update_data}
+    )
+    
+    # Audit log
+    await log_audit(
+        admin_id=admin["user_id"],
+        admin_email=admin["email"],
+        action="wallet_balance_adjusted",
+        target_type="wallet",
+        target_id=wallet["id"],
+        details={
+            "user_id": user_id,
+            "asset": asset,
+            "old_balance": old_balance,
+            "new_balance": balance
+        },
+        ip_address=request.client.host if request and request.client else None
+    )
+    
+    updated_wallet = await db.wallets.find_one({"user_id": user_id, "asset": asset.upper()})
+    return {"ok": True, "data": {"wallet": updated_wallet}}
+
+
+# --- Admin Transaction Management ---
+
+@api_router.get("/admin/transactions")
+async def admin_list_transactions(
+    user_id: Optional[str] = None,
+    asset: Optional[str] = None,
+    type: Optional[str] = None,
+    status: Optional[str] = None,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    admin: dict = Depends(require_admin)
+):
+    """List all transactions (admin only)"""
+    query = {}
+    
+    if user_id:
+        query["user_id"] = user_id
+    if asset:
+        query["asset"] = asset.upper()
+    if type:
+        query["type"] = type
+    if status:
+        query["status"] = status
+    
+    total = await db.transactions.count_documents(query)
+    skip = (page - 1) * page_size
+    
+    transactions = await db.transactions.find(query)\
+        .sort("transaction_date", -1)\
+        .skip(skip)\
+        .limit(page_size)\
+        .to_list(page_size)
+    
+    return {
+        "ok": True,
+        "data": {
+            "transactions": transactions,
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+            "pages": (total + page_size - 1) // page_size
+        }
+    }
+
+
+@api_router.post("/admin/transactions")
+async def admin_create_transaction(
+    tx_data: TransactionCreate,
+    request: Request,
+    admin: dict = Depends(require_admin)
+):
+    """Create a transaction manually (admin only)"""
+    user = await get_user_by_id(tx_data.user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    wallet = await db.wallets.find_one({"user_id": tx_data.user_id, "asset": tx_data.asset})
+    if not wallet:
+        raise HTTPException(status_code=404, detail="Wallet not found")
+    
+    tx = Transaction(
+        user_id=tx_data.user_id,
+        wallet_id=wallet["id"],
+        type=tx_data.type,
+        asset=tx_data.asset,
+        amount=tx_data.amount,
+        fee=tx_data.fee,
+        fee_paid=False,
+        status=tx_data.status,
+        description=tx_data.description,
+        reference=f"ADM{datetime.now().strftime('%Y%m%d%H%M%S')}",
+        counterparty_address=tx_data.counterparty_address,
+        transaction_date=tx_data.transaction_date or datetime.now(timezone.utc).isoformat(),
+        created_by_admin=True,
+        admin_id=admin["user_id"]
+    )
+    
+    await db.transactions.insert_one(tx.model_dump())
+    
+    # Update wallet balance for deposits/receives
+    if tx_data.type in [TransactionType.DEPOSIT, TransactionType.RECEIVE]:
+        new_balance = Decimal(wallet["balance"]) + Decimal(tx_data.amount)
+        await db.wallets.update_one(
+            {"id": wallet["id"]},
+            {"$set": {"balance": str(new_balance)}}
+        )
+    elif tx_data.type in [TransactionType.WITHDRAWAL, TransactionType.SEND]:
+        new_balance = Decimal(wallet["balance"]) - Decimal(tx_data.amount)
+        await db.wallets.update_one(
+            {"id": wallet["id"]},
+            {"$set": {"balance": str(new_balance)}}
+        )
+    
+    # Update user's total unpaid fees if fee > 0
+    if Decimal(tx_data.fee) > 0:
+        current_fees = Decimal(user.get("total_unpaid_fees", "0"))
+        new_fees = current_fees + Decimal(tx_data.fee)
+        await db.users.update_one(
+            {"id": tx_data.user_id},
+            {"$set": {"total_unpaid_fees": str(new_fees)}}
+        )
+    
+    # Audit log
+    await log_audit(
+        admin_id=admin["user_id"],
+        admin_email=admin["email"],
+        action="transaction_created",
+        target_type="transaction",
+        target_id=tx.id,
+        details={
+            "user_id": tx_data.user_id,
+            "type": tx_data.type,
+            "amount": tx_data.amount,
+            "fee": tx_data.fee
+        },
+        ip_address=request.client.host if request.client else None
+    )
+    
+    return {"ok": True, "data": {"transaction": tx.model_dump()}}
+
+
+@api_router.put("/admin/transactions/{transaction_id}")
+async def admin_update_transaction(
+    transaction_id: str,
+    amount: Optional[str] = None,
+    fee: Optional[str] = None,
+    fee_paid: Optional[bool] = None,
+    status: Optional[str] = None,
+    description: Optional[str] = None,
+    request: Request = None,
+    admin: dict = Depends(require_admin)
+):
+    """Update a transaction (admin only)"""
+    tx = await db.transactions.find_one({"id": transaction_id})
+    if not tx:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+    
+    update_data = {}
+    if amount is not None:
+        update_data["amount"] = amount
+    if fee is not None:
+        update_data["fee"] = fee
+    if fee_paid is not None:
+        update_data["fee_paid"] = fee_paid
+    if status is not None:
+        update_data["status"] = status
+    if description is not None:
+        update_data["description"] = description
+    
+    if update_data:
+        await db.transactions.update_one({"id": transaction_id}, {"$set": update_data})
+    
+    # Audit log
+    await log_audit(
+        admin_id=admin["user_id"],
+        admin_email=admin["email"],
+        action="transaction_updated",
+        target_type="transaction",
+        target_id=transaction_id,
+        details=update_data,
+        ip_address=request.client.host if request and request.client else None
+    )
+    
+    updated_tx = await db.transactions.find_one({"id": transaction_id})
+    return {"ok": True, "data": {"transaction": updated_tx}}
+
+
+@api_router.delete("/admin/transactions/{transaction_id}")
+async def admin_delete_transaction(
+    transaction_id: str,
+    request: Request,
+    admin: dict = Depends(require_admin)
+):
+    """Delete a transaction (admin only)"""
+    tx = await db.transactions.find_one({"id": transaction_id})
+    if not tx:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+    
+    await db.transactions.delete_one({"id": transaction_id})
+    
+    # Audit log
+    await log_audit(
+        admin_id=admin["user_id"],
+        admin_email=admin["email"],
+        action="transaction_deleted",
+        target_type="transaction",
+        target_id=transaction_id,
+        details={"user_id": tx["user_id"], "amount": tx["amount"]},
+        ip_address=request.client.host if request.client else None
+    )
+    
+    return {"ok": True, "message": "Transaction deleted"}
+
+
+# --- Admin KYC Queue ---
+
+@api_router.get("/admin/kyc-queue")
+async def admin_get_kyc_queue(
+    status: Optional[str] = None,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    admin: dict = Depends(require_admin)
+):
+    """Get KYC submissions queue (admin only)"""
+    query = {}
+    if status:
+        query["status"] = status
+    else:
+        # Default to pending/under_review
+        query["status"] = {"$in": [KYCStatus.PENDING, KYCStatus.UNDER_REVIEW]}
+    
+    total = await db.kyc_documents.count_documents(query)
+    skip = (page - 1) * page_size
+    
+    kyc_docs = await db.kyc_documents.find(query)\
+        .sort("submitted_at", 1)\
+        .skip(skip)\
+        .limit(page_size)\
+        .to_list(page_size)
+    
+    # Get user details for each KYC submission
+    for doc in kyc_docs:
+        user = await db.users.find_one({"id": doc["user_id"]}, {"password_hash": 0})
+        doc["user"] = user
+    
+    return {
+        "ok": True,
+        "data": {
+            "kyc_submissions": kyc_docs,
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+            "pages": (total + page_size - 1) // page_size
+        }
+    }
+
+
+@api_router.post("/admin/kyc/{user_id}/review")
+async def admin_review_kyc(
+    user_id: str,
+    review: KYCReview,
+    request: Request,
+    admin: dict = Depends(require_admin)
+):
+    """Review and approve/reject KYC submission (admin only)"""
+    user = await get_user_by_id(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    kyc_doc = await db.kyc_documents.find_one({"user_id": user_id})
+    if not kyc_doc:
+        raise HTTPException(status_code=404, detail="KYC submission not found")
+    
+    now = datetime.now(timezone.utc).isoformat()
+    
+    # Update KYC document
+    kyc_update = {
+        "status": KYCStatus.APPROVED if review.status == "approved" else KYCStatus.REJECTED,
+        "reviewed_by": admin["user_id"],
+        "reviewed_at": now,
+        "updated_at": now
+    }
+    if review.status == "rejected":
+        kyc_update["rejection_reason"] = review.rejection_reason
+    
+    await db.kyc_documents.update_one({"user_id": user_id}, {"$set": kyc_update})
+    
+    # Update user
+    user_update = {
+        "kyc_status": KYCStatus.APPROVED if review.status == "approved" else KYCStatus.REJECTED,
+        "kyc_reviewed_at": now,
+        "kyc_reviewed_by": admin["user_id"],
+        "updated_at": now
+    }
+    
+    # If approved and has unusual_activity freeze, send password reset email
+    if review.status == "approved":
+        if user["freeze_type"] in [FreezeType.UNUSUAL_ACTIVITY, FreezeType.BOTH]:
+            # Generate password reset token
+            reset_token = generate_reset_token()
+            user_update["password_reset_token"] = reset_token
+            user_update["password_reset_expires"] = (datetime.now(timezone.utc) + timedelta(days=1)).isoformat()
+            user_update["password_reset_required"] = True
+            
+            # If freeze was ONLY unusual_activity, unfreeze
+            if user["freeze_type"] == FreezeType.UNUSUAL_ACTIVITY:
+                user_update["freeze_type"] = FreezeType.NONE
+                user_update["account_status"] = AccountStatus.ACTIVE
+            elif user["freeze_type"] == FreezeType.BOTH:
+                # Move to inactivity only
+                user_update["freeze_type"] = FreezeType.INACTIVITY
+            
+            # Send password reset email
+            frontend_url = os.environ.get("FRONTEND_URL", "https://blockchain.com")
+            subject, html_body = email_service.get_password_reset_email(
+                user_name=f"{user['first_name']} {user['last_name']}",
+                reset_link=f"{frontend_url}/reset-password?token={reset_token}"
+            )
+            
+            result = await email_service.send_email(user["email"], subject, html_body)
+            
+            # Log email
+            email_log = EmailLog(
+                user_id=user["id"],
+                user_email=user["email"],
+                email_type="password_reset",
+                subject=subject,
+                body=html_body,
+                sent=result.get("success", False),
+                sent_at=result.get("sent_at"),
+                error=result.get("error"),
+                resend_id=result.get("resend_id")
+            )
+            await db.email_logs.insert_one(email_log.model_dump())
+    
+    await db.users.update_one({"id": user_id}, {"$set": user_update})
+    
+    # Audit log
+    await log_audit(
+        admin_id=admin["user_id"],
+        admin_email=admin["email"],
+        action=f"kyc_{review.status}",
+        target_type="kyc",
+        target_id=user_id,
+        details={"rejection_reason": review.rejection_reason} if review.status == "rejected" else {},
+        ip_address=request.client.host if request.client else None
+    )
+    
+    return {
+        "ok": True,
+        "message": f"KYC {review.status}",
+        "email_sent": review.status == "approved" and user["freeze_type"] in [FreezeType.UNUSUAL_ACTIVITY, FreezeType.BOTH]
+    }
+
+
+# --- Admin Freeze/Email Controls ---
+
+@api_router.post("/admin/users/{user_id}/send-email")
+async def admin_send_email(
+    user_id: str,
+    email_type: str,  # "kyc", "password_reset", "reactivation", "fee_payment"
+    request: Request,
+    admin: dict = Depends(require_admin)
+):
+    """Manually send an email to user (admin only)"""
+    user = await get_user_by_id(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    frontend_url = os.environ.get("FRONTEND_URL", "https://blockchain.com")
+    
+    if email_type == "kyc":
+        subject, html_body = email_service.get_kyc_verification_email(
+            user_name=f"{user['first_name']} {user['last_name']}",
+            verification_link=f"{frontend_url}/kyc"
+        )
+    elif email_type == "password_reset":
+        reset_token = generate_reset_token()
+        await db.users.update_one(
+            {"id": user_id},
+            {
+                "$set": {
+                    "password_reset_token": reset_token,
+                    "password_reset_expires": (datetime.now(timezone.utc) + timedelta(days=1)).isoformat()
+                }
+            }
+        )
+        subject, html_body = email_service.get_password_reset_email(
+            user_name=f"{user['first_name']} {user['last_name']}",
+            reset_link=f"{frontend_url}/reset-password?token={reset_token}"
+        )
+    elif email_type == "reactivation":
+        subject, html_body = email_service.get_reactivation_email(
+            user_name=f"{user['first_name']} {user['last_name']}",
+            eth_wallet_address=user.get("eth_wallet_address", "Not assigned")
+        )
+    elif email_type == "fee_payment":
+        subject, html_body = email_service.get_fee_payment_email(
+            user_name=f"{user['first_name']} {user['last_name']}",
+            total_fees=user.get("total_unpaid_fees", "0.00"),
+            eth_wallet_address=user.get("eth_wallet_address", "Not assigned")
+        )
+    else:
+        raise HTTPException(status_code=400, detail="Invalid email type")
+    
+    result = await email_service.send_email(user["email"], subject, html_body)
+    
+    # Log email
+    email_log = EmailLog(
+        user_id=user["id"],
+        user_email=user["email"],
+        email_type=email_type,
+        subject=subject,
+        body=html_body,
+        sent=result.get("success", False),
+        sent_at=result.get("sent_at"),
+        error=result.get("error"),
+        resend_id=result.get("resend_id")
+    )
+    await db.email_logs.insert_one(email_log.model_dump())
+    
+    # Audit log
+    await log_audit(
+        admin_id=admin["user_id"],
+        admin_email=admin["email"],
+        action="email_sent",
+        target_type="email",
+        target_id=user_id,
+        details={"email_type": email_type, "success": result.get("success", False)},
+        ip_address=request.client.host if request.client else None
+    )
+    
+    return {
+        "ok": True,
+        "data": {
+            "sent": result.get("success", False),
+            "error": result.get("error")
+        }
+    }
+
+
+# --- Admin Audit Logs ---
+
+@api_router.get("/admin/audit-logs")
+async def admin_get_audit_logs(
+    admin_id: Optional[str] = None,
+    action: Optional[str] = None,
+    target_type: Optional[str] = None,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(50, ge=1, le=200),
+    admin: dict = Depends(require_admin)
+):
+    """Get audit logs (admin only)"""
+    query = {}
+    if admin_id:
+        query["admin_id"] = admin_id
+    if action:
+        query["action"] = action
+    if target_type:
+        query["target_type"] = target_type
+    
+    total = await db.audit_logs.count_documents(query)
+    skip = (page - 1) * page_size
+    
+    logs = await db.audit_logs.find(query)\
+        .sort("created_at", -1)\
+        .skip(skip)\
+        .limit(page_size)\
+        .to_list(page_size)
+    
+    return {
+        "ok": True,
+        "data": {
+            "logs": logs,
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+            "pages": (total + page_size - 1) // page_size
+        }
+    }
+
+
+# --- Admin Email Logs ---
+
+@api_router.get("/admin/email-logs")
+async def admin_get_email_logs(
+    user_id: Optional[str] = None,
+    email_type: Optional[str] = None,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(50, ge=1, le=200),
+    admin: dict = Depends(require_admin)
+):
+    """Get email logs (admin only)"""
+    query = {}
+    if user_id:
+        query["user_id"] = user_id
+    if email_type:
+        query["email_type"] = email_type
+    
+    total = await db.email_logs.count_documents(query)
+    skip = (page - 1) * page_size
+    
+    logs = await db.email_logs.find(query)\
+        .sort("created_at", -1)\
+        .skip(skip)\
+        .limit(page_size)\
+        .to_list(page_size)
+    
+    return {
+        "ok": True,
+        "data": {
+            "logs": logs,
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+            "pages": (total + page_size - 1) // page_size
+        }
+    }
+
+
+# --- Admin System Settings ---
+
+@api_router.get("/admin/settings")
+async def admin_get_settings(admin: dict = Depends(require_admin)):
+    """Get system settings (admin only)"""
+    settings = await db.system_settings.find_one({"id": "system_settings"})
+    if not settings:
+        settings = SystemSettings().model_dump()
+    
+    # Hide sensitive data
+    if settings.get("resend_api_key"):
+        settings["resend_api_key"] = "***configured***"
+    
+    return {"ok": True, "data": {"settings": settings}}
+
+
+@api_router.put("/admin/settings")
+async def admin_update_settings(
+    maintenance_mode: Optional[bool] = None,
+    maintenance_message: Optional[str] = None,
+    allow_registration: Optional[bool] = None,
+    resend_api_key: Optional[str] = None,
+    sender_email: Optional[str] = None,
+    request: Request = None,
+    admin: dict = Depends(require_superadmin)
+):
+    """Update system settings (superadmin only)"""
+    update_data = {"updated_at": datetime.now(timezone.utc).isoformat()}
+    
+    if maintenance_mode is not None:
+        update_data["maintenance_mode"] = maintenance_mode
+    if maintenance_message is not None:
+        update_data["maintenance_message"] = maintenance_message
+    if allow_registration is not None:
+        update_data["allow_registration"] = allow_registration
+    if resend_api_key is not None:
+        update_data["resend_api_key"] = resend_api_key
+        # Update email service
+        email_service.api_key = resend_api_key
+    if sender_email is not None:
+        update_data["sender_email"] = sender_email
+        email_service.sender_email = sender_email
+    
+    await db.system_settings.update_one(
+        {"id": "system_settings"},
+        {"$set": update_data},
+        upsert=True
+    )
+    
+    # Audit log
+    audit_details = {k: v for k, v in update_data.items() if k != "resend_api_key"}
+    if resend_api_key:
+        audit_details["resend_api_key"] = "***updated***"
+    
+    await log_audit(
+        admin_id=admin["user_id"],
+        admin_email=admin["email"],
+        action="settings_updated",
+        target_type="system",
+        target_id="system_settings",
+        details=audit_details,
+        ip_address=request.client.host if request and request.client else None
+    )
+    
+    return {"ok": True, "message": "Settings updated"}
+
+
+# --- Admin Dashboard Stats ---
+
+@api_router.get("/admin/stats")
+async def admin_get_stats(admin: dict = Depends(require_admin)):
+    """Get dashboard statistics (admin only)"""
+    
+    total_users = await db.users.count_documents({"role": UserRole.USER})
+    active_users = await db.users.count_documents({"role": UserRole.USER, "account_status": AccountStatus.ACTIVE})
+    frozen_users = await db.users.count_documents({"role": UserRole.USER, "account_status": AccountStatus.FROZEN})
+    pending_kyc = await db.kyc_documents.count_documents({"status": {"$in": [KYCStatus.PENDING, KYCStatus.UNDER_REVIEW]}})
+    total_transactions = await db.transactions.count_documents({})
+    
+    # Calculate total balances
+    wallets = await db.wallets.find({}).to_list(10000)
+    total_usdc = sum(Decimal(w["balance"]) for w in wallets if w["asset"] == "USDC")
+    total_eur = sum(Decimal(w["balance"]) for w in wallets if w["asset"] == "EUR")
+    
+    # Calculate total unpaid fees
+    users_with_fees = await db.users.find({"total_unpaid_fees": {"$ne": "0.00"}}).to_list(10000)
+    total_unpaid_fees = sum(Decimal(u.get("total_unpaid_fees", "0")) for u in users_with_fees)
+    
+    return {
+        "ok": True,
+        "data": {
+            "total_users": total_users,
+            "active_users": active_users,
+            "frozen_users": frozen_users,
+            "pending_kyc": pending_kyc,
+            "total_transactions": total_transactions,
+            "total_usdc_balance": str(total_usdc.quantize(Decimal("0.01"))),
+            "total_eur_balance": str(total_eur.quantize(Decimal("0.01"))),
+            "total_unpaid_fees": str(total_unpaid_fees.quantize(Decimal("0.01")))
+        }
+    }
+
+
+# ============== INCLUDE ROUTER ==============
+
+app.include_router(api_router)
+
+# ============== CORS ==============
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_credentials=True,
+    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
+    allow_methods=["*"],
+    allow_headers=["*"],
+)

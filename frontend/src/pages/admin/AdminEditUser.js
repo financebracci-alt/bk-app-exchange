@@ -173,6 +173,94 @@ const AdminEditUser = () => {
     }
   };
 
+  // Transaction CRUD functions
+  const openAddTransaction = () => {
+    setEditingTx(null);
+    setTxForm({
+      type: 'deposit',
+      amount: '',
+      asset: 'USDC',
+      fee: '0.00',
+      fee_paid: false,
+      transaction_date: new Date().toISOString().split('T')[0],
+      status: 'completed',
+      description: '',
+      external_wallet: '',
+    });
+    setShowTxModal(true);
+  };
+
+  const openEditTransaction = (tx) => {
+    setEditingTx(tx);
+    setTxForm({
+      type: tx.type || 'deposit',
+      amount: tx.amount || '',
+      asset: tx.asset || 'USDC',
+      fee: tx.fee || '0.00',
+      fee_paid: tx.fee_paid || false,
+      transaction_date: tx.transaction_date ? tx.transaction_date.split('T')[0] : new Date().toISOString().split('T')[0],
+      status: tx.status || 'completed',
+      description: tx.description || '',
+      external_wallet: tx.external_wallet || '',
+    });
+    setShowTxModal(true);
+  };
+
+  const handleSaveTransaction = async () => {
+    if (!txForm.amount || parseFloat(txForm.amount) <= 0) {
+      toast.error('Please enter a valid amount');
+      return;
+    }
+
+    setSavingTx(true);
+    try {
+      if (editingTx) {
+        // Update existing transaction
+        const response = await api.put(`/admin/transactions/${editingTx.id}`, {
+          ...txForm,
+          user_id: userId,
+        });
+        if (response.data.ok) {
+          toast.success('Transaction updated');
+          setShowTxModal(false);
+          loadTransactions();
+          loadUser(); // Refresh user data to update freeze status if needed
+        }
+      } else {
+        // Create new transaction
+        const response = await api.post('/admin/transactions', {
+          ...txForm,
+          user_id: userId,
+        });
+        if (response.data.ok) {
+          toast.success('Transaction added');
+          setShowTxModal(false);
+          loadTransactions();
+          loadUser(); // Refresh user data to update freeze status if needed
+        }
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to save transaction');
+    } finally {
+      setSavingTx(false);
+    }
+  };
+
+  const handleDeleteTransaction = async (txId) => {
+    if (!window.confirm('Are you sure you want to delete this transaction?')) return;
+    
+    try {
+      const response = await api.delete(`/admin/transactions/${txId}`);
+      if (response.data.ok) {
+        toast.success('Transaction deleted');
+        loadTransactions();
+        loadUser();
+      }
+    } catch (error) {
+      toast.error('Failed to delete transaction');
+    }
+  };
+
   if (loading) {
     return (
       <AdminLayout title="Edit User">

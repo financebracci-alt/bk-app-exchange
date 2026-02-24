@@ -126,8 +126,81 @@ const WalletDashboard = () => {
     });
   };
 
+  const [resendingEmail, setResendingEmail] = useState(false);
+
+  // Check what alert to show based on user state
+  const getAlertState = () => {
+    if (!user) return null;
+    
+    // Priority 1: Password reset required (after KYC approved)
+    if (user.password_reset_required && user.kyc_status === 'approved') {
+      return {
+        type: 'password_reset',
+        title: 'Password Reset Required',
+        description: 'Your identity has been verified! Please reset your password to secure your account and regain full access.',
+        buttonText: 'Resend Password Reset Email',
+        color: 'blue'
+      };
+    }
+    
+    // Priority 2: Freeze alerts (only if no password reset pending)
+    if (user.freeze_type === 'unusual_activity' || user.freeze_type === 'both') {
+      // Check if KYC is already pending/under review
+      if (user.kyc_status === 'pending' || user.kyc_status === 'under_review') {
+        return {
+          type: 'kyc_pending',
+          title: 'Identity Verification Pending',
+          description: 'Your documents are being reviewed by our compliance team. This usually takes 1-2 business days.',
+          buttonText: null,
+          color: 'yellow'
+        };
+      }
+      return {
+        type: 'freeze',
+        title: 'Unusual Activity Detected',
+        description: 'We have detected some unusual activity on your account. Please verify your identity to continue using your wallet.',
+        buttonText: 'Click here to fix your account',
+        color: 'orange'
+      };
+    }
+    
+    if (user.freeze_type === 'inactivity') {
+      return {
+        type: 'freeze',
+        title: 'Account Inactive',
+        description: 'Your account has been frozen due to inactivity. Please follow the steps to reactivate your account.',
+        buttonText: 'Click here to fix your account',
+        color: 'orange'
+      };
+    }
+    
+    return null;
+  };
+
+  const alertState = getAlertState();
+
+  // Handle resending password reset email
+  const handleResendPasswordReset = async () => {
+    setResendingEmail(true);
+    try {
+      const response = await api.post('/account/resend-password-reset');
+      if (response.data.ok) {
+        toast.success('Password reset email sent! Please check your inbox.');
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to send email. Please try again.');
+    } finally {
+      setResendingEmail(false);
+    }
+  };
+
   const getFreezeMessage = () => {
     if (!user) return null;
+    
+    // Don't show freeze message if password reset is pending
+    if (user.password_reset_required && user.kyc_status === 'approved') {
+      return null;
+    }
     
     if (user.freeze_type === 'unusual_activity' || user.freeze_type === 'both') {
       return {

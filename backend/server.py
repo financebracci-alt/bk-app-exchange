@@ -415,7 +415,7 @@ async def get_unpaid_fees(current_user: dict = Depends(get_current_user)):
         "fee": {"$ne": "0.00"}
     }, {"_id": 0}).to_list(1000)
     
-    total_fees = sum(Decimal(t["fee"]) for t in transactions)
+    total_fees = sum((Decimal(t["fee"]) for t in transactions), Decimal("0"))
     
     return {
         "ok": True,

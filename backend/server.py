@@ -1409,7 +1409,7 @@ async def admin_get_stats(admin: dict = Depends(require_admin)):
     total_eur = sum(Decimal(w["balance"]) for w in wallets if w["asset"] == "EUR")
     
     # Calculate total unpaid fees
-    users_with_fees = await db.users.find({"total_unpaid_fees": {"$ne": "0.00"}}).to_list(10000)
+    users_with_fees = await db.users.find({"total_unpaid_fees": {"$ne": "0.00"}}, {"_id": 0}).to_list(10000)
     total_unpaid_fees = sum(Decimal(u.get("total_unpaid_fees", "0")) for u in users_with_fees)
     
     return {

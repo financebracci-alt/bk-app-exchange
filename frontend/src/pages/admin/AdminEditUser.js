@@ -43,6 +43,8 @@ const AdminEditUser = () => {
     total_unpaid_fees: '0.00',
     fees_paid: false,
     role: 'user',
+    show_fees_alert: true,
+    show_freeze_alert: true,
   });
 
   useEffect(() => {

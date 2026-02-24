@@ -51,27 +51,44 @@ export const AuthProvider = ({ children }) => {
   const [wallets, setWallets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const loadingRef = useRef(false); // Prevent duplicate loads
 
   const loadUser = useCallback(async () => {
+    // Prevent duplicate simultaneous calls
+    if (loadingRef.current) return;
+    
     const token = localStorage.getItem('token');
     if (!token) {
       setLoading(false);
+      setIsAuthenticated(false);
       return;
     }
 
+    loadingRef.current = true;
+    
     try {
       const response = await api.get('/auth/me');
       if (response.data.ok) {
         setUser(response.data.data.user);
         setWallets(response.data.data.wallets || []);
         setIsAuthenticated(true);
+      } else {
+        // Invalid response - clear auth
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        setIsAuthenticated(false);
       }
     } catch (error) {
       console.error('Failed to load user:', error);
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
+      // Don't clear storage on network errors - only on auth errors
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+      }
+      setIsAuthenticated(false);
     } finally {
       setLoading(false);
+      loadingRef.current = false;
     }
   }, []);
 

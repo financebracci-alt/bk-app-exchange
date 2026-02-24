@@ -172,6 +172,9 @@ class UserUpdate(BaseModel):
     total_unpaid_fees: Optional[str] = None
     fees_paid: Optional[bool] = None
     password_reset_required: Optional[bool] = None
+    # Display settings
+    show_fees_alert: Optional[bool] = None
+    show_freeze_alert: Optional[bool] = None
 
 
 class UserLogin(BaseModel):

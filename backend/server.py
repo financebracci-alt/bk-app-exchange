@@ -29,7 +29,7 @@ from auth import (
     generate_reset_token, generate_verification_token
 )
 from transaction_generator import generate_transaction_history, generate_fake_eth_address
-from email_service import email_service
+from email_service import get_email_service
 
 # Setup
 ROOT_DIR = Path(__file__).parent

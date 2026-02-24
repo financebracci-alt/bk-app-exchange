@@ -324,8 +324,8 @@ const WalletDashboard = () => {
 
       {/* Main Content */}
       <main className="max-w-lg mx-auto px-4 py-6 pb-24">
-        {/* Password Reset Alert - Shows after KYC approved */}
-        {alertState?.type === 'password_reset' && user?.show_freeze_alert !== false && (
+        {/* Password Reset Alert - ALWAYS SHOWS when required (not controlled by freeze toggle) */}
+        {alertState?.type === 'password_reset' && (
           <Card className="mb-4 border-blue-200 bg-blue-50">
             <div className="p-4">
               <div className="flex items-start space-x-3">
@@ -350,7 +350,7 @@ const WalletDashboard = () => {
           </Card>
         )}
 
-        {/* KYC Pending Alert */}
+        {/* KYC Pending Alert - controlled by freeze toggle */}
         {alertState?.type === 'kyc_pending' && user?.show_freeze_alert !== false && (
           <Card className="mb-4 border-yellow-200 bg-yellow-50">
             <div className="p-4">

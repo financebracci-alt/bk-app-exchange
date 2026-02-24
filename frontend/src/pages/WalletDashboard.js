@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -43,6 +43,33 @@ const WalletDashboard = () => {
   const [showFreezeModal, setShowFreezeModal] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
   const [sendingEmail, setSendingEmail] = useState(false);
+  const [lastRefresh, setLastRefresh] = useState(Date.now());
+
+  // Auto-refresh user data every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (refreshUser) {
+        refreshUser();
+        setLastRefresh(Date.now());
+      }
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(interval);
+  }, [refreshUser]);
+
+  // Manual refresh function
+  const handleManualRefresh = useCallback(async () => {
+    setLoading(true);
+    try {
+      if (refreshUser) {
+        await refreshUser();
+        setLastRefresh(Date.now());
+        loadUnpaidFees();
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [refreshUser]);
 
   useEffect(() => {
     loadUnpaidFees();

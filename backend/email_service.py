@@ -370,5 +370,11 @@ class EmailService:
         return subject, html_body
 
 
-# Global instance
-email_service = EmailService()
+# Create global instance that will be initialized with env vars
+email_service = None
+
+def get_email_service():
+    global email_service
+    if email_service is None:
+        email_service = EmailService()
+    return email_service

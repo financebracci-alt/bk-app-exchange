@@ -10,6 +10,13 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -17,7 +24,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { ArrowLeft, Save, Mail, RefreshCw, Wallet, History, User, Shield, Eye, EyeOff, AlertTriangle, DollarSign } from 'lucide-react';
+import { ArrowLeft, Save, Mail, RefreshCw, Wallet, History, User, Shield, Eye, EyeOff, AlertTriangle, DollarSign, Plus, Edit, Trash2, ArrowDownLeft, ArrowUpRight } from 'lucide-react';
 
 const AdminEditUser = () => {
   const { userId } = useParams();

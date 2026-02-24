@@ -18,6 +18,7 @@ const AdminKYCQueue = () => {
   const { api } = useAuth();
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [selectedKYC, setSelectedKYC] = useState(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [processing, setProcessing] = useState(false);
@@ -28,13 +29,17 @@ const AdminKYCQueue = () => {
 
   const loadKYCQueue = async () => {
     setLoading(true);
+    setError(null);
     try {
       const response = await api.get('/admin/kyc-queue');
       if (response.data.ok) {
-        setSubmissions(response.data.data.kyc_submissions);
+        setSubmissions(response.data.data.kyc_submissions || []);
+      } else {
+        setError('Failed to load KYC queue');
       }
-    } catch (error) {
-      toast.error('Failed to load KYC queue');
+    } catch (err) {
+      console.error('Error loading KYC queue:', err);
+      setError(err.response?.data?.detail || 'Failed to load KYC queue. Please try again.');
     } finally {
       setLoading(false);
     }

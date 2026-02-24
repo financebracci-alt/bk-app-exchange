@@ -129,6 +129,8 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
     setWallets([]);
     setIsAuthenticated(false);
+    // Reset redirect flag on logout
+    isRedirecting = false;
   };
 
   const refreshUser = async () => {

@@ -314,7 +314,7 @@ const AdminUsers = () => {
             </Button>
           </div>
         )}
-        </div>
+        </>
         )}
       </Card>
 

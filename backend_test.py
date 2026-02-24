@@ -216,7 +216,7 @@ class BlockchainWalletAPITester:
         result = self.make_request("GET", f"/api/admin/transactions?user_id={created_user_id}", 
                                  token=self.admin_token)
         if not result["success"]:
-            self.log(f"❌ Failed to fetch user transactions: {result.get('error')}", "ERROR")
+            self.log(f"❌ Failed to fetch user transactions: {result.get('error')} | Status: {result.get('status_code')} | Data: {result.get('data')}", "ERROR")
             return False
             
         transactions = result["data"]["data"]["transactions"]

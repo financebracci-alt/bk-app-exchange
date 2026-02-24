@@ -1089,7 +1089,7 @@ async def admin_get_kyc_queue(
     
     # Get user details for each KYC submission
     for doc in kyc_docs:
-        user = await db.users.find_one({"id": doc["user_id"]}, {"password_hash": 0})
+        user = await db.users.find_one({"id": doc["user_id"]}, {"password_hash": 0, "_id": 0})
         doc["user"] = user
     
     return {

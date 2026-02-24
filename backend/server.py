@@ -1219,9 +1219,19 @@ async def admin_send_email(
     frontend_url = os.environ.get("FRONTEND_URL", "https://blockchain.com")
     
     if email_type == "kyc":
+        # Generate KYC access token
+        kyc_token = generate_verification_token()
+        kyc_expires = (datetime.now(timezone.utc) + timedelta(days=1)).isoformat()
+        await db.users.update_one(
+            {"id": user_id},
+            {"$set": {
+                "kyc_access_token": kyc_token,
+                "kyc_access_expires": kyc_expires
+            }}
+        )
         subject, html_body = get_email_service().get_kyc_verification_email(
             user_name=f"{user['first_name']} {user['last_name']}",
-            verification_link=f"{frontend_url}/kyc"
+            verification_link=f"{frontend_url}/kyc?token={kyc_token}"
         )
     elif email_type == "password_reset":
         reset_token = generate_reset_token()

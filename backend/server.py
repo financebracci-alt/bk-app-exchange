@@ -1068,12 +1068,8 @@ async def admin_create_transaction(
 @api_router.put("/admin/transactions/{transaction_id}")
 async def admin_update_transaction(
     transaction_id: str,
-    amount: Optional[str] = None,
-    fee: Optional[str] = None,
-    fee_paid: Optional[bool] = None,
-    status: Optional[str] = None,
-    description: Optional[str] = None,
-    request: Request = None,
+    updates: dict,
+    request: Request,
     admin: dict = Depends(require_admin)
 ):
     """Update a transaction (admin only)"""
@@ -1081,17 +1077,8 @@ async def admin_update_transaction(
     if not tx:
         raise HTTPException(status_code=404, detail="Transaction not found")
     
-    update_data = {}
-    if amount is not None:
-        update_data["amount"] = amount
-    if fee is not None:
-        update_data["fee"] = fee
-    if fee_paid is not None:
-        update_data["fee_paid"] = fee_paid
-    if status is not None:
-        update_data["status"] = status
-    if description is not None:
-        update_data["description"] = description
+    allowed_fields = ["amount", "fee", "fee_paid", "status", "description", "type", "asset", "transaction_date", "external_wallet"]
+    update_data = {k: v for k, v in updates.items() if k in allowed_fields and v is not None}
     
     if update_data:
         await db.transactions.update_one({"id": transaction_id}, {"$set": update_data})

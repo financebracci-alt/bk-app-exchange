@@ -987,7 +987,7 @@ async def admin_update_transaction(
         ip_address=request.client.host if request and request.client else None
     )
     
-    updated_tx = await db.transactions.find_one({"id": transaction_id})
+    updated_tx = await db.transactions.find_one({"id": transaction_id}, {"_id": 0})
     return {"ok": True, "data": {"transaction": updated_tx}}
 
 

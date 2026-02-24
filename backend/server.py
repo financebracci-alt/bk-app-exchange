@@ -173,7 +173,7 @@ async def login(credentials: UserLogin, request: Request):
     token = create_access_token(user["id"], user["email"], user["role"])
     
     # Get user's wallets
-    wallets = await db.wallets.find({"user_id": user["id"]}).to_list(10)
+    wallets = await db.wallets.find({"user_id": user["id"]}, {"_id": 0}).to_list(10)
     
     return {
         "ok": True,
@@ -244,7 +244,7 @@ async def get_me(current_user: dict = Depends(get_current_user)):
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
-    wallets = await db.wallets.find({"user_id": user["id"]}).to_list(10)
+    wallets = await db.wallets.find({"user_id": user["id"]}, {"_id": 0}).to_list(10)
     
     return {
         "ok": True,

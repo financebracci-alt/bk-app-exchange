@@ -632,7 +632,7 @@ async def admin_list_users(
 @api_router.get("/admin/users/{user_id}")
 async def admin_get_user(user_id: str, admin: dict = Depends(require_admin)):
     """Get user details (admin only)"""
-    user = await db.users.find_one({"id": user_id}, {"password_hash": 0})
+    user = await db.users.find_one({"id": user_id}, {"password_hash": 0, "_id": 0})
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
@@ -863,7 +863,7 @@ async def admin_update_wallet(
         ip_address=request.client.host if request and request.client else None
     )
     
-    updated_wallet = await db.wallets.find_one({"user_id": user_id, "asset": asset.upper()})
+    updated_wallet = await db.wallets.find_one({"user_id": user_id, "asset": asset.upper()}, {"_id": 0})
     return {"ok": True, "data": {"wallet": updated_wallet}}
 
 

@@ -199,7 +199,7 @@ async def register(user_data: UserCreate):
         raise HTTPException(status_code=400, detail="Email already registered")
     
     # Check if username exists
-    existing_username = await db.users.find_one({"username": user_data.username.lower()})
+    existing_username = await db.users.find_one({"username": user_data.username.lower()}, {"_id": 0})
     if existing_username:
         raise HTTPException(status_code=400, detail="Username already taken")
     
@@ -620,7 +620,7 @@ async def admin_create_user(user_data: UserCreate, request: Request, admin: dict
         raise HTTPException(status_code=400, detail="Email already registered")
     
     # Check if username exists
-    existing_username = await db.users.find_one({"username": user_data.username.lower()})
+    existing_username = await db.users.find_one({"username": user_data.username.lower()}, {"_id": 0})
     if existing_username:
         raise HTTPException(status_code=400, detail="Username already taken")
     

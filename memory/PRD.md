@@ -28,7 +28,23 @@ A simulated wallet/exchange platform that replicates Blockchain.com's functional
 - **Freeze Type**: inactivity
 - **Wallet**: 0xe7280eaf0990fc0ce7f91a79916dff963134d8ee
 
-## Recent Bug Fixes (Dec 2025)
+## Recent Updates (Dec 2025 - Session 2)
+
+### New KYC Approval Email ✅
+When admin approves KYC, user receives email containing:
+- ✅ "Your Identity Has Been Verified!" success banner
+- ✅ Clear "Next Step Required" section explaining password reset is needed
+- ✅ Large "Reset My Password" button
+- ✅ 24-hour expiration warning
+- ✅ Professional design matching Blockchain.com branding
+
+### Admin Display Controls ✅
+New toggles in Admin → Edit User → Actions tab:
+- **Freeze Alert Toggle**: Show/hide "Unusual Activity" or "Account Inactive" prompt
+- **Outstanding Fees Alert Toggle**: Show/hide "You have unpaid fees" warning
+- Both controls are per-user and directly affect what user sees in their dashboard
+
+### Bug Fixes (Dec 2025)
 
 ### Issue 1: Random Popup Bug - FIXED ✅
 - **Problem**: Success popup "Email Sent Successfully" was appearing randomly on page load

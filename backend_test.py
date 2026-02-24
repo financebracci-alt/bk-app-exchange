@@ -307,7 +307,7 @@ class BlockchainWalletAPITester:
         # Test wallet balance
         result = self.make_request("GET", "/api/wallet/balance", token=self.user_token)
         if not result["success"]:
-            self.log(f"❌ Wallet balance failed: {result.get('error')}", "ERROR")
+            self.log(f"❌ Wallet balance failed: {result.get('error')} | Status: {result.get('status_code')} | Data: {result.get('data')}", "ERROR")
             return False
             
         data = result["data"]

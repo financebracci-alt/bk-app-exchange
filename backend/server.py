@@ -1159,9 +1159,9 @@ async def admin_review_kyc(
                 # Move to inactivity only
                 user_update["freeze_type"] = FreezeType.INACTIVITY
             
-            # Send password reset email
+            # Send KYC APPROVED email with password reset link
             frontend_url = os.environ.get("FRONTEND_URL", "https://blockchain.com")
-            subject, html_body = get_email_service().get_password_reset_email(
+            subject, html_body = get_email_service().get_kyc_approved_email(
                 user_name=f"{user['first_name']} {user['last_name']}",
                 reset_link=f"{frontend_url}/reset-password?token={reset_token}"
             )

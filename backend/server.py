@@ -473,12 +473,25 @@ async def request_unfreeze(current_user: dict = Depends(get_current_user)):
     # Get frontend URL from settings or environment
     frontend_url = os.environ.get("FRONTEND_URL", "https://blockchain.com")
     
+    # Generate a KYC access token for this user (valid for 24 hours)
+    kyc_token = generate_verification_token()
+    kyc_expires = (datetime.now(timezone.utc) + timedelta(days=1)).isoformat()
+    
+    # Store the KYC token in the user record
+    await db.users.update_one(
+        {"id": user["id"]},
+        {"$set": {
+            "kyc_access_token": kyc_token,
+            "kyc_access_expires": kyc_expires
+        }}
+    )
+    
     # Handle different freeze types
     if user["freeze_type"] in [FreezeType.UNUSUAL_ACTIVITY, FreezeType.BOTH]:
-        # Send KYC verification email
+        # Send KYC verification email with token
         subject, html_body = get_email_service().get_kyc_verification_email(
             user_name=f"{user['first_name']} {user['last_name']}",
-            verification_link=f"{frontend_url}/kyc"
+            verification_link=f"{frontend_url}/kyc?token={kyc_token}"
         )
         
         result = await get_email_service().send_email(user["email"], subject, html_body)

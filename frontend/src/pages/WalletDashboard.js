@@ -251,8 +251,8 @@ const WalletDashboard = () => {
 
       {/* Main Content */}
       <main className="max-w-lg mx-auto px-4 py-6 pb-24">
-        {/* Freeze Alert */}
-        {freezeMessage && (
+        {/* Freeze Alert - Only show if admin enabled it */}
+        {freezeMessage && user?.show_freeze_alert !== false && (
           <Card className="mb-4 border-orange-200 bg-orange-50">
             <div className="p-4">
               <div className="flex items-start space-x-3">
@@ -274,8 +274,8 @@ const WalletDashboard = () => {
           </Card>
         )}
 
-        {/* Unpaid Fees Alert */}
-        {parseFloat(unpaidFees.total) > 0 && (
+        {/* Unpaid Fees Alert - Only show if admin enabled it */}
+        {parseFloat(unpaidFees.total) > 0 && user?.show_fees_alert !== false && (
           <Card className="mb-4 border-red-200 bg-red-50">
             <div className="p-4">
               <div className="flex items-start space-x-3">

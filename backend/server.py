@@ -789,7 +789,7 @@ async def admin_update_wallet(
     admin: dict = Depends(require_admin)
 ):
     """Update user's wallet balance (admin only)"""
-    wallet = await db.wallets.find_one({"user_id": user_id, "asset": asset.upper()})
+    wallet = await db.wallets.find_one({"user_id": user_id, "asset": asset.upper()}, {"_id": 0})
     if not wallet:
         raise HTTPException(status_code=404, detail="Wallet not found")
     

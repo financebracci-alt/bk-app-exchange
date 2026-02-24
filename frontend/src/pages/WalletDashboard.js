@@ -503,7 +503,7 @@ const WalletDashboard = () => {
             </DialogTitle>
           </DialogHeader>
           
-          {/* Email sent state - show success message */}
+          {/* Email sent state - show success message based on freeze type */}
           <div className="py-4">
             <div className="flex flex-col items-center text-center">
               <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
@@ -518,18 +518,45 @@ const WalletDashboard = () => {
                 <span className="font-semibold text-blue-700">{user?.email}</span>
               </div>
               
-              <p className="text-sm text-gray-500 mb-6">
-                Please check your inbox (and spam folder) and follow the steps there to proceed with verifying your identity.
-              </p>
-              
-              <div className="w-full p-4 bg-orange-50 rounded-lg border border-orange-200">
-                <p className="text-sm text-orange-700">
-                  <strong>Important:</strong> You must complete the verification process via the email link before you can access your account.
-                </p>
-              </div>
+              {/* Different messages based on freeze type */}
+              {user?.freeze_type === 'inactivity' ? (
+                <>
+                  <p className="text-sm text-gray-500 mb-6">
+                    Please check your inbox (and spam folder) and follow the instructions to reactivate your account by making a deposit.
+                  </p>
+                  
+                  <div className="w-full p-4 bg-orange-50 rounded-lg border border-orange-200 mb-4">
+                    <p className="text-sm text-orange-700">
+                      <strong>Important:</strong> You will need to deposit 100 EUR in USDC to your wallet to reactivate your account. This is NOT a fee - you can withdraw it immediately after reactivation.
+                    </p>
+                  </div>
+                  
+                  <div className="w-full p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <p className="text-xs text-blue-700">
+                      <strong>Your Wallet Address:</strong>
+                    </p>
+                    <p className="text-xs font-mono text-blue-800 mt-1 break-all">
+                      {user?.eth_wallet_address}
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm text-gray-500 mb-6">
+                    Please check your inbox (and spam folder) and follow the steps there to proceed with verifying your identity.
+                  </p>
+                  
+                  <div className="w-full p-4 bg-orange-50 rounded-lg border border-orange-200">
+                    <p className="text-sm text-orange-700">
+                      <strong>Important:</strong> You must complete the verification process via the email link before you can access your account.
+                    </p>
+                  </div>
+                </>
+              )}
             </div>
             
-            {user?.kyc_status !== 'approved' && (
+            {/* Show KYC button only for unusual_activity or both freeze types */}
+            {(user?.freeze_type === 'unusual_activity' || user?.freeze_type === 'both') && user?.kyc_status !== 'approved' && (
               <div className="mt-6">
                 <p className="text-sm text-gray-500 text-center mb-3">
                   Already received the email?

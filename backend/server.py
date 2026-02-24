@@ -286,7 +286,7 @@ async def change_password(
 @api_router.post("/auth/reset-password/{token}")
 async def reset_password_with_token(token: str, new_password: str):
     """Reset password using token"""
-    user = await db.users.find_one({"password_reset_token": token})
+    user = await db.users.find_one({"password_reset_token": token}, {"_id": 0})
     if not user:
         raise HTTPException(status_code=400, detail="Invalid or expired token")
     

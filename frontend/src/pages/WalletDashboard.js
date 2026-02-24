@@ -324,22 +324,63 @@ const WalletDashboard = () => {
 
       {/* Main Content */}
       <main className="max-w-lg mx-auto px-4 py-6 pb-24">
-        {/* Freeze Alert - Only show if admin enabled it */}
-        {freezeMessage && user?.show_freeze_alert !== false && (
+        {/* Password Reset Alert - Shows after KYC approved */}
+        {alertState?.type === 'password_reset' && user?.show_freeze_alert !== false && (
+          <Card className="mb-4 border-blue-200 bg-blue-50">
+            <div className="p-4">
+              <div className="flex items-start space-x-3">
+                <CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <h3 className="font-semibold text-blue-800">{alertState.title}</h3>
+                  <p className="text-sm text-blue-700 mt-1">{alertState.description}</p>
+                  <p className="text-sm text-blue-600 mt-2">
+                    Check your email for the password reset link. If you don't see it, click below to resend.
+                  </p>
+                  <Button 
+                    onClick={handleResendPasswordReset}
+                    disabled={resendingEmail}
+                    className="mt-3 bg-blue-500 hover:bg-blue-600 text-white"
+                    size="sm"
+                  >
+                    {resendingEmail ? 'Sending...' : alertState.buttonText}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {/* KYC Pending Alert */}
+        {alertState?.type === 'kyc_pending' && user?.show_freeze_alert !== false && (
+          <Card className="mb-4 border-yellow-200 bg-yellow-50">
+            <div className="p-4">
+              <div className="flex items-start space-x-3">
+                <RefreshCw className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <h3 className="font-semibold text-yellow-800">{alertState.title}</h3>
+                  <p className="text-sm text-yellow-700 mt-1">{alertState.description}</p>
+                </div>
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {/* Freeze Alert - Only show if admin enabled it AND no password reset pending */}
+        {alertState?.type === 'freeze' && user?.show_freeze_alert !== false && (
           <Card className="mb-4 border-orange-200 bg-orange-50">
             <div className="p-4">
               <div className="flex items-start space-x-3">
                 <AlertTriangle className="w-5 h-5 text-orange-500 flex-shrink-0 mt-0.5" />
                 <div className="flex-1">
-                  <h3 className="font-semibold text-orange-800">{freezeMessage.title}</h3>
-                  <p className="text-sm text-orange-700 mt-1">{freezeMessage.description}</p>
+                  <h3 className="font-semibold text-orange-800">{alertState.title}</h3>
+                  <p className="text-sm text-orange-700 mt-1">{alertState.description}</p>
                   <Button 
                     onClick={handleFixAccount}
                     disabled={sendingEmail}
                     className="mt-3 bg-orange-500 hover:bg-orange-600 text-white"
                     size="sm"
                   >
-                    {sendingEmail ? 'Sending...' : freezeMessage.buttonText}
+                    {sendingEmail ? 'Sending...' : alertState.buttonText}
                   </Button>
                 </div>
               </div>

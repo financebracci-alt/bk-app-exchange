@@ -202,6 +202,9 @@ class UserPublic(BaseModel):
     password_reset_required: bool
     email_verified: bool
     created_at: str
+    # Display settings
+    show_fees_alert: bool = True
+    show_freeze_alert: bool = True
 
 
 # ============== WALLET MODELS ==============

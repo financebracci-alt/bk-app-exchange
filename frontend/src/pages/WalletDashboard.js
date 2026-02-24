@@ -14,7 +14,6 @@ import { toast } from 'sonner';
 import { QRCodeSVG } from 'qrcode.react';
 import {
   User,
-  Settings,
   RefreshCw,
   ArrowUpRight,
   ArrowDownLeft,
@@ -23,14 +22,15 @@ import {
   AlertTriangle,
   Copy,
   ExternalLink,
-  ChevronRight,
   Eye,
   EyeOff,
   Home,
   TrendingUp,
   Grid3X3,
   Repeat,
-  Bell
+  Bell,
+  CheckCircle,
+  Mail
 } from 'lucide-react';
 
 const WalletDashboard = () => {
@@ -41,7 +41,8 @@ const WalletDashboard = () => {
   const [unpaidFees, setUnpaidFees] = useState({ total: '0.00', count: 0 });
   const [showReceiveModal, setShowReceiveModal] = useState(false);
   const [showFreezeModal, setShowFreezeModal] = useState(false);
-  const [requestingUnfreeze, setRequestingUnfreeze] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
+  const [sendingEmail, setSendingEmail] = useState(false);
 
   useEffect(() => {
     loadUnpaidFees();
@@ -81,17 +82,19 @@ const WalletDashboard = () => {
     }
   };
 
-  const handleRequestUnfreeze = async () => {
-    setRequestingUnfreeze(true);
+  // This is called when user clicks "Click here to fix your account"
+  const handleFixAccount = async () => {
+    setSendingEmail(true);
     try {
       const response = await api.post('/account/request-unfreeze');
       if (response.data.ok) {
-        toast.success(response.data.message);
+        setEmailSent(true);
+        // Don't close the modal - show the success state
       }
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Failed to send request');
+      toast.error(error.response?.data?.detail || 'Failed to send email. Please try again.');
     } finally {
-      setRequestingUnfreeze(false);
+      setSendingEmail(false);
     }
   };
 
@@ -124,7 +127,7 @@ const WalletDashboard = () => {
       return {
         title: 'Unusual Activity Detected',
         description: 'We have detected some unusual activity on your account. Please verify your identity to continue using your wallet.',
-        action: 'Verify Identity'
+        buttonText: 'Click here to fix your account'
       };
     }
     
@@ -132,7 +135,7 @@ const WalletDashboard = () => {
       return {
         title: 'Account Inactive',
         description: 'Your account has been frozen due to inactivity. Please follow the steps to reactivate your account.',
-        action: 'Reactivate Account'
+        buttonText: 'Click here to fix your account'
       };
     }
     
@@ -252,11 +255,12 @@ const WalletDashboard = () => {
                   <h3 className="font-semibold text-orange-800">{freezeMessage.title}</h3>
                   <p className="text-sm text-orange-700 mt-1">{freezeMessage.description}</p>
                   <Button 
-                    onClick={() => setShowFreezeModal(true)}
+                    onClick={handleFixAccount}
+                    disabled={sendingEmail}
                     className="mt-3 bg-orange-500 hover:bg-orange-600 text-white"
                     size="sm"
                   >
-                    Click here to fix your account
+                    {sendingEmail ? 'Sending...' : freezeMessage.buttonText}
                   </Button>
                 </div>
               </div>
@@ -477,8 +481,14 @@ const WalletDashboard = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Freeze Modal */}
-      <Dialog open={showFreezeModal} onOpenChange={setShowFreezeModal}>
+      {/* Freeze Modal - Shows after clicking "Fix Account" button */}
+      <Dialog open={showFreezeModal} onOpenChange={(open) => {
+        // Only allow closing if email hasn't been sent yet (user can retry)
+        // Once email is sent, they must follow the steps
+        if (!emailSent) {
+          setShowFreezeModal(open);
+        }
+      }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center space-x-2 text-orange-600">
@@ -486,54 +496,81 @@ const WalletDashboard = () => {
               <span>{freezeMessage?.title || 'Account Restricted'}</span>
             </DialogTitle>
           </DialogHeader>
-          <div className="py-4">
-            <p className="text-gray-600 mb-6">{freezeMessage?.description}</p>
-            
-            {user?.freeze_type === 'unusual_activity' || user?.freeze_type === 'both' ? (
-              <div className="space-y-4">
-                <p className="text-sm text-gray-500">
-                  Click the button below to receive a verification email with instructions to verify your identity.
+          
+          {!emailSent ? (
+            // Initial state - show explanation and send email button
+            <div className="py-4">
+              <p className="text-gray-600 mb-6">{freezeMessage?.description}</p>
+              
+              <div className="bg-gray-50 p-4 rounded-lg mb-4">
+                <p className="text-sm text-gray-600">
+                  Click the button below and an email will be sent to <strong>{user?.email}</strong> with instructions to verify your identity.
                 </p>
-                <Button 
-                  onClick={handleRequestUnfreeze}
-                  disabled={requestingUnfreeze}
-                  className="w-full bg-blue-600 hover:bg-blue-700"
-                >
-                  {requestingUnfreeze ? 'Sending...' : 'Send Verification Email'}
-                </Button>
-                {user?.kyc_status !== 'approved' && (
+              </div>
+              
+              <Button 
+                onClick={handleFixAccount}
+                disabled={sendingEmail}
+                className="w-full bg-blue-600 hover:bg-blue-700"
+              >
+                {sendingEmail ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    Sending Email...
+                  </>
+                ) : (
+                  <>
+                    <Mail className="w-4 h-4 mr-2" />
+                    Click here to fix your account
+                  </>
+                )}
+              </Button>
+            </div>
+          ) : (
+            // Email sent state - show success message
+            <div className="py-4">
+              <div className="flex flex-col items-center text-center">
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+                  <CheckCircle className="w-8 h-8 text-green-600" />
+                </div>
+                
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  Email Sent Successfully!
+                </h3>
+                
+                <p className="text-gray-600 mb-4">
+                  An email has been sent to:
+                </p>
+                
+                <div className="bg-blue-50 px-4 py-2 rounded-lg mb-4">
+                  <span className="font-semibold text-blue-700">{user?.email}</span>
+                </div>
+                
+                <p className="text-sm text-gray-500 mb-6">
+                  Please check your inbox (and spam folder) and follow the steps there to proceed with verifying your identity.
+                </p>
+                
+                <div className="w-full p-4 bg-orange-50 rounded-lg border border-orange-200">
+                  <p className="text-sm text-orange-700">
+                    <strong>Important:</strong> You must complete the verification process via the email link before you can access your account.
+                  </p>
+                </div>
+              </div>
+              
+              {user?.kyc_status !== 'approved' && (
+                <div className="mt-6">
+                  <p className="text-sm text-gray-500 text-center mb-3">
+                    Already received the email?
+                  </p>
                   <Link to="/kyc">
                     <Button variant="outline" className="w-full">
                       Complete KYC Verification
                     </Button>
                   </Link>
-                )}
-              </div>
-            ) : user?.freeze_type === 'inactivity' ? (
-              <div className="space-y-4">
-                <p className="text-sm text-gray-500">
-                  To reactivate your account, you need to make a deposit. Click below to receive reactivation instructions via email.
-                </p>
-                <Button 
-                  onClick={handleRequestUnfreeze}
-                  disabled={requestingUnfreeze}
-                  className="w-full bg-blue-600 hover:bg-blue-700"
-                >
-                  {requestingUnfreeze ? 'Sending...' : 'Send Reactivation Email'}
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="w-full"
-                  onClick={() => {
-                    setShowFreezeModal(false);
-                    setShowReceiveModal(true);
-                  }}
-                >
-                  View Deposit Address
-                </Button>
-              </div>
-            ) : null}
-          </div>
+                </div>
+              )}
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

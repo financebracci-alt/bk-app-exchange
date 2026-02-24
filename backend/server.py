@@ -1268,7 +1268,7 @@ async def admin_get_audit_logs(
     total = await db.audit_logs.count_documents(query)
     skip = (page - 1) * page_size
     
-    logs = await db.audit_logs.find(query)\
+    logs = await db.audit_logs.find(query, {"_id": 0})\
         .sort("created_at", -1)\
         .skip(skip)\
         .limit(page_size)\

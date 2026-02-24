@@ -35,6 +35,22 @@ const AdminEditUser = () => {
   const [user, setUser] = useState(null);
   const [wallets, setWallets] = useState([]);
   const [transactions, setTransactions] = useState([]);
+  
+  // Transaction modal state
+  const [showTxModal, setShowTxModal] = useState(false);
+  const [editingTx, setEditingTx] = useState(null);
+  const [txForm, setTxForm] = useState({
+    type: 'deposit',
+    amount: '',
+    asset: 'USDC',
+    fee: '0.00',
+    fee_paid: false,
+    transaction_date: new Date().toISOString().split('T')[0],
+    status: 'completed',
+    description: '',
+    external_wallet: '',
+  });
+  const [savingTx, setSavingTx] = useState(false);
 
   const [formData, setFormData] = useState({
     first_name: '',

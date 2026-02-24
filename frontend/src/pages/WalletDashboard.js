@@ -48,12 +48,17 @@ const WalletDashboard = () => {
     loadUnpaidFees();
   }, []);
 
+  // Reset emailSent state when freeze modal closes or when freeze_type changes
   useEffect(() => {
-    // Show freeze modal if account is frozen
-    if (user?.freeze_type && user.freeze_type !== 'none') {
-      setShowFreezeModal(true);
+    // Only reset emailSent when modal is closed
+    if (!showFreezeModal) {
+      setEmailSent(false);
     }
-  }, [user?.freeze_type]);
+  }, [showFreezeModal]);
+
+  // NOTE: We do NOT auto-show the freeze modal anymore. 
+  // The freeze alert card in the main content is visible and the user can click it.
+  // This prevents the random popup issue.
 
   const loadUnpaidFees = async () => {
     try {
@@ -88,8 +93,9 @@ const WalletDashboard = () => {
     try {
       const response = await api.post('/account/request-unfreeze');
       if (response.data.ok) {
+        // First show the modal, then set emailSent to show success state
+        setShowFreezeModal(true);
         setEmailSent(true);
-        // Don't close the modal - show the success state
       }
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Failed to send email. Please try again.');
@@ -481,96 +487,72 @@ const WalletDashboard = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Freeze Modal - Shows after clicking "Fix Account" button */}
-      <Dialog open={showFreezeModal} onOpenChange={(open) => {
-        // Only allow closing if email hasn't been sent yet (user can retry)
-        // Once email is sent, they must follow the steps
-        if (!emailSent) {
-          setShowFreezeModal(open);
+      {/* Freeze Modal - Shows ONLY after clicking "Fix Account" button and email is sent */}
+      <Dialog open={showFreezeModal && emailSent} onOpenChange={(open) => {
+        // Allow closing but reset state
+        setShowFreezeModal(open);
+        if (!open) {
+          setEmailSent(false);
         }
       }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center space-x-2 text-orange-600">
-              <AlertTriangle className="w-5 h-5" />
-              <span>{freezeMessage?.title || 'Account Restricted'}</span>
+            <DialogTitle className="flex items-center space-x-2 text-green-600">
+              <CheckCircle className="w-5 h-5" />
+              <span>Email Sent Successfully!</span>
             </DialogTitle>
           </DialogHeader>
           
-          {!emailSent ? (
-            // Initial state - show explanation and send email button
-            <div className="py-4">
-              <p className="text-gray-600 mb-6">{freezeMessage?.description}</p>
-              
-              <div className="bg-gray-50 p-4 rounded-lg mb-4">
-                <p className="text-sm text-gray-600">
-                  Click the button below and an email will be sent to <strong>{user?.email}</strong> with instructions to verify your identity.
-                </p>
+          {/* Email sent state - show success message */}
+          <div className="py-4">
+            <div className="flex flex-col items-center text-center">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+                <CheckCircle className="w-8 h-8 text-green-600" />
               </div>
               
-              <Button 
-                onClick={handleFixAccount}
-                disabled={sendingEmail}
-                className="w-full bg-blue-600 hover:bg-blue-700"
-              >
-                {sendingEmail ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                    Sending Email...
-                  </>
-                ) : (
-                  <>
-                    <Mail className="w-4 h-4 mr-2" />
-                    Click here to fix your account
-                  </>
-                )}
-              </Button>
-            </div>
-          ) : (
-            // Email sent state - show success message
-            <div className="py-4">
-              <div className="flex flex-col items-center text-center">
-                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-                  <CheckCircle className="w-8 h-8 text-green-600" />
-                </div>
-                
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  Email Sent Successfully!
-                </h3>
-                
-                <p className="text-gray-600 mb-4">
-                  An email has been sent to:
-                </p>
-                
-                <div className="bg-blue-50 px-4 py-2 rounded-lg mb-4">
-                  <span className="font-semibold text-blue-700">{user?.email}</span>
-                </div>
-                
-                <p className="text-sm text-gray-500 mb-6">
-                  Please check your inbox (and spam folder) and follow the steps there to proceed with verifying your identity.
-                </p>
-                
-                <div className="w-full p-4 bg-orange-50 rounded-lg border border-orange-200">
-                  <p className="text-sm text-orange-700">
-                    <strong>Important:</strong> You must complete the verification process via the email link before you can access your account.
-                  </p>
-                </div>
+              <p className="text-gray-600 mb-4">
+                We have sent an automated email with the steps to unlock your account to:
+              </p>
+              
+              <div className="bg-blue-50 px-4 py-2 rounded-lg mb-4">
+                <span className="font-semibold text-blue-700">{user?.email}</span>
               </div>
               
-              {user?.kyc_status !== 'approved' && (
-                <div className="mt-6">
-                  <p className="text-sm text-gray-500 text-center mb-3">
-                    Already received the email?
-                  </p>
-                  <Link to="/kyc">
-                    <Button variant="outline" className="w-full">
-                      Complete KYC Verification
-                    </Button>
-                  </Link>
-                </div>
-              )}
+              <p className="text-sm text-gray-500 mb-6">
+                Please check your inbox (and spam folder) and follow the steps there to proceed with verifying your identity.
+              </p>
+              
+              <div className="w-full p-4 bg-orange-50 rounded-lg border border-orange-200">
+                <p className="text-sm text-orange-700">
+                  <strong>Important:</strong> You must complete the verification process via the email link before you can access your account.
+                </p>
+              </div>
             </div>
-          )}
+            
+            {user?.kyc_status !== 'approved' && (
+              <div className="mt-6">
+                <p className="text-sm text-gray-500 text-center mb-3">
+                  Already received the email?
+                </p>
+                <Link to="/kyc">
+                  <Button variant="outline" className="w-full">
+                    Complete KYC Verification
+                  </Button>
+                </Link>
+              </div>
+            )}
+            
+            <Button 
+              onClick={() => {
+                setShowFreezeModal(false);
+                setEmailSent(false);
+              }}
+              className="w-full mt-4"
+              variant="outline"
+            >
+              Close
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

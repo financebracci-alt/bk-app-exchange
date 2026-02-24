@@ -103,6 +103,10 @@ class User(BaseModel):
     total_unpaid_fees: str = "0.00"  # Decimal as string
     fees_paid: bool = False
     
+    # Display settings (admin controlled)
+    show_fees_alert: bool = True  # Show outstanding fees alert to user
+    show_freeze_alert: bool = True  # Show freeze alert to user
+    
     # Password reset
     password_reset_required: bool = False
     password_reset_token: Optional[str] = None

@@ -408,7 +408,7 @@ async def submit_kyc(kyc_data: KYCSubmit, current_user: dict = Depends(get_curre
         raise HTTPException(status_code=400, detail="KYC already approved")
     
     # Check if already submitted
-    existing = await db.kyc_documents.find_one({"user_id": current_user["user_id"]})
+    existing = await db.kyc_documents.find_one({"user_id": current_user["user_id"]}, {"_id": 0})
     
     kyc_doc = KYCDocument(
         user_id=current_user["user_id"],

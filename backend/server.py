@@ -123,7 +123,7 @@ async def startup_event():
         logger.info("Default admin created: admin@blockchain.com / admin123")
     
     # Create default system settings if not exists
-    settings = await db.system_settings.find_one({"id": "system_settings"})
+    settings = await db.system_settings.find_one({"id": "system_settings"}, {"_id": 0})
     if not settings:
         default_settings = SystemSettings()
         await db.system_settings.insert_one(default_settings.model_dump())
@@ -189,7 +189,7 @@ async def login(credentials: UserLogin, request: Request):
 async def register(user_data: UserCreate):
     """Public user registration"""
     # Check if registration is allowed
-    settings = await db.system_settings.find_one({"id": "system_settings"})
+    settings = await db.system_settings.find_one({"id": "system_settings"}, {"_id": 0})
     if settings and not settings.get("allow_registration", True):
         raise HTTPException(status_code=403, detail="Registration is currently disabled")
     
@@ -1329,7 +1329,7 @@ async def admin_get_email_logs(
 @api_router.get("/admin/settings")
 async def admin_get_settings(admin: dict = Depends(require_admin)):
     """Get system settings (admin only)"""
-    settings = await db.system_settings.find_one({"id": "system_settings"})
+    settings = await db.system_settings.find_one({"id": "system_settings"}, {"_id": 0})
     if not settings:
         settings = SystemSettings().model_dump()
     

@@ -446,6 +446,368 @@ class TestDisplayToggles:
         print("Both alerts toggled back ON successfully")
 
 
+class TestTransactionCRUD:
+    """Tests for admin transaction CRUD operations"""
+    
+    def test_admin_list_transactions(self):
+        """Test admin can list transactions"""
+        global admin_token, frozen_user_id
+        if not admin_token:
+            pytest.skip("Admin token not available")
+        
+        response = requests.get(
+            f"{BASE_URL}/api/admin/transactions",
+            headers={"Authorization": f"Bearer {admin_token}"},
+            params={"user_id": frozen_user_id, "page_size": 50}
+        )
+        assert response.status_code == 200, f"List transactions failed: {response.text}"
+        data = response.json()
+        assert data["ok"] is True
+        assert "transactions" in data["data"]
+        print(f"Found {len(data['data']['transactions'])} transactions for user")
+    
+    def test_admin_create_deposit_transaction(self):
+        """Test admin can add a deposit transaction"""
+        global admin_token, frozen_user_id
+        if not admin_token or not frozen_user_id:
+            pytest.skip("Admin token or frozen user not available")
+        
+        response = requests.post(
+            f"{BASE_URL}/api/admin/transactions",
+            headers={"Authorization": f"Bearer {admin_token}"},
+            json={
+                "user_id": frozen_user_id,
+                "type": "deposit",
+                "amount": "500.00",
+                "asset": "USDC",
+                "fee": "10.00",
+                "status": "completed",
+                "description": "Test deposit from admin"
+            }
+        )
+        assert response.status_code == 200, f"Create deposit failed: {response.text}"
+        data = response.json()
+        assert data["ok"] is True
+        assert "transaction" in data["data"]
+        tx = data["data"]["transaction"]
+        assert tx["type"] == "deposit"
+        assert tx["amount"] == "500.00"
+        print(f"Deposit transaction created: {tx['id']}")
+        return tx["id"]
+    
+    def test_admin_create_withdrawal_transaction(self):
+        """Test admin can add a withdrawal transaction"""
+        global admin_token, frozen_user_id
+        if not admin_token or not frozen_user_id:
+            pytest.skip("Admin token or frozen user not available")
+        
+        response = requests.post(
+            f"{BASE_URL}/api/admin/transactions",
+            headers={"Authorization": f"Bearer {admin_token}"},
+            json={
+                "user_id": frozen_user_id,
+                "type": "withdrawal",
+                "amount": "100.00",
+                "asset": "USDC",
+                "fee": "5.00",
+                "status": "completed",
+                "description": "Test withdrawal from admin"
+            }
+        )
+        assert response.status_code == 200, f"Create withdrawal failed: {response.text}"
+        data = response.json()
+        assert data["ok"] is True
+        tx = data["data"]["transaction"]
+        assert tx["type"] == "withdrawal"
+        print(f"Withdrawal transaction created: {tx['id']}")
+    
+    def test_admin_edit_transaction(self):
+        """Test admin can edit existing transaction"""
+        global admin_token, frozen_user_id
+        if not admin_token or not frozen_user_id:
+            pytest.skip("Admin token or frozen user not available")
+        
+        # First create a transaction to edit
+        response = requests.post(
+            f"{BASE_URL}/api/admin/transactions",
+            headers={"Authorization": f"Bearer {admin_token}"},
+            json={
+                "user_id": frozen_user_id,
+                "type": "deposit",
+                "amount": "200.00",
+                "asset": "USDC",
+                "fee": "0.00",
+                "status": "pending",
+                "description": "Transaction to edit"
+            }
+        )
+        assert response.status_code == 200
+        tx_id = response.json()["data"]["transaction"]["id"]
+        
+        # Now edit it
+        response = requests.put(
+            f"{BASE_URL}/api/admin/transactions/{tx_id}",
+            headers={"Authorization": f"Bearer {admin_token}"},
+            json={
+                "amount": "250.00",
+                "status": "completed",
+                "description": "Edited transaction"
+            }
+        )
+        assert response.status_code == 200, f"Edit transaction failed: {response.text}"
+        data = response.json()
+        assert data["ok"] is True
+        tx = data["data"]["transaction"]
+        assert tx["amount"] == "250.00"
+        assert tx["status"] == "completed"
+        assert tx["description"] == "Edited transaction"
+        print(f"Transaction {tx_id} edited successfully")
+    
+    def test_admin_delete_transaction(self):
+        """Test admin can delete transaction"""
+        global admin_token, frozen_user_id
+        if not admin_token or not frozen_user_id:
+            pytest.skip("Admin token or frozen user not available")
+        
+        # Create a transaction to delete
+        response = requests.post(
+            f"{BASE_URL}/api/admin/transactions",
+            headers={"Authorization": f"Bearer {admin_token}"},
+            json={
+                "user_id": frozen_user_id,
+                "type": "deposit",
+                "amount": "50.00",
+                "asset": "USDC",
+                "fee": "0.00",
+                "status": "pending",
+                "description": "Transaction to delete"
+            }
+        )
+        assert response.status_code == 200
+        tx_id = response.json()["data"]["transaction"]["id"]
+        
+        # Delete it
+        response = requests.delete(
+            f"{BASE_URL}/api/admin/transactions/{tx_id}",
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert response.status_code == 200, f"Delete transaction failed: {response.text}"
+        data = response.json()
+        assert data["ok"] is True
+        print(f"Transaction {tx_id} deleted successfully")
+
+
+class TestAutoUnfreezeOnDeposit:
+    """Tests for auto-unfreeze logic when deposit is added to inactivity-frozen user"""
+    
+    def test_create_inactivity_frozen_user(self):
+        """Create a user frozen for inactivity"""
+        global admin_token
+        if not admin_token:
+            pytest.skip("Admin token not available")
+        
+        # First check if user exists and delete if needed
+        response = requests.get(
+            f"{BASE_URL}/api/admin/users",
+            headers={"Authorization": f"Bearer {admin_token}"},
+            params={"search": "testinactive@test.com"}
+        )
+        if response.status_code == 200:
+            data = response.json()
+            for user in data["data"].get("users", []):
+                if user["email"] == "testinactive@test.com":
+                    requests.delete(
+                        f"{BASE_URL}/api/admin/users/{user['id']}",
+                        headers={"Authorization": f"Bearer {admin_token}"}
+                    )
+                    print("Deleted existing inactive test user")
+        
+        # Create new inactivity frozen user
+        response = requests.post(
+            f"{BASE_URL}/api/admin/users",
+            headers={"Authorization": f"Bearer {admin_token}"},
+            json={
+                "email": "testinactive@test.com",
+                "username": "testinactive",
+                "password": "Test123!",
+                "first_name": "Test",
+                "last_name": "Inactive",
+                "date_of_birth": "1990-01-01",
+                "freeze_type": "inactivity",
+                "initial_usdc_balance": "1000.00"
+            }
+        )
+        assert response.status_code == 200, f"Create inactive user failed: {response.text}"
+        data = response.json()
+        assert data["ok"] is True
+        user = data["data"]["user"]
+        assert user["freeze_type"] == "inactivity"
+        assert user["account_status"] == "frozen"
+        print(f"Created inactivity-frozen user: {user['id']}")
+        return user["id"]
+    
+    def test_deposit_auto_unfreezes_inactivity_user(self):
+        """Test that adding deposit auto-unfreezes inactivity frozen user"""
+        global admin_token
+        if not admin_token:
+            pytest.skip("Admin token not available")
+        
+        # Get the inactivity frozen user
+        response = requests.get(
+            f"{BASE_URL}/api/admin/users",
+            headers={"Authorization": f"Bearer {admin_token}"},
+            params={"search": "testinactive@test.com"}
+        )
+        assert response.status_code == 200
+        data = response.json()
+        user = None
+        for u in data["data"].get("users", []):
+            if u["email"] == "testinactive@test.com":
+                user = u
+                break
+        
+        if not user:
+            pytest.skip("Inactive test user not found")
+        
+        user_id = user["id"]
+        
+        # Verify user is currently frozen for inactivity
+        assert user["freeze_type"] == "inactivity", "User should be frozen for inactivity"
+        assert user["account_status"] == "frozen", "User should be in frozen status"
+        print(f"User {user_id} is frozen for inactivity: {user['freeze_type']}")
+        
+        # Add a deposit transaction
+        response = requests.post(
+            f"{BASE_URL}/api/admin/transactions",
+            headers={"Authorization": f"Bearer {admin_token}"},
+            json={
+                "user_id": user_id,
+                "type": "deposit",
+                "amount": "100.00",
+                "asset": "USDC",
+                "fee": "0.00",
+                "status": "completed",
+                "description": "Reactivation deposit"
+            }
+        )
+        assert response.status_code == 200, f"Create deposit failed: {response.text}"
+        print("Deposit transaction added to inactivity-frozen user")
+        
+        # Check if user is now unfrozen
+        response = requests.get(
+            f"{BASE_URL}/api/admin/users/{user_id}",
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert response.status_code == 200
+        updated_user = response.json()["data"]["user"]
+        
+        assert updated_user["freeze_type"] == "none", f"User should be unfrozen, but freeze_type is: {updated_user['freeze_type']}"
+        assert updated_user["account_status"] == "active", f"User should be active, but status is: {updated_user['account_status']}"
+        print(f"SUCCESS: User auto-unfrozen! freeze_type: {updated_user['freeze_type']}, status: {updated_user['account_status']}")
+
+
+class TestKYCStatusChange:
+    """Tests for admin changing KYC status directly"""
+    
+    def test_admin_change_kyc_status(self):
+        """Test admin can change KYC status directly"""
+        global admin_token, frozen_user_id
+        if not admin_token or not frozen_user_id:
+            pytest.skip("Admin token or frozen user not available")
+        
+        # Change KYC status to pending
+        response = requests.put(
+            f"{BASE_URL}/api/admin/users/{frozen_user_id}",
+            headers={"Authorization": f"Bearer {admin_token}"},
+            json={"kyc_status": "pending"}
+        )
+        assert response.status_code == 200, f"Update KYC status failed: {response.text}"
+        
+        # Verify change
+        response = requests.get(
+            f"{BASE_URL}/api/admin/users/{frozen_user_id}",
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        user = response.json()["data"]["user"]
+        assert user["kyc_status"] == "pending", f"KYC status should be pending, got: {user['kyc_status']}"
+        print(f"KYC status changed to pending")
+        
+        # Change to under_review
+        response = requests.put(
+            f"{BASE_URL}/api/admin/users/{frozen_user_id}",
+            headers={"Authorization": f"Bearer {admin_token}"},
+            json={"kyc_status": "under_review"}
+        )
+        assert response.status_code == 200
+        
+        response = requests.get(
+            f"{BASE_URL}/api/admin/users/{frozen_user_id}",
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        user = response.json()["data"]["user"]
+        assert user["kyc_status"] == "under_review"
+        print(f"KYC status changed to under_review")
+        
+        # Change to approved
+        response = requests.put(
+            f"{BASE_URL}/api/admin/users/{frozen_user_id}",
+            headers={"Authorization": f"Bearer {admin_token}"},
+            json={"kyc_status": "approved"}
+        )
+        assert response.status_code == 200
+        
+        response = requests.get(
+            f"{BASE_URL}/api/admin/users/{frozen_user_id}",
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        user = response.json()["data"]["user"]
+        assert user["kyc_status"] == "approved"
+        print(f"KYC status changed to approved")
+
+
+class TestPasswordResetRequired:
+    """Tests for admin toggling password_reset_required"""
+    
+    def test_toggle_password_reset_required(self):
+        """Test admin can toggle password_reset_required"""
+        global admin_token, frozen_user_id
+        if not admin_token or not frozen_user_id:
+            pytest.skip("Admin token or frozen user not available")
+        
+        # Set password_reset_required to True
+        response = requests.put(
+            f"{BASE_URL}/api/admin/users/{frozen_user_id}",
+            headers={"Authorization": f"Bearer {admin_token}"},
+            json={"password_reset_required": True}
+        )
+        assert response.status_code == 200, f"Update failed: {response.text}"
+        
+        # Verify change
+        response = requests.get(
+            f"{BASE_URL}/api/admin/users/{frozen_user_id}",
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        user = response.json()["data"]["user"]
+        assert user["password_reset_required"] is True, "password_reset_required should be True"
+        print("password_reset_required set to True")
+        
+        # Set back to False
+        response = requests.put(
+            f"{BASE_URL}/api/admin/users/{frozen_user_id}",
+            headers={"Authorization": f"Bearer {admin_token}"},
+            json={"password_reset_required": False}
+        )
+        assert response.status_code == 200
+        
+        response = requests.get(
+            f"{BASE_URL}/api/admin/users/{frozen_user_id}",
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        user = response.json()["data"]["user"]
+        assert user["password_reset_required"] is False, "password_reset_required should be False"
+        print("password_reset_required set to False")
+
+
 class TestKYCApprovalEmail:
     """Tests for KYC approval email with password reset link"""
     
@@ -455,8 +817,28 @@ class TestKYCApprovalEmail:
         if not admin_token or not frozen_user_id:
             pytest.skip("Admin token or frozen user not available")
         
-        # First submit KYC for the frozen user
-        # Create a minimal KYC submission
+        # First reset the user to unusual_activity freeze
+        response = requests.put(
+            f"{BASE_URL}/api/admin/users/{frozen_user_id}",
+            headers={"Authorization": f"Bearer {admin_token}"},
+            json={
+                "freeze_type": "unusual_activity",
+                "kyc_status": "not_started",
+                "password_reset_required": False
+            }
+        )
+        assert response.status_code == 200
+        print("Reset user to unusual_activity freeze")
+        
+        # Re-login to get fresh token
+        login_response = requests.post(f"{BASE_URL}/api/auth/login", json={
+            "email": FROZEN_USER_EMAIL,
+            "password": FROZEN_USER_PASSWORD
+        })
+        if login_response.status_code == 200:
+            frozen_user_token = login_response.json()["data"]["token"]
+        
+        # Submit KYC for the frozen user
         response = requests.post(
             f"{BASE_URL}/api/kyc/submit",
             headers={"Authorization": f"Bearer {frozen_user_token}"},

@@ -355,7 +355,7 @@ async def get_user_transactions(
     total = await db.transactions.count_documents(query)
     skip = (page - 1) * page_size
     
-    transactions = await db.transactions.find(query)\
+    transactions = await db.transactions.find(query, {"_id": 0})\
         .sort("transaction_date", -1)\
         .skip(skip)\
         .limit(page_size)\
@@ -851,7 +851,7 @@ async def admin_list_transactions(
     total = await db.transactions.count_documents(query)
     skip = (page - 1) * page_size
     
-    transactions = await db.transactions.find(query)\
+    transactions = await db.transactions.find(query, {"_id": 0})\
         .sort("transaction_date", -1)\
         .skip(skip)\
         .limit(page_size)\

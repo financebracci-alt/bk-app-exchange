@@ -47,18 +47,16 @@ const AdminUsers = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || 'all');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [deleteUserId, setDeleteUserId] = useState(null);
 
-  useEffect(() => {
-    loadUsers();
-  }, [page, statusFilter]);
-
   const loadUsers = async () => {
     setLoading(true);
+    setError(null);
     try {
       const params = { page, page_size: 20 };
       if (search) params.search = search;
@@ -66,15 +64,22 @@ const AdminUsers = () => {
       
       const response = await api.get('/admin/users', { params });
       if (response.data.ok) {
-        setUsers(response.data.data.users);
-        setTotalPages(response.data.data.pages);
+        setUsers(response.data.data.users || []);
+        setTotalPages(response.data.data.pages || 1);
+      } else {
+        setError('Failed to load users');
       }
-    } catch (error) {
-      toast.error('Failed to load users');
+    } catch (err) {
+      console.error('Error loading users:', err);
+      setError(err.response?.data?.detail || 'Failed to load users. Please try again.');
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    loadUsers();
+  }, [page, statusFilter]);
 
   const handleSearch = (e) => {
     e.preventDefault();

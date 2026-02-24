@@ -23,7 +23,8 @@ import {
   MoreVertical,
   Mail,
   UserCheck,
-  UserX
+  UserX,
+  RefreshCw
 } from 'lucide-react';
 import {
   DropdownMenu,

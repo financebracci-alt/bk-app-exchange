@@ -722,6 +722,140 @@ const AdminEditUser = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Transaction Add/Edit Modal */}
+      <Dialog open={showTxModal} onOpenChange={setShowTxModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {editingTx ? 'Edit Transaction' : 'Add Transaction'}
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Transaction Type</Label>
+              <Select value={txForm.type} onValueChange={(v) => setTxForm({...txForm, type: v})}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="deposit">Deposit</SelectItem>
+                  <SelectItem value="withdrawal">Withdrawal</SelectItem>
+                  <SelectItem value="transfer">Transfer</SelectItem>
+                  <SelectItem value="fee">Fee</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Amount</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={txForm.amount}
+                  onChange={(e) => setTxForm({...txForm, amount: e.target.value})}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Asset</Label>
+                <Select value={txForm.asset} onValueChange={(v) => setTxForm({...txForm, asset: v})}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="USDC">USDC (ERC-20)</SelectItem>
+                    <SelectItem value="EUR">EUR</SelectItem>
+                    <SelectItem value="ETH">ETH</SelectItem>
+                    <SelectItem value="BTC">BTC</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Date</Label>
+              <Input
+                type="date"
+                value={txForm.transaction_date}
+                onChange={(e) => setTxForm({...txForm, transaction_date: e.target.value})}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Fee</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={txForm.fee}
+                  onChange={(e) => setTxForm({...txForm, fee: e.target.value})}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Fee Status</Label>
+                <Select value={txForm.fee_paid ? 'true' : 'false'} onValueChange={(v) => setTxForm({...txForm, fee_paid: v === 'true'})}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="false">Unpaid</SelectItem>
+                    <SelectItem value="true">Paid</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Status</Label>
+              <Select value={txForm.status} onValueChange={(v) => setTxForm({...txForm, status: v})}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                  <SelectItem value="failed">Failed</SelectItem>
+                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Description (Optional)</Label>
+              <Input
+                placeholder="e.g., Reactivation deposit"
+                value={txForm.description}
+                onChange={(e) => setTxForm({...txForm, description: e.target.value})}
+              />
+            </div>
+
+            {(txForm.type === 'withdrawal' || txForm.type === 'transfer') && (
+              <div className="space-y-2">
+                <Label>External Wallet Address</Label>
+                <Input
+                  placeholder="0x..."
+                  value={txForm.external_wallet}
+                  onChange={(e) => setTxForm({...txForm, external_wallet: e.target.value})}
+                  className="font-mono text-sm"
+                />
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowTxModal(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveTransaction} disabled={savingTx}>
+              {savingTx ? 'Saving...' : (editingTx ? 'Update' : 'Add Transaction')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AdminLayout>
   );
 };

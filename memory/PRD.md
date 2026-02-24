@@ -28,6 +28,30 @@ A simulated wallet/exchange platform that replicates Blockchain.com's functional
 - **Freeze Type**: inactivity
 - **Wallet**: 0xe7280eaf0990fc0ce7f91a79916dff963134d8ee
 
+## Admin Transaction Management
+
+### Features
+- **Add Transaction**: Create deposits, withdrawals, transfers, fees
+- **Edit Transaction**: Update amount, fee, status, description, date
+- **Delete Transaction**: Remove transactions with confirmation
+- **Quick Actions**: One-click "Add €100 Reactivation Deposit"
+
+### Auto-Unfreeze Logic
+When admin adds a deposit for a user with `freeze_type = "inactivity"`:
+1. Transaction is created and balance is updated
+2. System automatically sets `freeze_type = "none"` and `account_status = "active"`
+3. User's dashboard updates within 30 seconds (auto-refresh)
+4. "Account Inactive" alert disappears
+
+### Transaction Fields
+- Type: deposit, withdrawal, transfer, fee
+- Amount: any decimal value
+- Asset: USDC, EUR, ETH, BTC
+- Date: customizable
+- Fee: optional with paid/unpaid status
+- Status: pending, completed, failed, cancelled
+- Description: optional notes
+
 ## Complete User State Flow
 
 ### State Priority (what user sees)

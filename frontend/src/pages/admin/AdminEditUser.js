@@ -73,6 +73,8 @@ const AdminEditUser = () => {
           total_unpaid_fees: userData.total_unpaid_fees || '0.00',
           fees_paid: userData.fees_paid || false,
           role: userData.role || 'user',
+          show_fees_alert: userData.show_fees_alert !== false,
+          show_freeze_alert: userData.show_freeze_alert !== false,
         });
         // Load transactions
         loadTransactions();

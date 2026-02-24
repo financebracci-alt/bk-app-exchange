@@ -245,7 +245,7 @@ class BlockchainWalletAPITester:
         # Test admin users list
         result = self.make_request("GET", "/api/admin/users", token=self.admin_token)
         if not result["success"]:
-            self.log(f"❌ Admin users list failed: {result.get('error')}", "ERROR")
+            self.log(f"❌ Admin users list failed: {result.get('error')} | Status: {result.get('status_code')} | Data: {result.get('data')}", "ERROR")
             return False
             
         data = result["data"]

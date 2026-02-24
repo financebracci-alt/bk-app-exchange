@@ -78,7 +78,7 @@ async def get_user_by_id(user_id: str) -> Optional[dict]:
 
 async def get_user_by_email(email: str) -> Optional[dict]:
     """Get user by email"""
-    return await db.users.find_one({"email": email.lower()})
+    return await db.users.find_one({"email": email.lower()}, {"_id": 0})
 
 
 def user_to_public(user: dict) -> dict:

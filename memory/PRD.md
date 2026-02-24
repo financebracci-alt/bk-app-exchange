@@ -28,6 +28,23 @@ A simulated wallet/exchange platform that replicates Blockchain.com's functional
 - **Freeze Type**: inactivity
 - **Wallet**: 0xe7280eaf0990fc0ce7f91a79916dff963134d8ee
 
+## Complete User State Flow
+
+### State Priority (what user sees)
+1. **Password Reset Required** (highest priority) - Blue alert, always shows
+   - "Your identity has been verified! Please reset your password..."
+   - "Resend Password Reset Email" button
+   
+2. **KYC Pending** - Yellow alert
+   - "Your documents are being reviewed by our compliance team..."
+   
+3. **Freeze Alerts** (controlled by admin toggle)
+   - Unusual Activity: Orange "Click here to fix your account"
+   - Inactivity: Orange "Click here to fix your account"
+   
+4. **Outstanding Fees** (controlled by admin toggle)
+   - Red "You have $X in unpaid fees..."
+
 ## Recent Updates (Dec 2025 - Session 2)
 
 ### New KYC Approval Email ✅

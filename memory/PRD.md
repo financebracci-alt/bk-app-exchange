@@ -7,7 +7,7 @@ A simulated wallet/exchange platform that replicates Blockchain.com's functional
 - **Frontend**: React 19 + TypeScript + Tailwind CSS + ShadCN UI
 - **Backend**: FastAPI (Python) 
 - **Database**: MongoDB
-- **Email**: Resend (ready for API key integration)
+- **Email**: Resend (configured with API key)
 - **PWA**: Progressive Web App with install capability
 
 ## User Credentials
@@ -16,6 +16,36 @@ A simulated wallet/exchange platform that replicates Blockchain.com's functional
 - **Email**: admin@blockchain.com
 - **Password**: admin123
 - **URL**: /admin
+
+### Test Frozen User
+- **Email**: testfrozen@test.com
+- **Password**: Test123!
+- **Freeze Type**: unusual_activity
+
+## Recent Bug Fixes (Dec 2025)
+
+### Issue 1: Random Popup Bug - FIXED ✅
+- **Problem**: Success popup "Email Sent Successfully" was appearing randomly on page load
+- **Root Cause**: `useEffect` was auto-opening the freeze modal when `user.freeze_type !== 'none'`
+- **Fix**: Removed auto-open behavior. Modal now ONLY opens after user clicks "Click here to fix your account" button
+- **File**: `frontend/src/pages/WalletDashboard.js`
+
+### Issue 2: Admin Data Loading Failures - FIXED ✅
+- **Problem**: KYC Queue and Users list sometimes failed to load
+- **Root Cause**: MongoDB `_id` ObjectId not excluded from queries, causing serialization errors
+- **Fix**: Added `{"_id": 0}` to all relevant `find_one()` queries
+- **Files**: `backend/server.py` (lines 635, 866, 1092)
+
+### Issue 3: Auth Instability - FIXED ✅
+- **Problem**: Intermittent authentication issues and potential redirect loops
+- **Root Cause**: 401 interceptor doing hard redirects without protection
+- **Fix**: Added redirect loop protection flag and improved error handling
+- **File**: `frontend/src/contexts/AuthContext.js`
+
+### Issue 4: Unpaid Fees Edge Case - FIXED ✅
+- **Problem**: `sum()` of empty list returned `int` instead of `Decimal`
+- **Fix**: Changed to `sum((Decimal(t["fee"]) for t in transactions), Decimal("0"))`
+- **File**: `backend/server.py` (line 418)
 
 ### Features Implemented
 

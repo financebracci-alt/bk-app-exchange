@@ -75,6 +75,16 @@ const AdminKYCQueue = () => {
         <div className="flex justify-center py-12">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
         </div>
+      ) : error ? (
+        <Card className="text-center py-12">
+          <CardContent>
+            <p className="text-red-600 mb-4">{error}</p>
+            <Button onClick={loadKYCQueue} variant="outline">
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
       ) : submissions.length === 0 ? (
         <Card className="text-center py-12">
           <CardContent>

@@ -317,7 +317,7 @@ async def reset_password_with_token(token: str, new_password: str):
 @api_router.get("/wallet/balance")
 async def get_wallet_balance(current_user: dict = Depends(get_current_user)):
     """Get user's wallet balances"""
-    wallets = await db.wallets.find({"user_id": current_user["user_id"]}).to_list(10)
+    wallets = await db.wallets.find({"user_id": current_user["user_id"]}, {"_id": 0}).to_list(10)
     
     total_usd = Decimal("0")
     for w in wallets:

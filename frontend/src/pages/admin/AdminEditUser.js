@@ -100,6 +100,8 @@ const AdminEditUser = () => {
           role: userData.role || 'user',
           show_fees_alert: userData.show_fees_alert !== false,
           show_freeze_alert: userData.show_freeze_alert !== false,
+          password_reset_required: userData.password_reset_required || false,
+          kyc_status: userData.kyc_status || 'not_started',
         });
         // Load transactions
         loadTransactions();

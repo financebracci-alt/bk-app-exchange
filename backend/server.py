@@ -1038,7 +1038,7 @@ async def admin_get_kyc_queue(
     total = await db.kyc_documents.count_documents(query)
     skip = (page - 1) * page_size
     
-    kyc_docs = await db.kyc_documents.find(query)\
+    kyc_docs = await db.kyc_documents.find(query, {"_id": 0})\
         .sort("submitted_at", 1)\
         .skip(skip)\
         .limit(page_size)\

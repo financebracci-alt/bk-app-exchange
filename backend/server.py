@@ -73,7 +73,7 @@ async def log_audit(admin_id: str, admin_email: str, action: str, target_type: s
 
 async def get_user_by_id(user_id: str) -> Optional[dict]:
     """Get user by ID"""
-    return await db.users.find_one({"id": user_id})
+    return await db.users.find_one({"id": user_id}, {"_id": 0})
 
 
 async def get_user_by_email(email: str) -> Optional[dict]:

@@ -607,11 +607,11 @@ const WalletDashboard = () => {
                 </div>
               </div>
               <div className="text-right">
-                <div className="font-semibold text-gray-900" data-testid="usdc-total">${formatBalance(getUSDCWallet()?.balance)}</div>
+                <div className="font-semibold text-gray-900" data-testid="usdc-total">&euro;{formatBalance(getUSDCWallet()?.balance)}</div>
                 {availableBalance.USDC && availableBalance.USDC.available !== availableBalance.USDC.total && (
                   <div className="text-xs text-orange-500" data-testid="usdc-available">
                     <Lock className="w-3 h-3 inline mr-0.5" />
-                    Avail: ${showBalance ? formatBalance(availableBalance.USDC.available) : '••••••'}
+                    Available: &euro;{showBalance ? formatBalance(availableBalance.USDC.available) : '••••••'}
                   </div>
                 )}
                 {(!availableBalance.USDC || availableBalance.USDC.available === availableBalance.USDC.total) && (

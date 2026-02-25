@@ -834,9 +834,9 @@ const AdminEditUser = () => {
             </div>
 
             <div className="space-y-2">
-              <Label>Date</Label>
+              <Label>Date & Time</Label>
               <Input
-                type="date"
+                type="datetime-local"
                 value={txForm.transaction_date}
                 onChange={(e) => setTxForm({...txForm, transaction_date: e.target.value})}
               />

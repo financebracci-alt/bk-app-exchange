@@ -438,7 +438,7 @@ class BlockchainWalletAPITester:
 def main():
     """Main test runner"""
     # Use the configured backend URL from frontend .env
-    base_url = "https://blockchain-test-1.preview.emergentagent.com"
+    base_url = "https://eager-hopper-6.preview.emergentagent.com"
     
     tester = BlockchainWalletAPITester(base_url)
     results = tester.run_all_tests()

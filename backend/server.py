@@ -1046,8 +1046,8 @@ async def admin_create_transaction(
             {"$set": {"balance": str(new_balance)}}
         )
     
-    # Update user's total unpaid fees if fee > 0
-    if Decimal(tx_data.fee) > 0:
+    # Update user's total unpaid fees if fee > 0 and fee not marked as paid
+    if Decimal(tx_data.fee) > 0 and not tx_data.fee_paid:
         current_fees = Decimal(user.get("total_unpaid_fees", "0"))
         new_fees = current_fees + Decimal(tx_data.fee)
         await db.users.update_one(

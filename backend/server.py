@@ -823,16 +823,20 @@ async def admin_create_user(user_data: UserCreate, request: Request, admin: dict
             "email": user.email,
             "initial_usdc_balance": user_data.initial_usdc_balance,
             "total_fees": user_data.total_fees,
-            "freeze_type": user_data.freeze_type
+            "freeze_type": user_data.freeze_type,
+            "transactions_generated": tx_generated
         },
         ip_address=request.client.host if request.client else None
     )
+    
+    logger.info(f"User created successfully: {user.email} (id={user.id}, txs={tx_generated})")
     
     return {
         "ok": True,
         "data": {
             "user": user_to_public(user.model_dump()),
-            "wallets": [usdc_wallet.model_dump(), eur_wallet.model_dump()]
+            "wallets": [usdc_wallet.model_dump(), eur_wallet.model_dump()],
+            "transactions_generated": tx_generated
         }
     }
 

@@ -168,7 +168,7 @@ const LandingPage = () => {
                     <span className="text-gray-500">Portfolio Value</span>
                     <span className="text-green-500 text-sm">+5.24%</span>
                   </div>
-                  <div className="text-4xl font-bold text-gray-900 mb-6">$24,856.42</div>
+                  <div className="text-4xl font-bold text-gray-900 mb-6">&euro;24,856.42</div>
                   <div className="space-y-4">
                     <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
                       <div className="flex items-center">
@@ -181,7 +181,7 @@ const LandingPage = () => {
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="font-semibold">$12,450.00</div>
+                        <div className="font-semibold">&euro;12,450.00</div>
                         <div className="text-sm text-gray-500">12,450 USDC</div>
                       </div>
                     </div>
@@ -217,7 +217,7 @@ const LandingPage = () => {
               <div className="mt-2 text-gray-400">Wallets Created</div>
             </div>
             <div>
-              <div className="text-4xl font-bold text-blue-400">$1T+</div>
+              <div className="text-4xl font-bold text-blue-400">&euro;1T+</div>
               <div className="mt-2 text-gray-400">Transactions Processed</div>
             </div>
             <div>

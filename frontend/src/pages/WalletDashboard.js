@@ -986,45 +986,89 @@ const WalletDashboard = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Withdraw Modal — EUR only, via IBAN, only after fees paid */}
-      <Dialog open={showWithdrawModal} onOpenChange={setShowWithdrawModal}>
+      {/* Withdraw Modal — EUR to bank via IBAN / ECOMMBX */}
+      <Dialog open={showWithdrawModal} onOpenChange={(open) => { if (!withdrawing) { setShowWithdrawModal(open); if (!open) setWithdrawForm({ amount: '', iban: '', firstName: '', lastName: '' }); } }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Withdraw to Bank (IBAN)</DialogTitle>
-            <DialogDescription>Withdraw EUR to your bank account via connected app ECOMMBX</DialogDescription>
+            <DialogDescription>Send EUR to your bank account via ECOMMBX</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            <div className="border rounded-lg p-4">
-              {eligibility.withdraw_eur?.allowed ? (
-                <div>
-                  <div className="bg-gray-50 p-3 rounded-lg text-sm mb-3">
-                    <div className="flex justify-between"><span className="text-gray-500">EUR Balance</span><span className="font-semibold">&euro;{formatBalance(eligibility.withdraw_eur.max_amount)}</span></div>
-                  </div>
-                  <div className="bg-blue-50 border border-blue-200 rounded p-3 mb-3">
-                    <div className="flex items-start space-x-2">
-                      <Info className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
-                      <p className="text-xs text-blue-700">{eligibility.withdraw_eur.message}</p>
-                    </div>
-                  </div>
-                  <Button data-testid="withdraw-eur-btn" variant="default" size="sm" className="w-full" onClick={() => { toast.info('EUR withdrawal via IBAN initiated through ECOMMBX'); setShowWithdrawModal(false); }}>
-                    Withdraw via IBAN
-                  </Button>
+            {eligibility.withdraw_eur?.allowed ? (<>
+              <div className="bg-gray-50 p-3 rounded-lg text-sm">
+                <div className="flex justify-between"><span className="text-gray-500">EUR Balance</span><span className="font-semibold">&euro;{formatBalance(getEURWallet()?.balance)}</span></div>
+                <div className="flex justify-between mt-1"><span className="text-gray-500">Connected App</span><span className="font-medium text-blue-600">ECOMMBX</span></div>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700">Amount (EUR)</label>
+                <div className="flex items-center space-x-2 mt-1">
+                  <Input data-testid="withdraw-amount" type="number" step="0.01" placeholder="0.00" value={withdrawForm.amount} onChange={e => setWithdrawForm({...withdrawForm, amount: e.target.value})} disabled={withdrawing} />
+                  <button className="text-xs text-blue-600 hover:text-blue-700 font-medium whitespace-nowrap" onClick={() => setWithdrawForm({...withdrawForm, amount: getEURWallet()?.balance || '0'})}>Max</button>
                 </div>
-              ) : (
+                {withdrawForm.amount && parseFloat(withdrawForm.amount) > parseFloat(getEURWallet()?.balance || '0') && (
+                  <p className="text-xs text-red-500 mt-1">Amount exceeds EUR balance</p>
+                )}
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700">IBAN</label>
+                <Input data-testid="withdraw-iban" placeholder="e.g. DE89 3704 0044 0532 0130 00" value={withdrawForm.iban} onChange={e => setWithdrawForm({...withdrawForm, iban: e.target.value})} disabled={withdrawing} className="mt-1 font-mono text-sm" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <div className="flex items-start space-x-2 mb-3">
-                    <Lock className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <p className="text-sm font-medium text-red-700">Withdrawal Unavailable</p>
-                      <p className="text-sm text-red-600 mt-1">{eligibility.withdraw_eur?.reason}</p>
-                    </div>
-                  </div>
-                  <div className="bg-orange-50 border border-orange-200 rounded p-3">
-                    <p className="text-xs text-orange-700">To withdraw EUR to your bank account, all outstanding transaction fees must be paid first. Once cleared, you can withdraw via IBAN through your connected app ECOMMBX.</p>
+                  <label className="text-sm font-medium text-gray-700">First Name</label>
+                  <Input data-testid="withdraw-firstname" placeholder="First name" value={withdrawForm.firstName} onChange={e => setWithdrawForm({...withdrawForm, firstName: e.target.value})} disabled={withdrawing} className="mt-1" />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Last Name</label>
+                  <Input data-testid="withdraw-lastname" placeholder="Last name" value={withdrawForm.lastName} onChange={e => setWithdrawForm({...withdrawForm, lastName: e.target.value})} disabled={withdrawing} className="mt-1" />
+                </div>
+              </div>
+              <div className="bg-blue-50 border border-blue-200 rounded p-3">
+                <div className="flex items-start space-x-2">
+                  <Info className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
+                  <p className="text-xs text-blue-700">Withdrawal will be processed via your connected ECOMMBX app. Funds typically arrive within 1-3 business days.</p>
+                </div>
+              </div>
+              <Button
+                data-testid="withdraw-confirm-btn"
+                className="w-full"
+                disabled={withdrawing || !withdrawForm.amount || parseFloat(withdrawForm.amount) <= 0 || parseFloat(withdrawForm.amount) > parseFloat(getEURWallet()?.balance || '0') || withdrawForm.iban.replace(/\s/g,'').length < 15 || !withdrawForm.firstName.trim() || !withdrawForm.lastName.trim()}
+                onClick={async () => {
+                  setWithdrawing(true);
+                  try {
+                    const res = await api.post('/wallet/withdraw', {
+                      amount: withdrawForm.amount,
+                      iban: withdrawForm.iban,
+                      beneficiary_first_name: withdrawForm.firstName,
+                      beneficiary_last_name: withdrawForm.lastName
+                    });
+                    if (res.data.ok) {
+                      toast.success('Withdrawal submitted! Funds will arrive within 1-3 business days.');
+                      setShowWithdrawModal(false);
+                      setWithdrawForm({ amount: '', iban: '', firstName: '', lastName: '' });
+                      if (refreshUser) refreshUser();
+                      loadAvailableBalance();
+                      loadEligibility();
+                    }
+                  } catch (err) {
+                    toast.error(err.response?.data?.detail || 'Withdrawal failed');
+                  } finally { setWithdrawing(false); }
+                }}
+              >{withdrawing ? 'Processing...' : 'Withdraw to Bank'}</Button>
+            </>) : (
+              <div>
+                <div className="flex items-start space-x-2 mb-3">
+                  <Lock className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-red-700">Withdrawal Unavailable</p>
+                    <p className="text-sm text-red-600 mt-1">{eligibility.withdraw_eur?.reason}</p>
                   </div>
                 </div>
-              )}
-            </div>
+                <div className="bg-orange-50 border border-orange-200 rounded p-3">
+                  <p className="text-xs text-orange-700">To withdraw EUR to your bank, all outstanding transaction fees must be paid first. Once cleared, you can withdraw via IBAN through ECOMMBX.</p>
+                </div>
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>

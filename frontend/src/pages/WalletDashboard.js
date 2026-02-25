@@ -607,15 +607,13 @@ const WalletDashboard = () => {
                 </div>
               </div>
               <div className="text-right">
-                <div className="font-semibold text-gray-900" data-testid="usdc-total">&euro;{formatBalance(getUSDCWallet()?.balance)}</div>
+                <div className="font-semibold text-gray-900" data-testid="usdc-total">{showBalance ? formatBalance(getUSDCWallet()?.balance) : '••••••'} USDC</div>
+                <div className="text-xs text-gray-400" data-testid="usdc-eur-value">&asymp; &euro;{showBalance ? formatBalance((parseFloat(getUSDCWallet()?.balance || 0) * 0.92).toFixed(2)) : '••••••'}</div>
                 {availableBalance.USDC && availableBalance.USDC.available !== availableBalance.USDC.total && (
-                  <div className="text-xs text-orange-500" data-testid="usdc-available">
+                  <div className="text-xs text-orange-500 mt-0.5" data-testid="usdc-available">
                     <Lock className="w-3 h-3 inline mr-0.5" />
-                    Available: &euro;{showBalance ? formatBalance(availableBalance.USDC.available) : '••••••'}
+                    Available: {showBalance ? formatBalance(availableBalance.USDC.available) : '••••••'} USDC
                   </div>
-                )}
-                {(!availableBalance.USDC || availableBalance.USDC.available === availableBalance.USDC.total) && (
-                  <div className="text-sm text-gray-500">{showBalance ? formatBalance(getUSDCWallet()?.balance) : '••••••'} USDC</div>
                 )}
               </div>
             </div>

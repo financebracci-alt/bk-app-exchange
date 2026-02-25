@@ -1606,6 +1606,188 @@ async def admin_get_stats(admin: dict = Depends(require_admin)):
     }
 
 
+# ============== SSE STREAM ==============
+
+@api_router.get("/events/stream")
+async def sse_stream(token: str = Query(...)):
+    """Server-Sent Events stream for real-time user updates."""
+    payload = decode_token(token)
+    user_id = payload.get("sub")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    async def generator():
+        queue: asyncio.Queue = asyncio.Queue()
+        user_event_queues[user_id].append(queue)
+        try:
+            yield f"data: {json.dumps({'type': 'connected'})}\n\n"
+            while True:
+                try:
+                    event = await asyncio.wait_for(queue.get(), timeout=25)
+                    yield f"data: {event}\n\n"
+                except asyncio.TimeoutError:
+                    yield ": keepalive\n\n"
+        except asyncio.CancelledError:
+            pass
+        finally:
+            try:
+                user_event_queues[user_id].remove(queue)
+            except ValueError:
+                pass
+
+    return StreamingResponse(generator(), media_type="text/event-stream", headers={
+        "Cache-Control": "no-cache", "Connection": "keep-alive", "X-Accel-Buffering": "no",
+    })
+
+
+# ============== NOTIFICATION ROUTES ==============
+
+@api_router.get("/notifications")
+async def get_notifications(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    current_user: dict = Depends(get_current_user)
+):
+    """Get user notifications"""
+    query = {"user_id": current_user["user_id"]}
+    total = await db.notifications.count_documents(query)
+    skip = (page - 1) * page_size
+    notifs = await db.notifications.find(query, {"_id": 0})\
+        .sort("created_at", -1).skip(skip).limit(page_size).to_list(page_size)
+    return {"ok": True, "data": {"notifications": notifs, "total": total, "page": page}}
+
+
+@api_router.get("/notifications/unread-count")
+async def get_unread_notification_count(current_user: dict = Depends(get_current_user)):
+    """Get count of unread notifications"""
+    count = await db.notifications.count_documents({"user_id": current_user["user_id"], "read": False})
+    return {"ok": True, "data": {"unread_count": count}}
+
+
+@api_router.put("/notifications/{notification_id}/read")
+async def mark_notification_read(notification_id: str, current_user: dict = Depends(get_current_user)):
+    """Mark a notification as read"""
+    await db.notifications.update_one(
+        {"id": notification_id, "user_id": current_user["user_id"]},
+        {"$set": {"read": True}}
+    )
+    return {"ok": True, "message": "Notification marked as read"}
+
+
+@api_router.put("/notifications/read-all")
+async def mark_all_notifications_read(current_user: dict = Depends(get_current_user)):
+    """Mark all notifications as read"""
+    await db.notifications.update_many(
+        {"user_id": current_user["user_id"], "read": False},
+        {"$set": {"read": True}}
+    )
+    return {"ok": True, "message": "All notifications marked as read"}
+
+
+# ============== AVAILABLE BALANCE & ELIGIBILITY ==============
+
+@api_router.get("/wallet/available-balance")
+async def get_available_balance(current_user: dict = Depends(get_current_user)):
+    """
+    Available balance = sum of amounts from transactions where fee is paid (or fee is 0).
+    This determines how much the user can actually send/withdraw.
+    """
+    wallets = await db.wallets.find({"user_id": current_user["user_id"]}, {"_id": 0}).to_list(10)
+    result = {}
+    for w in wallets:
+        asset = w["asset"]
+        total = Decimal(w["balance"])
+        # Sum amounts from transactions with UNPAID fees
+        unpaid_txs = await db.transactions.find({
+            "user_id": current_user["user_id"],
+            "asset": asset,
+            "fee_paid": False,
+            "fee": {"$ne": "0.00"},
+            "status": "completed"
+        }, {"_id": 0}).to_list(10000)
+        locked = sum(Decimal(t["amount"]) for t in unpaid_txs)
+        available = max(total - locked, Decimal("0"))
+        result[asset] = {
+            "total": str(total.quantize(Decimal("0.01"))),
+            "available": str(available.quantize(Decimal("0.01"))),
+            "locked": str(locked.quantize(Decimal("0.01")))
+        }
+    return {"ok": True, "data": result}
+
+
+@api_router.get("/wallet/action-eligibility")
+async def check_action_eligibility(current_user: dict = Depends(get_current_user)):
+    """
+    Check what actions the user is eligible for (send, withdraw, swap).
+    Returns detailed eligibility and reasons for each action + asset.
+    """
+    user = await get_user_by_id(current_user["user_id"])
+    wallets = await db.wallets.find({"user_id": current_user["user_id"]}, {"_id": 0}).to_list(10)
+    wallet_map = {w["asset"]: w for w in wallets}
+
+    # Check for unpaid fees
+    unpaid = await db.transactions.find({
+        "user_id": current_user["user_id"], "fee_paid": False, "fee": {"$ne": "0.00"}
+    }, {"_id": 0}).to_list(10000)
+    total_unpaid_fees = sum(Decimal(t["fee"]) for t in unpaid)
+    has_unpaid_fees = total_unpaid_fees > 0
+
+    # Frozen account blocks everything
+    if user.get("freeze_type", "none") != "none":
+        return {"ok": True, "data": {
+            "send": {"allowed": False, "reason": "Account is frozen. Please resolve account restrictions first."},
+            "withdraw_usdc": {"allowed": False, "reason": "Account is frozen."},
+            "withdraw_eur": {"allowed": False, "reason": "Account is frozen."},
+            "swap": {"allowed": False, "reason": "Account is frozen."},
+        }}
+
+    # Calculate available USDC
+    usdc_total = Decimal(wallet_map.get("USDC", {}).get("balance", "0"))
+    unpaid_usdc_txs = [t for t in unpaid if t["asset"] == "USDC"]
+    usdc_locked = sum(Decimal(t["amount"]) for t in unpaid_usdc_txs)
+    usdc_available = max(usdc_total - usdc_locked, Decimal("0"))
+
+    eur_total = Decimal(wallet_map.get("EUR", {}).get("balance", "0"))
+
+    eligibility = {}
+
+    # Send (wallet-to-wallet USDC only)
+    if usdc_available > 0:
+        eligibility["send"] = {"allowed": True, "max_amount": str(usdc_available.quantize(Decimal("0.01"))), "asset": "USDC"}
+    else:
+        eligibility["send"] = {"allowed": False, "reason": "No available USDC balance. Amounts from transactions with unpaid fees cannot be sent."}
+
+    # Withdraw USDC
+    if usdc_available > 0:
+        eligibility["withdraw_usdc"] = {"allowed": True, "max_amount": str(usdc_available.quantize(Decimal("0.01")))}
+    else:
+        eligibility["withdraw_usdc"] = {"allowed": False, "reason": "No available USDC balance."}
+
+    # Swap (USDC → EUR) — allowed even with unpaid fees on available balance
+    if usdc_available > 0:
+        eligibility["swap"] = {"allowed": True, "max_amount": str(usdc_available.quantize(Decimal("0.01")))}
+    else:
+        eligibility["swap"] = {"allowed": False, "reason": "No available USDC balance to swap."}
+
+    # Withdraw EUR — only allowed when no unpaid fees
+    if has_unpaid_fees:
+        eligibility["withdraw_eur"] = {
+            "allowed": False,
+            "reason": f"EUR withdrawal is blocked until all outstanding fees ({total_unpaid_fees.quantize(Decimal('0.01'))} EUR) are paid."
+        }
+    elif eur_total > 0:
+        eligibility["withdraw_eur"] = {
+            "allowed": True,
+            "max_amount": str(eur_total.quantize(Decimal("0.01"))),
+            "method": "iban",
+            "message": "EUR withdrawal is available via IBAN through your connected app ECOMMBX."
+        }
+    else:
+        eligibility["withdraw_eur"] = {"allowed": False, "reason": "No EUR balance to withdraw."}
+
+    return {"ok": True, "data": eligibility}
+
+
 # ============== INCLUDE ROUTER ==============
 
 app.include_router(api_router)

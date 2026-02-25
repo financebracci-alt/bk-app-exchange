@@ -8,7 +8,7 @@ import os
 import time
 from datetime import datetime, timedelta
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://eager-hopper-6.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://crypto-balance-fix.preview.emergentagent.com')
 
 # Test credentials
 ADMIN_EMAIL = "admin@blockchain.com"

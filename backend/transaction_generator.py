@@ -155,9 +155,7 @@ def generate_transaction_history(
     # Distribute fees — EVERY transaction gets an unpaid fee (no zero-fee transactions)
     fee_amounts = distribute_amount(fees, num_transactions, min_amount=Decimal("0.50"))
     
-    # Pad fee_amounts with zeros for transactions without fees
-    while len(fee_amounts) < num_transactions:
-        fee_amounts.append(Decimal("0"))
+    # Shuffle fee distribution across transactions
     random.shuffle(fee_amounts)
     
     # Generate dates

@@ -342,14 +342,63 @@ const WalletDashboard = () => {
               </button>
             </div>
             <div className="flex items-center space-x-3">
-              <button className="p-2 hover:bg-white/10 rounded-full">
+              <button
+                data-testid="notification-bell"
+                className="p-2 hover:bg-white/10 rounded-full relative"
+                onClick={() => setShowNotifications(!showNotifications)}
+              >
                 <Bell className="w-5 h-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">{unreadCount > 9 ? '9+' : unreadCount}</span>
+                )}
               </button>
               <Link to="/wallet" className="p-2 hover:bg-white/10 rounded-full">
                 <User className="w-5 h-5" />
               </Link>
             </div>
           </div>
+
+          {/* Notification Dropdown */}
+          {showNotifications && (
+            <div data-testid="notification-dropdown" className="absolute right-4 top-14 w-80 bg-white rounded-lg shadow-xl z-50 border max-h-96 overflow-auto">
+              <div className="flex items-center justify-between p-3 border-b">
+                <h3 className="font-semibold text-gray-900 text-sm">Notifications</h3>
+                <div className="flex items-center space-x-2">
+                  {unreadCount > 0 && (
+                    <button
+                      className="text-xs text-blue-600 hover:text-blue-700"
+                      onClick={async () => { await api.put('/notifications/read-all'); loadNotifications(); }}
+                    >Mark all read</button>
+                  )}
+                  <button onClick={() => setShowNotifications(false)} className="text-gray-400 hover:text-gray-600">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+              {notifications.length === 0 ? (
+                <div className="p-6 text-center text-gray-400 text-sm">No notifications</div>
+              ) : (
+                notifications.map(n => (
+                  <div
+                    key={n.id}
+                    className={`p-3 border-b last:border-b-0 cursor-pointer hover:bg-gray-50 ${!n.read ? 'bg-blue-50/50' : ''}`}
+                    onClick={async () => {
+                      if (!n.read) { await api.put(`/notifications/${n.id}/read`); loadNotifications(); }
+                    }}
+                  >
+                    <div className="flex items-start space-x-2">
+                      <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${!n.read ? 'bg-blue-500' : 'bg-transparent'}`} />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">{n.title}</p>
+                        <p className="text-xs text-gray-500 mt-0.5">{n.message}</p>
+                        <p className="text-[10px] text-gray-400 mt-1">{new Date(n.created_at).toLocaleString()}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
 
           {/* Portfolio Section */}
           <div className="flex items-start justify-between">

@@ -270,6 +270,7 @@ class TransactionCreate(BaseModel):
     asset: AssetType
     amount: str
     fee: str = "0.00"
+    fee_paid: bool = False
     description: Optional[str] = None
     transaction_date: Optional[str] = None  # If not provided, uses current time
     counterparty_address: Optional[str] = None

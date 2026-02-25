@@ -428,7 +428,7 @@ const AdminEditUser = () => {
                       <div>
                         <div className="font-semibold">{wallet.asset}</div>
                         <div className="text-2xl font-bold">
-                          {wallet.asset === 'USDC' ? '$' : '€'}{wallet.balance}
+                          &euro;{wallet.balance}
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">

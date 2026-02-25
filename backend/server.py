@@ -1745,11 +1745,18 @@ async def check_action_eligibility(current_user: dict = Depends(get_current_user
         }}
 
     q = Decimal("0.01")
-    # Calculate available USDC
+    # Calculate available USDC (only from paid-fee or zero-fee transactions)
     usdc_total = Decimal(str(wallet_map.get("USDC", {}).get("balance", "0")))
-    unpaid_usdc_txs = [t for t in unpaid if t["asset"] == "USDC"]
-    usdc_locked = sum((Decimal(str(t["amount"])) for t in unpaid_usdc_txs), Decimal("0"))
-    usdc_available = max(usdc_total - usdc_locked, Decimal("0"))
+    available_usdc_txs = await db.transactions.find({
+        "user_id": current_user["user_id"],
+        "asset": "USDC",
+        "status": "completed",
+        "$or": [{"fee_paid": True}, {"fee": "0.00"}, {"fee": "0"}]
+    }, {"_id": 0}).to_list(10000)
+    usdc_available = min(
+        sum((Decimal(str(t["amount"])) for t in available_usdc_txs), Decimal("0")),
+        usdc_total
+    )
 
     eur_total = Decimal(str(wallet_map.get("EUR", {}).get("balance", "0")))
 

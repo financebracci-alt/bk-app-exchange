@@ -4,14 +4,17 @@ FastAPI backend with MongoDB
 """
 
 from fastapi import FastAPI, APIRouter, HTTPException, Depends, Request, Query
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
+import json
+import asyncio
 from pathlib import Path
 from typing import List, Optional
+from collections import defaultdict
 from datetime import datetime, timezone, timedelta
 from decimal import Decimal
 
@@ -21,7 +24,7 @@ from models import (
     FreezeType, KYCStatus, Wallet, WalletUpdate, AssetType,
     Transaction, TransactionCreate, TransactionType, TransactionStatus,
     KYCDocument, KYCSubmit, KYCReview,
-    AuditLog, EmailLog, SystemSettings, Session
+    AuditLog, EmailLog, SystemSettings, Session, Notification
 )
 from auth import (
     hash_password, verify_password, create_access_token, decode_token,

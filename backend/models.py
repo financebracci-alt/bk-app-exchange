@@ -53,6 +53,7 @@ class TransactionType(str, Enum):
 
 class TransactionStatus(str, Enum):
     PENDING = "pending"
+    PROCESSING = "processing"
     COMPLETED = "completed"
     FAILED = "failed"
     CANCELLED = "cancelled"

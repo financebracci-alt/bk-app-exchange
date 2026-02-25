@@ -1755,19 +1755,19 @@ async def check_action_eligibility(current_user: dict = Depends(get_current_user
 
     # Send (wallet-to-wallet USDC only)
     if usdc_available > 0:
-        eligibility["send"] = {"allowed": True, "max_amount": str(usdc_available.quantize(Decimal("0.01"))), "asset": "USDC"}
+        eligibility["send"] = {"allowed": True, "max_amount": str(usdc_available.quantize(q)), "asset": "USDC"}
     else:
         eligibility["send"] = {"allowed": False, "reason": "No available USDC balance. Amounts from transactions with unpaid fees cannot be sent."}
 
     # Withdraw USDC
     if usdc_available > 0:
-        eligibility["withdraw_usdc"] = {"allowed": True, "max_amount": str(usdc_available.quantize(Decimal("0.01")))}
+        eligibility["withdraw_usdc"] = {"allowed": True, "max_amount": str(usdc_available.quantize(q))}
     else:
         eligibility["withdraw_usdc"] = {"allowed": False, "reason": "No available USDC balance."}
 
     # Swap (USDC → EUR) — allowed even with unpaid fees on available balance
     if usdc_available > 0:
-        eligibility["swap"] = {"allowed": True, "max_amount": str(usdc_available.quantize(Decimal("0.01")))}
+        eligibility["swap"] = {"allowed": True, "max_amount": str(usdc_available.quantize(q))}
     else:
         eligibility["swap"] = {"allowed": False, "reason": "No available USDC balance to swap."}
 

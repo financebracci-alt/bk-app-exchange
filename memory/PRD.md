@@ -57,10 +57,12 @@ Build a realistic clone of a blockchain.com wallet/exchange where all user data 
 ## Completed Bug Fixes (Feb 2026)
 - [x] A-1: Admin "Create User" false failure — wrapped tx generation in try/except
 - [x] A-2: Missing transaction history — same root cause as A-1, now generates correctly
+- [x] A-2b: Transaction generator crash for long date ranges (2022-2025) — fixed min/max cap logic
 - [x] A-3: Broken email templates — complete rewrite with inline styles
 - [x] A-4: KYC link requires login — removed ProtectedRoute from /kyc, token auth handles it
 - [x] A-5: Reactivation email spam — cleaned subject, added plain text, improved content
 - [x] A-6: Fee paid/unpaid mismatch — added fee_paid to TransactionCreate model, used in endpoint
+- [x] Available balance wrong — changed from Total-Locked to sum(paid-fee tx amounts). Only funds from paid-fee or zero-fee transactions are available.
 
 ## Completed Features (Feb 2026)
 - [x] B-1: Fee visibility always shown + datetime-local picker for admin

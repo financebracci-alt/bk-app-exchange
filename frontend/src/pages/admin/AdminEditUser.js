@@ -524,7 +524,7 @@ const AdminEditUser = () => {
                           </div>
                           <div>
                             <div className="font-medium capitalize">{tx.type}</div>
-                            <div className="text-gray-500">{new Date(tx.transaction_date).toLocaleDateString()}</div>
+                            <div className="text-gray-500">{new Date(tx.transaction_date).toLocaleString()}</div>
                             {tx.description && (
                               <div className="text-xs text-gray-400">{tx.description}</div>
                             )}

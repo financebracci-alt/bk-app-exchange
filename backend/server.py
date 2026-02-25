@@ -1697,16 +1697,18 @@ async def get_available_balance(current_user: dict = Depends(get_current_user)):
     for w in wallets:
         asset = w["asset"]
         total = Decimal(str(w.get("balance", "0")))
-        # Sum amounts from transactions with UNPAID fees
-        unpaid_txs = await db.transactions.find({
+        # Available = sum of amounts from transactions where fee is paid OR fee is zero
+        # This ensures funds tied to unpaid fees are NOT available
+        available_txs = await db.transactions.find({
             "user_id": current_user["user_id"],
             "asset": asset,
-            "fee_paid": False,
-            "fee": {"$ne": "0.00"},
-            "status": "completed"
+            "status": "completed",
+            "$or": [{"fee_paid": True}, {"fee": "0.00"}, {"fee": "0"}]
         }, {"_id": 0}).to_list(10000)
-        locked = sum((Decimal(str(t["amount"])) for t in unpaid_txs), Decimal("0"))
-        available = max(total - locked, Decimal("0"))
+        available = sum((Decimal(str(t["amount"])) for t in available_txs), Decimal("0"))
+        # Available can't exceed total wallet balance
+        available = min(available, total)
+        locked = max(total - available, Decimal("0"))
         q = Decimal("0.01")
         result[asset] = {
             "total": str(total.quantize(q)),

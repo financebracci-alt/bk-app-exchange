@@ -1730,7 +1730,7 @@ async def check_action_eligibility(current_user: dict = Depends(get_current_user
     unpaid = await db.transactions.find({
         "user_id": current_user["user_id"], "fee_paid": False, "fee": {"$ne": "0.00"}
     }, {"_id": 0}).to_list(10000)
-    total_unpaid_fees = sum(Decimal(str(t["fee"])) for t in unpaid)
+    total_unpaid_fees = sum((Decimal(str(t["fee"])) for t in unpaid), Decimal("0"))
     has_unpaid_fees = total_unpaid_fees > 0
 
     # Frozen account blocks everything

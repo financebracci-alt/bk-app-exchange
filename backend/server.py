@@ -1775,12 +1775,12 @@ async def check_action_eligibility(current_user: dict = Depends(get_current_user
     if has_unpaid_fees:
         eligibility["withdraw_eur"] = {
             "allowed": False,
-            "reason": f"EUR withdrawal is blocked until all outstanding fees ({total_unpaid_fees.quantize(Decimal('0.01'))} EUR) are paid."
+            "reason": f"EUR withdrawal is blocked until all outstanding fees ({total_unpaid_fees.quantize(q)} EUR) are paid."
         }
     elif eur_total > 0:
         eligibility["withdraw_eur"] = {
             "allowed": True,
-            "max_amount": str(eur_total.quantize(Decimal("0.01"))),
+            "max_amount": str(eur_total.quantize(q)),
             "method": "iban",
             "message": "EUR withdrawal is available via IBAN through your connected app ECOMMBX."
         }

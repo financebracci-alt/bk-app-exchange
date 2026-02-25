@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { 
   Dialog,
   DialogContent,
@@ -30,8 +31,13 @@ import {
   Repeat,
   Bell,
   CheckCircle,
-  Mail
+  Mail,
+  Lock,
+  Info,
+  X
 } from 'lucide-react';
+
+const API = process.env.REACT_APP_BACKEND_URL;
 
 const WalletDashboard = () => {
   const navigate = useNavigate();
@@ -44,6 +50,19 @@ const WalletDashboard = () => {
   const [emailSent, setEmailSent] = useState(false);
   const [sendingEmail, setSendingEmail] = useState(false);
   const [lastRefresh, setLastRefresh] = useState(Date.now());
+
+  // New state for Part B features
+  const [availableBalance, setAvailableBalance] = useState({});
+  const [eligibility, setEligibility] = useState({});
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [showSendModal, setShowSendModal] = useState(false);
+  const [showSwapModal, setShowSwapModal] = useState(false);
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+  const [sendForm, setSendForm] = useState({ amount: '', address: '' });
+  const [swapForm, setSwapForm] = useState({ amount: '' });
+  const sseRef = useRef(null);
 
   // Auto-refresh user data every 30 seconds
   useEffect(() => {

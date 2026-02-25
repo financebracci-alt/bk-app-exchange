@@ -1802,27 +1802,41 @@ async def mark_all_notifications_read(current_user: dict = Depends(get_current_u
 @api_router.get("/wallet/available-balance")
 async def get_available_balance(current_user: dict = Depends(get_current_user)):
     """
-    Available balance = sum of amounts from transactions where fee is paid (or fee is 0).
-    This determines how much the user can actually send/withdraw.
+    Available = (sum of deposit/receive amounts where fee is paid or zero)
+              - (sum of send/withdrawal amounts)
+    Capped at [0, wallet_balance].
     """
+    inflow_types = {"deposit", "receive", "swap"}
+    outflow_types = {"send", "withdrawal"}
     wallets = await db.wallets.find({"user_id": current_user["user_id"]}, {"_id": 0}).to_list(10)
     result = {}
+    q = Decimal("0.01")
     for w in wallets:
         asset = w["asset"]
         total = Decimal(str(w.get("balance", "0")))
-        # Available = sum of amounts from transactions where fee is paid OR fee is zero
-        # This ensures funds tied to unpaid fees are NOT available
-        available_txs = await db.transactions.find({
+
+        # Inflows with paid / zero fee
+        inflow_txs = await db.transactions.find({
             "user_id": current_user["user_id"],
             "asset": asset,
-            "status": "completed",
+            "type": {"$in": list(inflow_types)},
+            "status": {"$in": ["completed", "processing"]},
             "$or": [{"fee_paid": True}, {"fee": "0.00"}, {"fee": "0"}]
-        }, {"_id": 0}).to_list(10000)
-        available = sum((Decimal(str(t["amount"])) for t in available_txs), Decimal("0"))
-        # Available can't exceed total wallet balance
+        }, {"_id": 0, "amount": 1}).to_list(100000)
+        inflow_sum = sum((Decimal(str(t["amount"])) for t in inflow_txs), Decimal("0"))
+
+        # All outflows (sends / withdrawals) regardless of fee status
+        outflow_txs = await db.transactions.find({
+            "user_id": current_user["user_id"],
+            "asset": asset,
+            "type": {"$in": list(outflow_types)},
+            "status": {"$in": ["completed", "processing"]},
+        }, {"_id": 0, "amount": 1}).to_list(100000)
+        outflow_sum = sum((Decimal(str(t["amount"])) for t in outflow_txs), Decimal("0"))
+
+        available = max(inflow_sum - outflow_sum, Decimal("0"))
         available = min(available, total)
         locked = max(total - available, Decimal("0"))
-        q = Decimal("0.01")
         result[asset] = {
             "total": str(total.quantize(q)),
             "available": str(available.quantize(q)),

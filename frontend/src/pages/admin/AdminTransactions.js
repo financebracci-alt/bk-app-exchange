@@ -158,12 +158,12 @@ const AdminTransactions = () => {
                       <Badge variant="outline">{tx.asset}</Badge>
                     </td>
                     <td className="px-4 py-3 font-semibold">
-                      ${parseFloat(tx.amount).toLocaleString()}
+                      &euro;{parseFloat(tx.amount).toLocaleString()}
                     </td>
                     <td className="px-4 py-3">
                       {parseFloat(tx.fee) > 0 ? (
                         <span className={tx.fee_paid ? 'text-green-600' : 'text-orange-600'}>
-                          ${tx.fee} ({tx.fee_paid ? 'Paid' : 'Unpaid'})
+                          &euro;{tx.fee} ({tx.fee_paid ? 'Paid' : 'Unpaid'})
                         </span>
                       ) : (
                         <span className="text-gray-400">-</span>

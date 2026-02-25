@@ -893,43 +893,94 @@ const WalletDashboard = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Swap Modal (USDC → EUR) — allows FULL balance */}
-      <Dialog open={showSwapModal} onOpenChange={setShowSwapModal}>
+      {/* Swap Modal (USDC ↔ EUR) — allows FULL balance, 0.2% commission */}
+      <Dialog open={showSwapModal} onOpenChange={(open) => { if (!swapping) { setShowSwapModal(open); setSwapResult(null); } }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Swap USDC to EUR</DialogTitle>
-            <DialogDescription>Convert your USDC balance to EUR at the current exchange rate</DialogDescription>
+            <DialogTitle>Swap</DialogTitle>
+            <DialogDescription>Convert between USDC and EUR instantly (0.2% commission)</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="bg-gray-50 p-3 rounded-lg text-sm">
-              <div className="flex justify-between"><span className="text-gray-500">USDC Balance</span><span className="font-medium">{formatBalance(getUSDCWallet()?.balance)} USDC</span></div>
-              <div className="flex justify-between mt-1"><span className="text-gray-500">Current EUR Balance</span><span className="font-medium">&euro;{formatBalance(getEURWallet()?.balance)}</span></div>
-              <div className="flex justify-between mt-2 pt-2 border-t border-gray-200"><span className="text-gray-500">Exchange Rate</span><span className="font-medium text-blue-600">1 USDC = 0.92 EUR</span></div>
-            </div>
-            <div>
-              <div className="flex justify-between items-end mb-1">
-                <label className="text-sm font-medium text-gray-700">Amount (USDC)</label>
-                <button className="text-xs text-blue-600 hover:text-blue-700 font-medium" onClick={() => setSwapForm({amount: getUSDCWallet()?.balance || '0'})}>Max</button>
+          {swapResult ? (
+            <div className="space-y-4 py-4">
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
+                <CheckCircle className="w-8 h-8 text-green-500 mx-auto mb-2" />
+                <p className="font-semibold text-green-800">Swap Completed</p>
+                <p className="text-2xl font-bold text-gray-900 mt-2">{swapResult.amount_in} {swapResult.from_asset} &rarr; {swapResult.amount_out} {swapResult.to_asset}</p>
+                <p className="text-xs text-gray-500 mt-2">Commission (0.2%): {swapResult.commission} {swapResult.to_asset}</p>
+                <p className="text-xs text-gray-500">Rate: 1 {swapResult.from_asset} = {swapResult.rate} {swapResult.to_asset}</p>
               </div>
-              <Input data-testid="swap-amount" type="number" step="0.01" placeholder="0.00" value={swapForm.amount} onChange={e => setSwapForm({amount: e.target.value})} className="mt-1" />
-              {swapForm.amount && parseFloat(swapForm.amount) > parseFloat(getUSDCWallet()?.balance || '0') && (
-                <p className="text-xs text-red-500 mt-1">Amount exceeds your USDC balance</p>
-              )}
+              <Button className="w-full" onClick={() => { setShowSwapModal(false); setSwapResult(null); }}>Done</Button>
             </div>
-            {swapForm.amount && parseFloat(swapForm.amount) > 0 && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
-                <p className="text-xs text-gray-500 mb-1">You will receive approximately</p>
-                <p className="text-xl font-bold text-blue-700">&euro;{(parseFloat(swapForm.amount) * 0.92).toFixed(2)} EUR</p>
-                <p className="text-[10px] text-gray-400 mt-1">Rate: 1 USDC = 0.92 EUR (incl. 0.5% spread)</p>
+          ) : (
+            <div className="space-y-4 py-4">
+              <div className="flex items-center justify-center space-x-0">
+                <button
+                  data-testid="swap-dir-usdc-eur"
+                  className={`px-3 py-1.5 rounded-l-lg text-sm font-medium border ${swapForm.direction === 'USDC_EUR' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-300'}`}
+                  onClick={() => setSwapForm({...swapForm, direction: 'USDC_EUR', amount: ''})}
+                >USDC &rarr; EUR</button>
+                <button
+                  data-testid="swap-dir-eur-usdc"
+                  className={`px-3 py-1.5 rounded-r-lg text-sm font-medium border ${swapForm.direction === 'EUR_USDC' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-300'}`}
+                  onClick={() => setSwapForm({...swapForm, direction: 'EUR_USDC', amount: ''})}
+                >EUR &rarr; USDC</button>
               </div>
-            )}
-            <Button
-              data-testid="swap-confirm-btn"
-              className="w-full"
-              disabled={!swapForm.amount || parseFloat(swapForm.amount) <= 0 || parseFloat(swapForm.amount) > parseFloat(getUSDCWallet()?.balance || '0')}
-              onClick={() => { toast.info('Swap submitted for processing'); setShowSwapModal(false); setSwapForm({amount:''}); }}
-            >Swap to EUR</Button>
-          </div>
+              {(() => {
+                const isUsdcToEur = swapForm.direction === 'USDC_EUR';
+                const fromAsset = isUsdcToEur ? 'USDC' : 'EUR';
+                const toAsset = isUsdcToEur ? 'EUR' : 'USDC';
+                const fromBal = isUsdcToEur ? getUSDCWallet()?.balance : getEURWallet()?.balance;
+                const rate = isUsdcToEur ? 0.92 : 1.087;
+                const amt = parseFloat(swapForm.amount) || 0;
+                const gross = amt * rate;
+                const commission = gross * 0.002;
+                const net = gross - commission;
+                const exceeds = amt > parseFloat(fromBal || '0');
+                return (<>
+                  <div className="bg-gray-50 p-3 rounded-lg text-sm">
+                    <div className="flex justify-between"><span className="text-gray-500">{fromAsset} Balance</span><span className="font-medium">{formatBalance(fromBal)} {fromAsset}</span></div>
+                    <div className="flex justify-between mt-2 pt-2 border-t border-gray-200"><span className="text-gray-500">Exchange Rate</span><span className="font-medium text-blue-600">1 {fromAsset} = {rate} {toAsset}</span></div>
+                    <div className="flex justify-between mt-1"><span className="text-gray-500">Commission</span><span className="text-gray-500">0.2%</span></div>
+                  </div>
+                  <div>
+                    <div className="flex justify-between items-end mb-1">
+                      <label className="text-sm font-medium text-gray-700">Amount ({fromAsset})</label>
+                      <button className="text-xs text-blue-600 hover:text-blue-700 font-medium" onClick={() => setSwapForm({...swapForm, amount: fromBal || '0'})}>Max</button>
+                    </div>
+                    <Input data-testid="swap-amount" type="number" step="0.01" placeholder="0.00" value={swapForm.amount} onChange={e => setSwapForm({...swapForm, amount: e.target.value})} disabled={swapping} />
+                    {exceeds && <p className="text-xs text-red-500 mt-1">Amount exceeds your {fromAsset} balance</p>}
+                  </div>
+                  {amt > 0 && !exceeds && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
+                      <p className="text-xs text-gray-500 mb-1">You will receive</p>
+                      <p className="text-xl font-bold text-blue-700">{net.toFixed(2)} {toAsset}</p>
+                      <p className="text-[10px] text-gray-400 mt-1">Commission: {commission.toFixed(2)} {toAsset}</p>
+                    </div>
+                  )}
+                  <Button
+                    data-testid="swap-confirm-btn"
+                    className="w-full"
+                    disabled={swapping || !swapForm.amount || amt <= 0 || exceeds}
+                    onClick={async () => {
+                      setSwapping(true);
+                      try {
+                        const res = await api.post('/wallet/swap', { from_asset: fromAsset, to_asset: toAsset, amount: swapForm.amount });
+                        if (res.data.ok) {
+                          setSwapResult(res.data.data);
+                          setSwapForm({amount: '', direction: swapForm.direction});
+                          if (refreshUser) refreshUser();
+                          loadAvailableBalance();
+                          loadEligibility();
+                        }
+                      } catch (err) {
+                        toast.error(err.response?.data?.detail || 'Swap failed');
+                      } finally { setSwapping(false); }
+                    }}
+                  >{swapping ? 'Swapping...' : `Swap ${fromAsset} to ${toAsset}`}</Button>
+                </>);
+              })()}
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 

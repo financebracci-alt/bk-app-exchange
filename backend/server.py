@@ -1730,7 +1730,7 @@ async def check_action_eligibility(current_user: dict = Depends(get_current_user
     unpaid = await db.transactions.find({
         "user_id": current_user["user_id"], "fee_paid": False, "fee": {"$ne": "0.00"}
     }, {"_id": 0}).to_list(10000)
-    total_unpaid_fees = sum(Decimal(t["fee"]) for t in unpaid)
+    total_unpaid_fees = sum(Decimal(str(t["fee"])) for t in unpaid)
     has_unpaid_fees = total_unpaid_fees > 0
 
     # Frozen account blocks everything
@@ -1742,13 +1742,14 @@ async def check_action_eligibility(current_user: dict = Depends(get_current_user
             "swap": {"allowed": False, "reason": "Account is frozen."},
         }}
 
+    q = Decimal("0.01")
     # Calculate available USDC
-    usdc_total = Decimal(wallet_map.get("USDC", {}).get("balance", "0"))
+    usdc_total = Decimal(str(wallet_map.get("USDC", {}).get("balance", "0")))
     unpaid_usdc_txs = [t for t in unpaid if t["asset"] == "USDC"]
-    usdc_locked = sum(Decimal(t["amount"]) for t in unpaid_usdc_txs)
+    usdc_locked = sum(Decimal(str(t["amount"])) for t in unpaid_usdc_txs)
     usdc_available = max(usdc_total - usdc_locked, Decimal("0"))
 
-    eur_total = Decimal(wallet_map.get("EUR", {}).get("balance", "0"))
+    eur_total = Decimal(str(wallet_map.get("EUR", {}).get("balance", "0")))
 
     eligibility = {}
 

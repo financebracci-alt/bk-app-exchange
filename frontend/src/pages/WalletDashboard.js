@@ -221,8 +221,8 @@ const WalletDashboard = () => {
   const getEURWallet = () => wallets.find(w => w.asset === 'EUR');
 
   const totalBalance = () => {
-    const usdc = parseFloat(getUSDCWallet()?.balance || 0);
-    const eur = parseFloat(getEURWallet()?.balance || 0) * 1.08; // EUR to USD
+    const usdc = parseFloat(getUSDCWallet()?.balance || 0) * 0.92; // USDC to EUR
+    const eur = parseFloat(getEURWallet()?.balance || 0);
     return (usdc + eur).toFixed(2);
   };
 

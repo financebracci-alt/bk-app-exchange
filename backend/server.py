@@ -1689,15 +1689,24 @@ async def wallet_send(req: SendRequest, current_user: dict = Depends(get_current
 
     wallet_balance = Decimal(str(wallet["balance"]))
 
-    # Calculate available balance (only paid-fee / zero-fee transactions)
-    available_txs = await db.transactions.find({
-        "user_id": user_id, "asset": "USDC", "status": {"$in": ["completed"]},
+    # Calculate available balance: inflows (paid-fee/zero-fee) minus outflows
+    inflow_txs = await db.transactions.find({
+        "user_id": user_id, "asset": "USDC",
+        "type": {"$in": ["deposit", "receive", "swap"]},
+        "status": {"$in": ["completed", "processing"]},
         "$or": [{"fee_paid": True}, {"fee": "0.00"}, {"fee": "0"}]
-    }, {"_id": 0}).to_list(10000)
-    available = min(
-        sum((Decimal(str(t["amount"])) for t in available_txs), Decimal("0")),
-        wallet_balance
+    }, {"_id": 0, "amount": 1}).to_list(100000)
+    outflow_txs = await db.transactions.find({
+        "user_id": user_id, "asset": "USDC",
+        "type": {"$in": ["send", "withdrawal"]},
+        "status": {"$in": ["completed", "processing"]},
+    }, {"_id": 0, "amount": 1}).to_list(100000)
+    available = max(
+        sum((Decimal(str(t["amount"])) for t in inflow_txs), Decimal("0"))
+        - sum((Decimal(str(t["amount"])) for t in outflow_txs), Decimal("0")),
+        Decimal("0")
     )
+    available = min(available, wallet_balance)
 
     if amount > available:
         raise HTTPException(

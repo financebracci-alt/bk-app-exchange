@@ -777,11 +777,8 @@ const WalletDashboard = () => {
 
       {/* Freeze Modal - Shows ONLY after clicking "Fix Account" button and email is sent */}
       <Dialog open={showFreezeModal && emailSent} onOpenChange={(open) => {
-        // Allow closing but reset state
         setShowFreezeModal(open);
-        if (!open) {
-          setEmailSent(false);
-        }
+        if (!open) setEmailSent(false);
       }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -790,83 +787,159 @@ const WalletDashboard = () => {
               <span>Email Sent Successfully!</span>
             </DialogTitle>
           </DialogHeader>
-          
-          {/* Email sent state - show success message based on freeze type */}
           <div className="py-4">
             <div className="flex flex-col items-center text-center">
               <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
                 <CheckCircle className="w-8 h-8 text-green-600" />
               </div>
-              
-              <p className="text-gray-600 mb-4">
-                We have sent an automated email with the steps to unlock your account to:
-              </p>
-              
+              <p className="text-gray-600 mb-4">We have sent an automated email with the steps to unlock your account to:</p>
               <div className="bg-blue-50 px-4 py-2 rounded-lg mb-4">
                 <span className="font-semibold text-blue-700">{user?.email}</span>
               </div>
-              
-              {/* Different messages based on freeze type */}
               {user?.freeze_type === 'inactivity' ? (
                 <>
-                  <p className="text-sm text-gray-500 mb-6">
-                    Please check your inbox (and spam folder) and follow the instructions to reactivate your account by making a deposit.
-                  </p>
-                  
+                  <p className="text-sm text-gray-500 mb-6">Please check your inbox (and spam folder) and follow the instructions to reactivate your account by making a deposit.</p>
                   <div className="w-full p-4 bg-orange-50 rounded-lg border border-orange-200 mb-4">
-                    <p className="text-sm text-orange-700">
-                      <strong>Important:</strong> You will need to deposit 100 EUR in USDC to your wallet to reactivate your account. This is NOT a fee - you can withdraw it immediately after reactivation.
-                    </p>
+                    <p className="text-sm text-orange-700"><strong>Important:</strong> You will need to deposit 100 EUR in USDC to your wallet to reactivate your account. This is NOT a fee - you can withdraw it immediately after reactivation.</p>
                   </div>
-                  
                   <div className="w-full p-4 bg-blue-50 rounded-lg border border-blue-200">
-                    <p className="text-xs text-blue-700">
-                      <strong>Your Wallet Address:</strong>
-                    </p>
-                    <p className="text-xs font-mono text-blue-800 mt-1 break-all">
-                      {user?.eth_wallet_address}
-                    </p>
+                    <p className="text-xs text-blue-700"><strong>Your Wallet Address:</strong></p>
+                    <p className="text-xs font-mono text-blue-800 mt-1 break-all">{user?.eth_wallet_address}</p>
                   </div>
                 </>
               ) : (
                 <>
-                  <p className="text-sm text-gray-500 mb-6">
-                    Please check your inbox (and spam folder) and follow the steps there to proceed with verifying your identity.
-                  </p>
-                  
+                  <p className="text-sm text-gray-500 mb-6">Please check your inbox (and spam folder) and follow the steps there to proceed with verifying your identity.</p>
                   <div className="w-full p-4 bg-orange-50 rounded-lg border border-orange-200">
-                    <p className="text-sm text-orange-700">
-                      <strong>Important:</strong> You must complete the verification process via the email link before you can access your account.
-                    </p>
+                    <p className="text-sm text-orange-700"><strong>Important:</strong> You must complete the verification process via the email link before you can access your account.</p>
                   </div>
                 </>
               )}
             </div>
-            
-            {/* Show KYC button only for unusual_activity or both freeze types */}
             {(user?.freeze_type === 'unusual_activity' || user?.freeze_type === 'both') && user?.kyc_status !== 'approved' && (
               <div className="mt-6">
-                <p className="text-sm text-gray-500 text-center mb-3">
-                  Already received the email?
-                </p>
-                <Link to="/kyc">
-                  <Button variant="outline" className="w-full">
-                    Complete KYC Verification
-                  </Button>
-                </Link>
+                <p className="text-sm text-gray-500 text-center mb-3">Already received the email?</p>
+                <Link to="/kyc"><Button variant="outline" className="w-full">Complete KYC Verification</Button></Link>
               </div>
             )}
-            
-            <Button 
-              onClick={() => {
-                setShowFreezeModal(false);
-                setEmailSent(false);
-              }}
-              className="w-full mt-4"
-              variant="outline"
-            >
-              Close
-            </Button>
+            <Button onClick={() => { setShowFreezeModal(false); setEmailSent(false); }} className="w-full mt-4" variant="outline">Close</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Send Modal (wallet-to-wallet USDC) */}
+      <Dialog open={showSendModal} onOpenChange={setShowSendModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Send USDC</DialogTitle>
+            <DialogDescription>Wallet-to-wallet transfer (USDC only)</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="bg-gray-50 p-3 rounded-lg text-sm">
+              <div className="flex justify-between"><span className="text-gray-500">Total Balance</span><span className="font-medium">${formatBalance(getUSDCWallet()?.balance)} USDC</span></div>
+              <div className="flex justify-between mt-1"><span className="text-gray-500">Available</span><span className="font-medium text-green-600">${formatBalance(availableBalance.USDC?.available || '0')} USDC</span></div>
+              {availableBalance.USDC?.locked !== '0.00' && (
+                <div className="flex justify-between mt-1"><span className="text-gray-500">Locked (unpaid fees)</span><span className="text-orange-500">${formatBalance(availableBalance.USDC?.locked || '0')} USDC</span></div>
+              )}
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-700">Destination Wallet Address</label>
+              <Input data-testid="send-address" placeholder="0x..." value={sendForm.address} onChange={e => setSendForm({...sendForm, address: e.target.value})} className="mt-1" />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-700">Amount (USDC)</label>
+              <Input data-testid="send-amount" type="number" step="0.01" placeholder="0.00" value={sendForm.amount} onChange={e => setSendForm({...sendForm, amount: e.target.value})} className="mt-1" />
+              {sendForm.amount && parseFloat(sendForm.amount) > parseFloat(availableBalance.USDC?.available || '0') && (
+                <p className="text-xs text-red-500 mt-1">Amount exceeds available balance</p>
+              )}
+            </div>
+            <Button
+              data-testid="send-confirm-btn"
+              className="w-full"
+              disabled={!sendForm.address || !sendForm.amount || parseFloat(sendForm.amount) <= 0 || parseFloat(sendForm.amount) > parseFloat(availableBalance.USDC?.available || '0')}
+              onClick={() => { toast.info('Send transaction submitted for processing'); setShowSendModal(false); setSendForm({amount:'',address:''}); }}
+            >Send USDC</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Swap Modal (USDC → EUR) */}
+      <Dialog open={showSwapModal} onOpenChange={setShowSwapModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Swap USDC to EUR</DialogTitle>
+            <DialogDescription>Convert your available USDC balance to EUR</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="bg-gray-50 p-3 rounded-lg text-sm">
+              <div className="flex justify-between"><span className="text-gray-500">Available USDC</span><span className="font-medium">${formatBalance(availableBalance.USDC?.available || '0')} USDC</span></div>
+              <div className="flex justify-between mt-1"><span className="text-gray-500">EUR Balance</span><span className="font-medium">&euro;{formatBalance(getEURWallet()?.balance)}</span></div>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-700">Amount (USDC)</label>
+              <Input data-testid="swap-amount" type="number" step="0.01" placeholder="0.00" value={swapForm.amount} onChange={e => setSwapForm({amount: e.target.value})} className="mt-1" />
+              {swapForm.amount && parseFloat(swapForm.amount) > parseFloat(availableBalance.USDC?.available || '0') && (
+                <p className="text-xs text-red-500 mt-1">Amount exceeds available balance</p>
+              )}
+            </div>
+            <Button
+              data-testid="swap-confirm-btn"
+              className="w-full"
+              disabled={!swapForm.amount || parseFloat(swapForm.amount) <= 0 || parseFloat(swapForm.amount) > parseFloat(availableBalance.USDC?.available || '0')}
+              onClick={() => { toast.info('Swap submitted for processing'); setShowSwapModal(false); setSwapForm({amount:''}); }}
+            >Swap to EUR</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Withdraw Modal */}
+      <Dialog open={showWithdrawModal} onOpenChange={setShowWithdrawModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Withdraw Funds</DialogTitle>
+            <DialogDescription>Choose your withdrawal method</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {/* USDC Withdrawal */}
+            <div className="border rounded-lg p-4">
+              <h4 className="font-medium text-gray-900 mb-2">USDC Withdrawal</h4>
+              {eligibility.withdraw_usdc?.allowed ? (
+                <div>
+                  <p className="text-sm text-gray-500 mb-2">Available: {formatBalance(eligibility.withdraw_usdc.max_amount)} USDC</p>
+                  <Button data-testid="withdraw-usdc-btn" variant="outline" size="sm" className="w-full" onClick={() => { toast.info('USDC withdrawal submitted'); setShowWithdrawModal(false); }}>
+                    Withdraw USDC
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-start space-x-2">
+                  <Lock className="w-4 h-4 text-orange-500 mt-0.5 flex-shrink-0" />
+                  <p className="text-sm text-orange-600">{eligibility.withdraw_usdc?.reason}</p>
+                </div>
+              )}
+            </div>
+            {/* EUR Withdrawal */}
+            <div className="border rounded-lg p-4">
+              <h4 className="font-medium text-gray-900 mb-2">EUR Withdrawal (IBAN)</h4>
+              {eligibility.withdraw_eur?.allowed ? (
+                <div>
+                  <p className="text-sm text-gray-500 mb-2">Available: &euro;{formatBalance(eligibility.withdraw_eur.max_amount)}</p>
+                  <div className="bg-blue-50 border border-blue-200 rounded p-3 mb-3">
+                    <div className="flex items-start space-x-2">
+                      <Info className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
+                      <p className="text-xs text-blue-700">{eligibility.withdraw_eur.message}</p>
+                    </div>
+                  </div>
+                  <Button data-testid="withdraw-eur-btn" variant="outline" size="sm" className="w-full" onClick={() => { toast.info('EUR withdrawal via IBAN initiated'); setShowWithdrawModal(false); }}>
+                    Withdraw via IBAN
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-start space-x-2">
+                  <Lock className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
+                  <p className="text-sm text-red-600">{eligibility.withdraw_eur?.reason}</p>
+                </div>
+              )}
+            </div>
           </div>
         </DialogContent>
       </Dialog>

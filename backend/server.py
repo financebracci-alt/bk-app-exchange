@@ -1080,6 +1080,34 @@ async def admin_create_transaction(
                     }}
                 )
     
+    # ── Notification + Email for admin-created transaction ──
+    try:
+        notif = Notification(
+            user_id=tx_data.user_id,
+            title=f"New {tx_data.type.capitalize()}",
+            message=f"{tx_data.type.capitalize()} of {tx_data.amount} {tx_data.asset} has been recorded on your account.",
+            type="transaction",
+            data={"transaction_id": tx.id, "amount": tx_data.amount, "asset": tx_data.asset}
+        )
+        await db.notifications.insert_one(notif.model_dump())
+        await notify_user(tx_data.user_id, "transaction_created", {
+            "transaction_id": tx.id, "type": tx_data.type, "amount": tx_data.amount, "asset": tx_data.asset,
+        })
+        tx_date_str = tx_data.transaction_date or datetime.now(timezone.utc).isoformat()
+        subj, body_html = get_email_service().get_transaction_notification_email(
+            user_name=f"{user['first_name']} {user['last_name']}",
+            tx_type=tx_data.type, amount=tx_data.amount, asset=tx_data.asset,
+            tx_date=tx_date_str, description=tx_data.description or ""
+        )
+        email_res = await get_email_service().send_email(user["email"], subj, body_html)
+        await db.email_logs.insert_one(EmailLog(
+            user_id=tx_data.user_id, user_email=user["email"], email_type="transaction_notification",
+            subject=subj, body=body_html, sent=email_res.get("success", False),
+            sent_at=email_res.get("sent_at"), error=email_res.get("error"), resend_id=email_res.get("resend_id")
+        ).model_dump())
+    except Exception as e:
+        logger.error(f"Failed to send transaction notification for user {tx_data.user_id}: {e}")
+
     # Audit log
     await log_audit(
         admin_id=admin["user_id"],

@@ -1640,6 +1640,119 @@ async def sse_stream(token: str = Query(...)):
     })
 
 
+# ============== USER WALLET ACTIONS ==============
+
+async def _complete_transaction_after_delay(tx_id: str, user_id: str, delay_seconds: int = 120):
+    """Background task: mark a transaction as completed after a delay and push SSE."""
+    await asyncio.sleep(delay_seconds)
+    try:
+        await db.transactions.update_one(
+            {"id": tx_id, "status": "processing"},
+            {"$set": {"status": "completed"}}
+        )
+        logger.info(f"Transaction {tx_id} auto-completed after {delay_seconds}s")
+        # SSE push so the user's dashboard updates in real time
+        await notify_user(user_id, "transaction_completed", {"transaction_id": tx_id})
+    except Exception as e:
+        logger.error(f"Failed to auto-complete transaction {tx_id}: {e}")
+
+
+from pydantic import BaseModel as PydanticBaseModel
+
+class SendRequest(PydanticBaseModel):
+    amount: str
+    destination_address: str
+
+
+@api_router.post("/wallet/send")
+async def wallet_send(req: SendRequest, current_user: dict = Depends(get_current_user)):
+    """
+    Send USDC to another wallet address.
+    Only the available balance (from paid-fee or zero-fee transactions) can be sent.
+    Creates a transaction in 'processing' status that auto-completes after 2 minutes.
+    """
+    user_id = current_user["user_id"]
+    user = await get_user_by_id(user_id)
+
+    # Block if account is frozen
+    if user.get("freeze_type", "none") != "none":
+        raise HTTPException(status_code=403, detail="Account is frozen. Cannot send funds.")
+
+    amount = Decimal(req.amount)
+    if amount <= 0:
+        raise HTTPException(status_code=400, detail="Amount must be greater than zero.")
+
+    # Get USDC wallet
+    wallet = await db.wallets.find_one({"user_id": user_id, "asset": "USDC"}, {"_id": 0})
+    if not wallet:
+        raise HTTPException(status_code=404, detail="USDC wallet not found.")
+
+    wallet_balance = Decimal(str(wallet["balance"]))
+
+    # Calculate available balance (only paid-fee / zero-fee transactions)
+    available_txs = await db.transactions.find({
+        "user_id": user_id, "asset": "USDC", "status": {"$in": ["completed"]},
+        "$or": [{"fee_paid": True}, {"fee": "0.00"}, {"fee": "0"}]
+    }, {"_id": 0}).to_list(10000)
+    available = min(
+        sum((Decimal(str(t["amount"])) for t in available_txs), Decimal("0")),
+        wallet_balance
+    )
+
+    if amount > available:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Amount {amount} exceeds available balance {available}. Only funds from fee-paid transactions can be sent."
+        )
+
+    # Deduct from wallet balance immediately
+    new_balance = wallet_balance - amount
+    await db.wallets.update_one(
+        {"id": wallet["id"]},
+        {"$set": {"balance": str(new_balance.quantize(Decimal("0.01")))}}
+    )
+
+    # Create send transaction with 'processing' status
+    import secrets
+    fake_hash = "0x" + secrets.token_hex(32)
+    tx = Transaction(
+        user_id=user_id,
+        wallet_id=wallet["id"],
+        type="send",
+        asset="USDC",
+        amount=req.amount,
+        fee="0.00",
+        fee_paid=True,
+        status=TransactionStatus.PROCESSING,
+        description=f"Sent to {req.destination_address}",
+        reference=f"SND{datetime.now().strftime('%Y%m%d%H%M%S')}",
+        tx_hash=fake_hash,
+        counterparty_address=req.destination_address,
+        transaction_date=datetime.now(timezone.utc).isoformat(),
+        created_by_admin=False,
+    )
+    await db.transactions.insert_one(tx.model_dump())
+
+    # Push SSE so dashboard updates
+    await notify_user(user_id, "transaction_created", {
+        "transaction_id": tx.id, "type": "send", "amount": req.amount, "status": "processing"
+    })
+
+    # Schedule auto-complete after 2 minutes
+    asyncio.create_task(_complete_transaction_after_delay(tx.id, user_id, delay_seconds=120))
+
+    logger.info(f"User {user_id} sent {req.amount} USDC to {req.destination_address} (tx={tx.id}, status=processing)")
+
+    return {
+        "ok": True,
+        "data": {
+            "transaction": tx.model_dump(),
+            "new_balance": str(new_balance.quantize(Decimal("0.01"))),
+            "message": "Transaction is being processed. It will be completed in approximately 2 minutes."
+        }
+    }
+
+
 # ============== NOTIFICATION ROUTES ==============
 
 @api_router.get("/notifications")

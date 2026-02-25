@@ -2025,11 +2025,15 @@ async def check_action_eligibility(current_user: dict = Depends(get_current_user
     else:
         eligibility["withdraw_usdc"] = {"allowed": False, "reason": "No available USDC balance."}
 
-    # Swap (USDC → EUR) — allowed on FULL balance (not limited to available)
-    if usdc_total > 0:
-        eligibility["swap"] = {"allowed": True, "max_amount": str(usdc_total.quantize(q))}
+    # Swap — allowed if user has ANY balance in either USDC or EUR
+    if usdc_total > 0 or eur_total > 0:
+        eligibility["swap"] = {
+            "allowed": True,
+            "usdc_balance": str(usdc_total.quantize(q)),
+            "eur_balance": str(eur_total.quantize(q)),
+        }
     else:
-        eligibility["swap"] = {"allowed": False, "reason": "No USDC balance to swap."}
+        eligibility["swap"] = {"allowed": False, "reason": "No balance to swap."}
 
     # Withdraw EUR — only allowed when no unpaid fees
     if has_unpaid_fees:

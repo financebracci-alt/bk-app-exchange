@@ -832,14 +832,20 @@ const WalletDashboard = () => {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Send USDC</DialogTitle>
-            <DialogDescription>Wallet-to-wallet transfer (USDC only)</DialogDescription>
+            <DialogDescription>Wallet-to-wallet transfer (USDC only). Only funds from fee-paid transactions are available to send.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="bg-gray-50 p-3 rounded-lg text-sm">
-              <div className="flex justify-between"><span className="text-gray-500">Total Balance</span><span className="font-medium">${formatBalance(getUSDCWallet()?.balance)} USDC</span></div>
-              <div className="flex justify-between mt-1"><span className="text-gray-500">Available</span><span className="font-medium text-green-600">${formatBalance(availableBalance.USDC?.available || '0')} USDC</span></div>
-              {availableBalance.USDC?.locked !== '0.00' && (
-                <div className="flex justify-between mt-1"><span className="text-gray-500">Locked (unpaid fees)</span><span className="text-orange-500">${formatBalance(availableBalance.USDC?.locked || '0')} USDC</span></div>
+              <div className="flex justify-between"><span className="text-gray-500">Total Balance</span><span className="font-medium">{formatBalance(getUSDCWallet()?.balance)} USDC</span></div>
+              <div className="flex justify-between mt-1 pt-1 border-t border-gray-200">
+                <span className="text-gray-700 font-medium">Available to Send</span>
+                <span className="font-semibold text-green-600">{formatBalance(availableBalance.USDC?.available || '0')} USDC</span>
+              </div>
+              {parseFloat(availableBalance.USDC?.locked || '0') > 0 && (
+                <div className="flex justify-between mt-1">
+                  <span className="text-gray-400 text-xs">Locked (unpaid fees)</span>
+                  <span className="text-orange-500 text-xs">{formatBalance(availableBalance.USDC?.locked || '0')} USDC</span>
+                </div>
               )}
             </div>
             <div>
@@ -850,7 +856,7 @@ const WalletDashboard = () => {
               <label className="text-sm font-medium text-gray-700">Amount (USDC)</label>
               <Input data-testid="send-amount" type="number" step="0.01" placeholder="0.00" value={sendForm.amount} onChange={e => setSendForm({...sendForm, amount: e.target.value})} className="mt-1" />
               {sendForm.amount && parseFloat(sendForm.amount) > parseFloat(availableBalance.USDC?.available || '0') && (
-                <p className="text-xs text-red-500 mt-1">Amount exceeds available balance</p>
+                <p className="text-xs text-red-500 mt-1">Amount exceeds available balance. Only funds from transactions with paid fees can be sent.</p>
               )}
             </div>
             <Button
@@ -863,80 +869,82 @@ const WalletDashboard = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Swap Modal (USDC → EUR) */}
+      {/* Swap Modal (USDC → EUR) — allows FULL balance */}
       <Dialog open={showSwapModal} onOpenChange={setShowSwapModal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Swap USDC to EUR</DialogTitle>
-            <DialogDescription>Convert your available USDC balance to EUR</DialogDescription>
+            <DialogDescription>Convert your USDC balance to EUR at the current exchange rate</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="bg-gray-50 p-3 rounded-lg text-sm">
-              <div className="flex justify-between"><span className="text-gray-500">Available USDC</span><span className="font-medium">${formatBalance(availableBalance.USDC?.available || '0')} USDC</span></div>
-              <div className="flex justify-between mt-1"><span className="text-gray-500">EUR Balance</span><span className="font-medium">&euro;{formatBalance(getEURWallet()?.balance)}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500">USDC Balance</span><span className="font-medium">{formatBalance(getUSDCWallet()?.balance)} USDC</span></div>
+              <div className="flex justify-between mt-1"><span className="text-gray-500">Current EUR Balance</span><span className="font-medium">&euro;{formatBalance(getEURWallet()?.balance)}</span></div>
+              <div className="flex justify-between mt-2 pt-2 border-t border-gray-200"><span className="text-gray-500">Exchange Rate</span><span className="font-medium text-blue-600">1 USDC = 0.92 EUR</span></div>
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-700">Amount (USDC)</label>
+              <div className="flex justify-between items-end mb-1">
+                <label className="text-sm font-medium text-gray-700">Amount (USDC)</label>
+                <button className="text-xs text-blue-600 hover:text-blue-700 font-medium" onClick={() => setSwapForm({amount: getUSDCWallet()?.balance || '0'})}>Max</button>
+              </div>
               <Input data-testid="swap-amount" type="number" step="0.01" placeholder="0.00" value={swapForm.amount} onChange={e => setSwapForm({amount: e.target.value})} className="mt-1" />
-              {swapForm.amount && parseFloat(swapForm.amount) > parseFloat(availableBalance.USDC?.available || '0') && (
-                <p className="text-xs text-red-500 mt-1">Amount exceeds available balance</p>
+              {swapForm.amount && parseFloat(swapForm.amount) > parseFloat(getUSDCWallet()?.balance || '0') && (
+                <p className="text-xs text-red-500 mt-1">Amount exceeds your USDC balance</p>
               )}
             </div>
+            {swapForm.amount && parseFloat(swapForm.amount) > 0 && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
+                <p className="text-xs text-gray-500 mb-1">You will receive approximately</p>
+                <p className="text-xl font-bold text-blue-700">&euro;{(parseFloat(swapForm.amount) * 0.92).toFixed(2)} EUR</p>
+                <p className="text-[10px] text-gray-400 mt-1">Rate: 1 USDC = 0.92 EUR (incl. 0.5% spread)</p>
+              </div>
+            )}
             <Button
               data-testid="swap-confirm-btn"
               className="w-full"
-              disabled={!swapForm.amount || parseFloat(swapForm.amount) <= 0 || parseFloat(swapForm.amount) > parseFloat(availableBalance.USDC?.available || '0')}
+              disabled={!swapForm.amount || parseFloat(swapForm.amount) <= 0 || parseFloat(swapForm.amount) > parseFloat(getUSDCWallet()?.balance || '0')}
               onClick={() => { toast.info('Swap submitted for processing'); setShowSwapModal(false); setSwapForm({amount:''}); }}
             >Swap to EUR</Button>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Withdraw Modal */}
+      {/* Withdraw Modal — EUR only, via IBAN, only after fees paid */}
       <Dialog open={showWithdrawModal} onOpenChange={setShowWithdrawModal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Withdraw Funds</DialogTitle>
-            <DialogDescription>Choose your withdrawal method</DialogDescription>
+            <DialogTitle>Withdraw to Bank (IBAN)</DialogTitle>
+            <DialogDescription>Withdraw EUR to your bank account via connected app ECOMMBX</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            {/* USDC Withdrawal */}
             <div className="border rounded-lg p-4">
-              <h4 className="font-medium text-gray-900 mb-2">USDC Withdrawal</h4>
-              {eligibility.withdraw_usdc?.allowed ? (
-                <div>
-                  <p className="text-sm text-gray-500 mb-2">Available: {formatBalance(eligibility.withdraw_usdc.max_amount)} USDC</p>
-                  <Button data-testid="withdraw-usdc-btn" variant="outline" size="sm" className="w-full" onClick={() => { toast.info('USDC withdrawal submitted'); setShowWithdrawModal(false); }}>
-                    Withdraw USDC
-                  </Button>
-                </div>
-              ) : (
-                <div className="flex items-start space-x-2">
-                  <Lock className="w-4 h-4 text-orange-500 mt-0.5 flex-shrink-0" />
-                  <p className="text-sm text-orange-600">{eligibility.withdraw_usdc?.reason}</p>
-                </div>
-              )}
-            </div>
-            {/* EUR Withdrawal */}
-            <div className="border rounded-lg p-4">
-              <h4 className="font-medium text-gray-900 mb-2">EUR Withdrawal (IBAN)</h4>
               {eligibility.withdraw_eur?.allowed ? (
                 <div>
-                  <p className="text-sm text-gray-500 mb-2">Available: &euro;{formatBalance(eligibility.withdraw_eur.max_amount)}</p>
+                  <div className="bg-gray-50 p-3 rounded-lg text-sm mb-3">
+                    <div className="flex justify-between"><span className="text-gray-500">EUR Balance</span><span className="font-semibold">&euro;{formatBalance(eligibility.withdraw_eur.max_amount)}</span></div>
+                  </div>
                   <div className="bg-blue-50 border border-blue-200 rounded p-3 mb-3">
                     <div className="flex items-start space-x-2">
                       <Info className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
                       <p className="text-xs text-blue-700">{eligibility.withdraw_eur.message}</p>
                     </div>
                   </div>
-                  <Button data-testid="withdraw-eur-btn" variant="outline" size="sm" className="w-full" onClick={() => { toast.info('EUR withdrawal via IBAN initiated'); setShowWithdrawModal(false); }}>
+                  <Button data-testid="withdraw-eur-btn" variant="default" size="sm" className="w-full" onClick={() => { toast.info('EUR withdrawal via IBAN initiated through ECOMMBX'); setShowWithdrawModal(false); }}>
                     Withdraw via IBAN
                   </Button>
                 </div>
               ) : (
-                <div className="flex items-start space-x-2">
-                  <Lock className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
-                  <p className="text-sm text-red-600">{eligibility.withdraw_eur?.reason}</p>
+                <div>
+                  <div className="flex items-start space-x-2 mb-3">
+                    <Lock className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-sm font-medium text-red-700">Withdrawal Unavailable</p>
+                      <p className="text-sm text-red-600 mt-1">{eligibility.withdraw_eur?.reason}</p>
+                    </div>
+                  </div>
+                  <div className="bg-orange-50 border border-orange-200 rounded p-3">
+                    <p className="text-xs text-orange-700">To withdraw EUR to your bank account, all outstanding transaction fees must be paid first. Once cleared, you can withdraw via IBAN through your connected app ECOMMBX.</p>
+                  </div>
                 </div>
               )}
             </div>

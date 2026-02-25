@@ -74,7 +74,7 @@ const AdminDashboard = () => {
     },
     {
       title: 'Total USDC Balance',
-      value: `$${stats?.total_usdc_balance || '0.00'}`,
+      value: `€${stats?.total_usdc_balance || '0.00'}`,
       icon: DollarSign,
       color: 'bg-indigo-500',
     },
@@ -86,7 +86,7 @@ const AdminDashboard = () => {
     },
     {
       title: 'Total Unpaid Fees',
-      value: `$${stats?.total_unpaid_fees || '0.00'}`,
+      value: `€${stats?.total_unpaid_fees || '0.00'}`,
       icon: AlertTriangle,
       color: 'bg-orange-500',
     },

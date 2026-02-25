@@ -1705,7 +1705,7 @@ async def get_available_balance(current_user: dict = Depends(get_current_user)):
             "fee": {"$ne": "0.00"},
             "status": "completed"
         }, {"_id": 0}).to_list(10000)
-        locked = sum(Decimal(str(t["amount"])) for t in unpaid_txs)
+        locked = sum((Decimal(str(t["amount"])) for t in unpaid_txs), Decimal("0"))
         available = max(total - locked, Decimal("0"))
         q = Decimal("0.01")
         result[asset] = {

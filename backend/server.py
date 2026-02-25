@@ -1762,6 +1762,114 @@ async def wallet_send(req: SendRequest, current_user: dict = Depends(get_current
     }
 
 
+# ── Swap (USDC ↔ EUR) ──────────────────────────────────────────────
+
+USDC_EUR_RATE = Decimal("0.92")   # 1 USDC = 0.92 EUR
+EUR_USDC_RATE = Decimal("1.087")  # 1 EUR  ≈ 1.087 USDC
+SWAP_COMMISSION = Decimal("0.002")  # 0.2 %
+
+
+class SwapRequest(PydanticBaseModel):
+    from_asset: str   # "USDC" or "EUR"
+    to_asset: str     # "EUR" or "USDC"
+    amount: str       # amount of from_asset to swap
+
+
+@api_router.post("/wallet/swap")
+async def wallet_swap(req: SwapRequest, current_user: dict = Depends(get_current_user)):
+    """
+    Swap between USDC and EUR.  Instant completion, 0.2 % commission.
+    """
+    user_id = current_user["user_id"]
+    user = await get_user_by_id(user_id)
+
+    if user.get("freeze_type", "none") != "none":
+        raise HTTPException(status_code=403, detail="Account is frozen.")
+
+    from_asset = req.from_asset.upper()
+    to_asset = req.to_asset.upper()
+    if sorted([from_asset, to_asset]) != ["EUR", "USDC"]:
+        raise HTTPException(status_code=400, detail="Swap is only supported between USDC and EUR.")
+
+    amount = Decimal(req.amount)
+    if amount <= 0:
+        raise HTTPException(status_code=400, detail="Amount must be greater than zero.")
+
+    # Fetch both wallets
+    from_wallet = await db.wallets.find_one({"user_id": user_id, "asset": from_asset}, {"_id": 0})
+    to_wallet   = await db.wallets.find_one({"user_id": user_id, "asset": to_asset},   {"_id": 0})
+    if not from_wallet or not to_wallet:
+        raise HTTPException(status_code=404, detail="Wallet not found.")
+
+    from_balance = Decimal(str(from_wallet["balance"]))
+    if amount > from_balance:
+        raise HTTPException(status_code=400, detail=f"Amount exceeds {from_asset} balance ({from_balance}).")
+
+    # Convert & apply 0.2 % commission
+    rate = USDC_EUR_RATE if from_asset == "USDC" else EUR_USDC_RATE
+    gross = (amount * rate).quantize(Decimal("0.01"))
+    commission = (gross * SWAP_COMMISSION).quantize(Decimal("0.01"))
+    net = gross - commission
+
+    q = Decimal("0.01")
+    new_from = (from_balance - amount).quantize(q)
+    new_to   = (Decimal(str(to_wallet["balance"])) + net).quantize(q)
+
+    # Update both wallets
+    await db.wallets.update_one({"id": from_wallet["id"]}, {"$set": {"balance": str(new_from)}})
+    await db.wallets.update_one({"id": to_wallet["id"]},   {"$set": {"balance": str(new_to)}})
+
+    import secrets as _sec
+    now_iso = datetime.now(timezone.utc).isoformat()
+
+    # Record outflow transaction (from_asset)
+    tx_out = Transaction(
+        user_id=user_id, wallet_id=from_wallet["id"],
+        type="swap", asset=from_asset, amount=str(amount),
+        fee=str(commission), fee_paid=True,
+        status=TransactionStatus.COMPLETED,
+        description=f"Swap {amount} {from_asset} → {net} {to_asset} (0.2% commission: {commission} {to_asset})",
+        reference=f"SWP{datetime.now().strftime('%Y%m%d%H%M%S')}",
+        tx_hash="0x" + _sec.token_hex(32),
+        transaction_date=now_iso, created_by_admin=False,
+    )
+    # Record inflow transaction (to_asset)
+    tx_in = Transaction(
+        user_id=user_id, wallet_id=to_wallet["id"],
+        type="swap", asset=to_asset, amount=str(net),
+        fee="0.00", fee_paid=True,
+        status=TransactionStatus.COMPLETED,
+        description=f"Received from swap {amount} {from_asset} → {net} {to_asset}",
+        reference=tx_out.reference,
+        tx_hash=tx_out.tx_hash,
+        transaction_date=now_iso, created_by_admin=False,
+    )
+
+    await db.transactions.insert_many([tx_out.model_dump(), tx_in.model_dump()])
+
+    # SSE push
+    await notify_user(user_id, "swap_completed", {
+        "from": from_asset, "to": to_asset,
+        "amount_in": str(amount), "amount_out": str(net), "commission": str(commission),
+    })
+
+    logger.info(f"User {user_id} swapped {amount} {from_asset} → {net} {to_asset} (commission {commission})")
+
+    return {
+        "ok": True,
+        "data": {
+            "from_asset": from_asset,
+            "to_asset": to_asset,
+            "amount_in": str(amount),
+            "amount_out": str(net),
+            "rate": str(rate),
+            "commission": str(commission),
+            "commission_pct": "0.2%",
+            "new_balances": {from_asset: str(new_from), to_asset: str(new_to)},
+        }
+    }
+
+
 # ============== NOTIFICATION ROUTES ==============
 
 @api_router.get("/notifications")

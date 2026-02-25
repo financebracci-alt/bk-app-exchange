@@ -1746,7 +1746,7 @@ async def check_action_eligibility(current_user: dict = Depends(get_current_user
     # Calculate available USDC
     usdc_total = Decimal(str(wallet_map.get("USDC", {}).get("balance", "0")))
     unpaid_usdc_txs = [t for t in unpaid if t["asset"] == "USDC"]
-    usdc_locked = sum(Decimal(str(t["amount"])) for t in unpaid_usdc_txs)
+    usdc_locked = sum((Decimal(str(t["amount"])) for t in unpaid_usdc_txs), Decimal("0"))
     usdc_available = max(usdc_total - usdc_locked, Decimal("0"))
 
     eur_total = Decimal(str(wallet_map.get("EUR", {}).get("balance", "0")))

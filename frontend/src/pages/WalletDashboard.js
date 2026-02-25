@@ -110,14 +110,45 @@ const WalletDashboard = () => {
         await refreshUser();
         setLastRefresh(Date.now());
         loadUnpaidFees();
+        loadAvailableBalance();
+        loadEligibility();
+        loadNotifications();
       }
     } finally {
       setLoading(false);
     }
   }, [refreshUser]);
 
+  const loadAvailableBalance = async () => {
+    try {
+      const res = await api.get('/wallet/available-balance');
+      if (res.data.ok) setAvailableBalance(res.data.data);
+    } catch (e) { console.error('Failed to load available balance:', e); }
+  };
+
+  const loadEligibility = async () => {
+    try {
+      const res = await api.get('/wallet/action-eligibility');
+      if (res.data.ok) setEligibility(res.data.data);
+    } catch (e) { console.error('Failed to load eligibility:', e); }
+  };
+
+  const loadNotifications = async () => {
+    try {
+      const [nRes, cRes] = await Promise.all([
+        api.get('/notifications?page_size=10'),
+        api.get('/notifications/unread-count')
+      ]);
+      if (nRes.data.ok) setNotifications(nRes.data.data.notifications);
+      if (cRes.data.ok) setUnreadCount(cRes.data.data.unread_count);
+    } catch (e) { console.error('Failed to load notifications:', e); }
+  };
+
   useEffect(() => {
     loadUnpaidFees();
+    loadAvailableBalance();
+    loadEligibility();
+    loadNotifications();
   }, []);
 
   // Reset emailSent state when freeze modal closes or when freeze_type changes

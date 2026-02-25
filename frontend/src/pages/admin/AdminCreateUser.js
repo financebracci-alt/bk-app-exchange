@@ -570,7 +570,7 @@ const AdminCreateUser = () => {
                     </div>
                     <div className="flex justify-between">
                       <dt className="text-gray-500">USDC Balance:</dt>
-                      <dd className="text-gray-900">${formData.initial_usdc_balance}</dd>
+                      <dd className="text-gray-900">&euro;{formData.initial_usdc_balance}</dd>
                     </div>
                     <div className="flex justify-between">
                       <dt className="text-gray-500">EUR Balance:</dt>
@@ -579,7 +579,7 @@ const AdminCreateUser = () => {
                     {formData.generate_history && (
                       <div className="flex justify-between">
                         <dt className="text-gray-500">Total Fees:</dt>
-                        <dd className="text-gray-900">${formData.total_fees}</dd>
+                        <dd className="text-gray-900">&euro;{formData.total_fees}</dd>
                       </div>
                     )}
                     <div className="flex justify-between">

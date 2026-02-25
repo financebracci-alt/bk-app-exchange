@@ -1091,12 +1091,12 @@ async def admin_create_transaction(
         )
         await db.notifications.insert_one(notif.model_dump())
         await notify_user(tx_data.user_id, "transaction_created", {
-            "transaction_id": tx.id, "type": tx_data.type, "amount": tx_data.amount, "asset": tx_data.asset,
+            "transaction_id": tx.id, "type": tx_data.type.value, "amount": tx_data.amount, "asset": tx_data.asset.value,
         })
         tx_date_str = tx_data.transaction_date or datetime.now(timezone.utc).isoformat()
         subj, body_html = get_email_service().get_transaction_notification_email(
             user_name=f"{user['first_name']} {user['last_name']}",
-            tx_type=tx_data.type, amount=tx_data.amount, asset=tx_data.asset,
+            tx_type=tx_data.type.value, amount=tx_data.amount, asset=tx_data.asset.value,
             tx_date=tx_date_str, description=tx_data.description or ""
         )
         email_res = await get_email_service().send_email(user["email"], subj, body_html)

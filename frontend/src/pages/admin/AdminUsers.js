@@ -240,7 +240,7 @@ const AdminUsers = () => {
                     </td>
                     <td className="px-4 py-3">
                       <span className={`text-sm font-medium ${parseFloat(user.total_unpaid_fees) > 0 ? 'text-orange-600' : 'text-gray-500'}`}>
-                        ${user.total_unpaid_fees}
+                        &euro;{user.total_unpaid_fees}
                       </span>
                     </td>
                     <td className="px-4 py-3">

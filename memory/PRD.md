@@ -67,6 +67,7 @@ Build a realistic clone of a blockchain.com wallet/exchange where all user data 
 ## Completed Features (Feb 2026)
 - [x] B-1: Fee visibility always shown + datetime-local picker for admin
 - [x] B-2: Send button wallet-to-wallet only, Total vs Available balance
+- [x] B-2b: Real send endpoint — creates transaction in DB, deducts balance, starts as "processing", auto-completes after 2 min
 - [x] B-3: EUR withdrawal restrictions + IBAN requirement + state machine
 - [x] B-4: Transaction notifications (email + in-app) for every admin-created transaction
 - [x] B-5: Real-time SSE updates replacing 30s polling

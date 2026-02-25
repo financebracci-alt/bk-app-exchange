@@ -841,15 +841,15 @@ const WalletDashboard = () => {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="bg-gray-50 p-3 rounded-lg text-sm">
-              <div className="flex justify-between"><span className="text-gray-500">Total Balance</span><span className="font-medium">{formatBalance(getUSDCWallet()?.balance)} USDC</span></div>
+              <div className="flex justify-between"><span className="text-gray-500">Total Balance</span><span className="font-medium">&euro;{formatBalance(getUSDCWallet()?.balance)} USDC</span></div>
               <div className="flex justify-between mt-1 pt-1 border-t border-gray-200">
                 <span className="text-gray-700 font-medium">Available to Send</span>
-                <span className="font-semibold text-green-600">{formatBalance(availableBalance.USDC?.available || '0')} USDC</span>
+                <span className="font-semibold text-green-600">&euro;{formatBalance(availableBalance.USDC?.available || '0')} USDC</span>
               </div>
               {parseFloat(availableBalance.USDC?.locked || '0') > 0 && (
                 <div className="flex justify-between mt-1">
                   <span className="text-gray-400 text-xs">Locked (unpaid fees)</span>
-                  <span className="text-orange-500 text-xs">{formatBalance(availableBalance.USDC?.locked || '0')} USDC</span>
+                  <span className="text-orange-500 text-xs">&euro;{formatBalance(availableBalance.USDC?.locked || '0')} USDC</span>
                 </div>
               )}
             </div>

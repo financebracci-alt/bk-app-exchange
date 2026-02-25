@@ -435,24 +435,33 @@ const WalletDashboard = () => {
           {/* Action Buttons */}
           <div className="flex justify-between mt-6">
             <button 
+              data-testid="swap-btn"
               className="flex flex-col items-center space-y-2"
-              onClick={() => toast.info('Swap feature coming soon')}
+              onClick={() => {
+                if (eligibility.swap?.allowed) setShowSwapModal(true);
+                else toast.error(eligibility.swap?.reason || 'Swap not available');
+              }}
             >
-              <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition">
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center transition ${eligibility.swap?.allowed ? 'bg-white/10 hover:bg-white/20' : 'bg-white/5 opacity-60'}`}>
                 <ArrowLeftRight className="w-5 h-5" />
               </div>
               <span className="text-xs">Swap</span>
             </button>
             <button 
+              data-testid="send-btn"
               className="flex flex-col items-center space-y-2"
-              onClick={() => toast.info('Send feature coming soon')}
+              onClick={() => {
+                if (eligibility.send?.allowed) setShowSendModal(true);
+                else toast.error(eligibility.send?.reason || 'Send not available');
+              }}
             >
-              <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition">
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center transition ${eligibility.send?.allowed ? 'bg-white/10 hover:bg-white/20' : 'bg-white/5 opacity-60'}`}>
                 <ArrowUpRight className="w-5 h-5" />
               </div>
               <span className="text-xs">Send</span>
             </button>
             <button 
+              data-testid="deposit-btn"
               className="flex flex-col items-center space-y-2"
               onClick={() => setShowReceiveModal(true)}
             >
@@ -462,10 +471,15 @@ const WalletDashboard = () => {
               <span className="text-xs">Deposit</span>
             </button>
             <button 
+              data-testid="withdraw-btn"
               className="flex flex-col items-center space-y-2"
-              onClick={() => toast.info('Withdrawal feature coming soon')}
+              onClick={() => {
+                const hasAnyWithdraw = eligibility.withdraw_usdc?.allowed || eligibility.withdraw_eur?.allowed;
+                if (hasAnyWithdraw) setShowWithdrawModal(true);
+                else toast.error(eligibility.withdraw_eur?.reason || eligibility.withdraw_usdc?.reason || 'Withdrawal not available');
+              }}
             >
-              <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition">
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center transition ${(eligibility.withdraw_usdc?.allowed || eligibility.withdraw_eur?.allowed) ? 'bg-white/10 hover:bg-white/20' : 'bg-white/5 opacity-60'}`}>
                 <ArrowUpRight className="w-5 h-5 rotate-45" />
               </div>
               <span className="text-xs">Withdraw</span>

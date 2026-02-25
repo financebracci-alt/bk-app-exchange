@@ -62,6 +62,7 @@ const WalletDashboard = () => {
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   const [sendForm, setSendForm] = useState({ amount: '', address: '' });
   const [swapForm, setSwapForm] = useState({ amount: '' });
+  const [sendingTx, setSendingTx] = useState(false);
   const sseRef = useRef(null);
 
   // SSE real-time connection (replaces 30s polling)

@@ -64,15 +64,41 @@ const WalletDashboard = () => {
   const [swapForm, setSwapForm] = useState({ amount: '' });
   const sseRef = useRef(null);
 
-  // Auto-refresh user data every 30 seconds
+  // SSE real-time connection (replaces 30s polling)
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    const url = `${API}/api/events/stream?token=${token}`;
+    const es = new EventSource(url);
+    sseRef.current = es;
+    es.onmessage = (event) => {
+      try {
+        const msg = JSON.parse(event.data);
+        if (msg.type === 'connected') return;
+        // Any event triggers a full refresh
+        if (refreshUser) refreshUser();
+        loadUnpaidFees();
+        loadAvailableBalance();
+        loadEligibility();
+        loadNotifications();
+      } catch (e) { /* ignore parse errors from keepalive */ }
+    };
+    es.onerror = () => {
+      // Auto-reconnect handled by EventSource
+    };
+    return () => { es.close(); sseRef.current = null; };
+  }, []);
+
+  // Fallback: poll every 60s in case SSE disconnects
   useEffect(() => {
     const interval = setInterval(() => {
       if (refreshUser) {
         refreshUser();
-        setLastRefresh(Date.now());
+        loadAvailableBalance();
+        loadEligibility();
+        loadNotifications();
       }
-    }, 30000); // 30 seconds
-
+    }, 60000);
     return () => clearInterval(interval);
   }, [refreshUser]);
 

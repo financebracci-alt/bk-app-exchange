@@ -143,7 +143,7 @@ const TransactionsPage = () => {
                       ['deposit', 'receive'].includes(tx.type) ? 'text-green-600' : 'text-gray-900'
                     }`}>
                       {['deposit', 'receive'].includes(tx.type) ? '+' : '-'}
-                      ${parseFloat(tx.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                      &euro;{parseFloat(tx.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                     </div>
                     <div className="mt-1">{getStatusBadge(tx.status)}</div>
                   </div>
@@ -157,7 +157,7 @@ const TransactionsPage = () => {
                         <AlertTriangle className="w-4 h-4 mr-1" />
                         <span>Unpaid Fee</span>
                       </div>
-                      <span className="font-semibold text-orange-600">${tx.fee}</span>
+                      <span className="font-semibold text-orange-600">&euro;{tx.fee}</span>
                     </div>
                   </div>
                 )}

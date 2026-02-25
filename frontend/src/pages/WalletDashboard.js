@@ -750,7 +750,7 @@ const WalletDashboard = () => {
           <DialogHeader>
             <DialogTitle>Receive USDC (ERC-20)</DialogTitle>
             <DialogDescription>
-              Send USDC to this address using the Ethereum network (ERC-20)
+              Send USDC to this address using the Ethereum network (ERC-20). Balance shown in EUR.
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col items-center py-4">

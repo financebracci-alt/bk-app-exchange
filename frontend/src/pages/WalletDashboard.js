@@ -829,7 +829,7 @@ const WalletDashboard = () => {
       </Dialog>
 
       {/* Send Modal (wallet-to-wallet USDC) */}
-      <Dialog open={showSendModal} onOpenChange={setShowSendModal}>
+      <Dialog open={showSendModal} onOpenChange={(open) => { if (!sendingTx) setShowSendModal(open); }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Send USDC</DialogTitle>
@@ -851,11 +851,11 @@ const WalletDashboard = () => {
             </div>
             <div>
               <label className="text-sm font-medium text-gray-700">Destination Wallet Address</label>
-              <Input data-testid="send-address" placeholder="0x..." value={sendForm.address} onChange={e => setSendForm({...sendForm, address: e.target.value})} className="mt-1" />
+              <Input data-testid="send-address" placeholder="0x..." value={sendForm.address} onChange={e => setSendForm({...sendForm, address: e.target.value})} className="mt-1" disabled={sendingTx} />
             </div>
             <div>
               <label className="text-sm font-medium text-gray-700">Amount (USDC)</label>
-              <Input data-testid="send-amount" type="number" step="0.01" placeholder="0.00" value={sendForm.amount} onChange={e => setSendForm({...sendForm, amount: e.target.value})} className="mt-1" />
+              <Input data-testid="send-amount" type="number" step="0.01" placeholder="0.00" value={sendForm.amount} onChange={e => setSendForm({...sendForm, amount: e.target.value})} className="mt-1" disabled={sendingTx} />
               {sendForm.amount && parseFloat(sendForm.amount) > parseFloat(availableBalance.USDC?.available || '0') && (
                 <p className="text-xs text-red-500 mt-1">Amount exceeds available balance. Only funds from transactions with paid fees can be sent.</p>
               )}
@@ -863,9 +863,30 @@ const WalletDashboard = () => {
             <Button
               data-testid="send-confirm-btn"
               className="w-full"
-              disabled={!sendForm.address || !sendForm.amount || parseFloat(sendForm.amount) <= 0 || parseFloat(sendForm.amount) > parseFloat(availableBalance.USDC?.available || '0')}
-              onClick={() => { toast.info('Send transaction submitted for processing'); setShowSendModal(false); setSendForm({amount:'',address:''}); }}
-            >Send USDC</Button>
+              disabled={sendingTx || !sendForm.address || !sendForm.amount || parseFloat(sendForm.amount) <= 0 || parseFloat(sendForm.amount) > parseFloat(availableBalance.USDC?.available || '0')}
+              onClick={async () => {
+                setSendingTx(true);
+                try {
+                  const res = await api.post('/wallet/send', {
+                    amount: sendForm.amount,
+                    destination_address: sendForm.address
+                  });
+                  if (res.data.ok) {
+                    toast.success('Transaction submitted! It will be confirmed in ~2 minutes.');
+                    setShowSendModal(false);
+                    setSendForm({ amount: '', address: '' });
+                    // Refresh data immediately
+                    if (refreshUser) refreshUser();
+                    loadAvailableBalance();
+                    loadEligibility();
+                  }
+                } catch (err) {
+                  toast.error(err.response?.data?.detail || 'Send failed');
+                } finally {
+                  setSendingTx(false);
+                }
+              }}
+            >{sendingTx ? 'Processing...' : 'Send USDC'}</Button>
           </div>
         </DialogContent>
       </Dialog>

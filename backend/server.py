@@ -1872,18 +1872,25 @@ async def check_action_eligibility(current_user: dict = Depends(get_current_user
         }}
 
     q = Decimal("0.01")
-    # Calculate available USDC (only from paid-fee or zero-fee transactions)
+    # Calculate available USDC: inflows (paid-fee) - outflows
     usdc_total = Decimal(str(wallet_map.get("USDC", {}).get("balance", "0")))
-    available_usdc_txs = await db.transactions.find({
-        "user_id": current_user["user_id"],
-        "asset": "USDC",
-        "status": "completed",
+    inflow_txs = await db.transactions.find({
+        "user_id": current_user["user_id"], "asset": "USDC",
+        "type": {"$in": ["deposit", "receive", "swap"]},
+        "status": {"$in": ["completed", "processing"]},
         "$or": [{"fee_paid": True}, {"fee": "0.00"}, {"fee": "0"}]
-    }, {"_id": 0}).to_list(10000)
-    usdc_available = min(
-        sum((Decimal(str(t["amount"])) for t in available_usdc_txs), Decimal("0")),
-        usdc_total
+    }, {"_id": 0, "amount": 1}).to_list(100000)
+    outflow_txs = await db.transactions.find({
+        "user_id": current_user["user_id"], "asset": "USDC",
+        "type": {"$in": ["send", "withdrawal"]},
+        "status": {"$in": ["completed", "processing"]},
+    }, {"_id": 0, "amount": 1}).to_list(100000)
+    usdc_available = max(
+        sum((Decimal(str(t["amount"])) for t in inflow_txs), Decimal("0"))
+        - sum((Decimal(str(t["amount"])) for t in outflow_txs), Decimal("0")),
+        Decimal("0")
     )
+    usdc_available = min(usdc_available, usdc_total)
 
     eur_total = Decimal(str(wallet_map.get("EUR", {}).get("balance", "0")))
 

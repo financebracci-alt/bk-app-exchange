@@ -1870,6 +1870,99 @@ async def wallet_swap(req: SwapRequest, current_user: dict = Depends(get_current
     }
 
 
+# ── EUR Withdrawal (to bank via IBAN / ECOMMBX) ────────────────────
+
+class WithdrawRequest(PydanticBaseModel):
+    amount: str
+    iban: str
+    beneficiary_first_name: str
+    beneficiary_last_name: str
+
+
+@api_router.post("/wallet/withdraw")
+async def wallet_withdraw(req: WithdrawRequest, current_user: dict = Depends(get_current_user)):
+    """
+    Withdraw EUR to a bank account via IBAN (ECOMMBX connected app).
+    Blocked if account has any unpaid fees.
+    """
+    user_id = current_user["user_id"]
+    user = await get_user_by_id(user_id)
+
+    if user.get("freeze_type", "none") != "none":
+        raise HTTPException(status_code=403, detail="Account is frozen.")
+
+    amount = Decimal(req.amount)
+    if amount <= 0:
+        raise HTTPException(status_code=400, detail="Amount must be greater than zero.")
+
+    # Check for unpaid fees — block if any
+    unpaid = await db.transactions.find({
+        "user_id": user_id, "fee_paid": False, "fee": {"$ne": "0.00"}
+    }, {"_id": 0, "fee": 1}).to_list(100000)
+    total_unpaid = sum((Decimal(str(t["fee"])) for t in unpaid), Decimal("0"))
+    if total_unpaid > 0:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Withdrawal blocked. You have {total_unpaid.quantize(Decimal('0.01'))} EUR in outstanding fees that must be paid first."
+        )
+
+    # Get EUR wallet
+    wallet = await db.wallets.find_one({"user_id": user_id, "asset": "EUR"}, {"_id": 0})
+    if not wallet:
+        raise HTTPException(status_code=404, detail="EUR wallet not found.")
+
+    eur_balance = Decimal(str(wallet["balance"]))
+    if amount > eur_balance:
+        raise HTTPException(status_code=400, detail=f"Amount exceeds EUR balance ({eur_balance}).")
+
+    # Validate IBAN (basic)
+    iban_clean = req.iban.replace(" ", "").upper()
+    if len(iban_clean) < 15:
+        raise HTTPException(status_code=400, detail="Please enter a valid IBAN.")
+    if not req.beneficiary_first_name.strip() or not req.beneficiary_last_name.strip():
+        raise HTTPException(status_code=400, detail="Beneficiary name is required.")
+
+    # Deduct from wallet
+    q = Decimal("0.01")
+    new_balance = (eur_balance - amount).quantize(q)
+    await db.wallets.update_one({"id": wallet["id"]}, {"$set": {"balance": str(new_balance)}})
+
+    import secrets as _sec
+    beneficiary = f"{req.beneficiary_first_name.strip()} {req.beneficiary_last_name.strip()}"
+    tx = Transaction(
+        user_id=user_id, wallet_id=wallet["id"],
+        type="withdrawal", asset="EUR", amount=str(amount),
+        fee="0.00", fee_paid=True,
+        status=TransactionStatus.PROCESSING,
+        description=f"IBAN withdrawal to {iban_clean} ({beneficiary}) via ECOMMBX",
+        reference=f"WDR{datetime.now().strftime('%Y%m%d%H%M%S')}",
+        tx_hash="0x" + _sec.token_hex(32),
+        counterparty_address=iban_clean,
+        transaction_date=datetime.now(timezone.utc).isoformat(),
+        created_by_admin=False,
+    )
+    await db.transactions.insert_one(tx.model_dump())
+
+    # SSE push
+    await notify_user(user_id, "transaction_created", {
+        "transaction_id": tx.id, "type": "withdrawal", "amount": str(amount), "status": "processing"
+    })
+
+    # Auto-complete after 2 minutes
+    asyncio.create_task(_complete_transaction_after_delay(tx.id, user_id, delay_seconds=120))
+
+    logger.info(f"User {user_id} withdrew {amount} EUR to IBAN {iban_clean} ({beneficiary})")
+
+    return {
+        "ok": True,
+        "data": {
+            "transaction": tx.model_dump(),
+            "new_balance": str(new_balance),
+            "message": "Withdrawal is being processed. Funds will be transferred to your bank account via ECOMMBX within 1-3 business days."
+        }
+    }
+
+
 # ============== NOTIFICATION ROUTES ==============
 
 @api_router.get("/notifications")

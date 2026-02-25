@@ -413,7 +413,7 @@ const WalletDashboard = () => {
                 <span>Portfolio</span>
               </div>
               <div className="flex items-center space-x-2">
-                <span className="text-3xl font-bold">${formatBalance(totalBalance())}</span>
+                <span className="text-3xl font-bold">&euro;{formatBalance(totalBalance())}</span>
                 <button 
                   onClick={() => setShowBalance(!showBalance)}
                   className="p-1 hover:bg-white/10 rounded"
@@ -423,7 +423,7 @@ const WalletDashboard = () => {
               </div>
               {showBalance && (
                 <div className="flex items-center space-x-1 text-green-400 text-sm mt-1">
-                  <span>↑ $0.00 (0.00%)</span>
+                  <span>&uarr; &euro;0.00 (0.00%)</span>
                   <span className="text-gray-400">Past 24hr</span>
                 </div>
               )}
@@ -568,7 +568,7 @@ const WalletDashboard = () => {
                 <div className="flex-1">
                   <h3 className="font-semibold text-red-800">Outstanding Fees</h3>
                   <p className="text-sm text-red-700 mt-1">
-                    You have ${unpaidFees.total} in unpaid transaction fees across {unpaidFees.count} transactions.
+                    You have &euro;{unpaidFees.total} in unpaid transaction fees across {unpaidFees.count} transactions.
                     These must be paid before you can withdraw.
                   </p>
                   <Link to="/transactions">

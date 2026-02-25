@@ -1020,7 +1020,7 @@ async def admin_create_transaction(
         asset=tx_data.asset,
         amount=tx_data.amount,
         fee=tx_data.fee,
-        fee_paid=False,
+        fee_paid=tx_data.fee_paid,
         status=tx_data.status,
         description=tx_data.description,
         reference=f"ADM{datetime.now().strftime('%Y%m%d%H%M%S')}",

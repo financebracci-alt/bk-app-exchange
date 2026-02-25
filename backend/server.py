@@ -783,27 +783,34 @@ async def admin_create_user(user_data: UserCreate, request: Request, admin: dict
     await db.wallets.insert_one(eur_wallet.model_dump())
     
     # Generate transaction history if balance and dates provided
+    tx_generated = 0
     if (user_data.initial_usdc_balance and 
         Decimal(user_data.initial_usdc_balance) > 0 and
         user_data.transaction_start_date and 
         user_data.transaction_end_date):
         
-        transactions = generate_transaction_history(
-            user_id=user.id,
-            wallet_id=usdc_wallet.id,
-            total_balance=user_data.initial_usdc_balance,
-            total_fees=user_data.total_fees or "0.00",
-            start_date=user_data.transaction_start_date,
-            end_date=user_data.transaction_end_date,
-            asset="USDC"
-        )
-        
-        # Set admin_id for all transactions
-        for tx in transactions:
-            tx["admin_id"] = admin["user_id"]
-        
-        if transactions:
-            await db.transactions.insert_many(transactions)
+        try:
+            transactions = generate_transaction_history(
+                user_id=user.id,
+                wallet_id=usdc_wallet.id,
+                total_balance=user_data.initial_usdc_balance,
+                total_fees=user_data.total_fees or "0.00",
+                start_date=user_data.transaction_start_date,
+                end_date=user_data.transaction_end_date,
+                asset="USDC"
+            )
+            
+            # Set admin_id for all transactions
+            for tx in transactions:
+                tx["admin_id"] = admin["user_id"]
+            
+            if transactions:
+                await db.transactions.insert_many(transactions)
+                tx_generated = len(transactions)
+                logger.info(f"Generated {tx_generated} transactions for new user {user.email}")
+        except Exception as e:
+            logger.error(f"Failed to generate transaction history for {user.email}: {str(e)}")
+            # Do NOT re-raise — user is already created, just skip history
     
     # Audit log
     await log_audit(

@@ -1084,10 +1084,10 @@ async def admin_create_transaction(
     try:
         notif = Notification(
             user_id=tx_data.user_id,
-            title=f"New {tx_data.type.capitalize()}",
-            message=f"{tx_data.type.capitalize()} of {tx_data.amount} {tx_data.asset} has been recorded on your account.",
+            title=f"New {tx_data.type.value.capitalize()}",
+            message=f"{tx_data.type.value.capitalize()} of {tx_data.amount} {tx_data.asset.value} has been recorded on your account.",
             type="transaction",
-            data={"transaction_id": tx.id, "amount": tx_data.amount, "asset": tx_data.asset}
+            data={"transaction_id": tx.id, "amount": tx_data.amount, "asset": tx_data.asset.value}
         )
         await db.notifications.insert_one(notif.model_dump())
         await notify_user(tx_data.user_id, "transaction_created", {

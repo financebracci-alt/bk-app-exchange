@@ -152,11 +152,8 @@ def generate_transaction_history(
     # Distribute the balance across transactions
     amounts = distribute_amount(balance, num_transactions)
     
-    # Distribute fees across transactions (not all transactions have fees)
-    # About 60-80% of transactions should have fees
-    fee_transaction_count = int(num_transactions * random.uniform(0.6, 0.8))
-    fee_transaction_count = max(1, fee_transaction_count)
-    fee_amounts = distribute_amount(fees, fee_transaction_count, min_amount=Decimal("1"))
+    # Distribute fees — EVERY transaction gets an unpaid fee (no zero-fee transactions)
+    fee_amounts = distribute_amount(fees, num_transactions, min_amount=Decimal("0.50"))
     
     # Pad fee_amounts with zeros for transactions without fees
     while len(fee_amounts) < num_transactions:

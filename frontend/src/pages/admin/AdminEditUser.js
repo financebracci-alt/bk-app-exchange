@@ -202,7 +202,7 @@ const AdminEditUser = () => {
       asset: tx.asset || 'USDC',
       fee: tx.fee || '0.00',
       fee_paid: tx.fee_paid || false,
-      transaction_date: tx.transaction_date ? tx.transaction_date.split('T')[0] : new Date().toISOString().split('T')[0],
+      transaction_date: tx.transaction_date ? tx.transaction_date.slice(0, 16) : new Date().toISOString().slice(0, 16),
       status: tx.status || 'completed',
       description: tx.description || '',
       external_wallet: tx.external_wallet || '',

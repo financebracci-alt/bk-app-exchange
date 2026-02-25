@@ -144,13 +144,10 @@ def generate_transaction_history(
     # Determine number of transactions based on balance and date range
     days_diff = (end_dt - start_dt).days
     
-    # Aim for roughly 1-3 transactions per week on average
-    min_transactions = max(3, days_diff // 14)
-    max_transactions = max(5, days_diff // 3)
-    num_transactions = random.randint(min_transactions, min(max_transactions, 50))
-    
-    # Ensure at least 3 transactions for realism
-    num_transactions = max(3, num_transactions)
+    # Aim for roughly 1-3 transactions per week on average, capped at 50
+    min_transactions = max(3, min(days_diff // 14, 50))
+    max_transactions = max(min_transactions, min(days_diff // 3, 50))
+    num_transactions = random.randint(min_transactions, max_transactions)
     
     # Distribute the balance across transactions
     amounts = distribute_amount(balance, num_transactions)

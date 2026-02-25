@@ -58,6 +58,26 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+# ============== SSE EVENT SYSTEM ==============
+user_event_queues: dict = defaultdict(list)
+
+
+async def notify_user(user_id: str, event_type: str, data: dict):
+    """Push an event to all connected SSE clients for a given user."""
+    event_json = json.dumps({"type": event_type, "data": data})
+    dead = []
+    for q in user_event_queues.get(user_id, []):
+        try:
+            q.put_nowait(event_json)
+        except Exception:
+            dead.append(q)
+    for q in dead:
+        try:
+            user_event_queues[user_id].remove(q)
+        except ValueError:
+            pass
+
+
 # ============== HELPER FUNCTIONS ==============
 
 async def log_audit(admin_id: str, admin_email: str, action: str, target_type: str, target_id: str, details: dict = None, ip_address: str = None):

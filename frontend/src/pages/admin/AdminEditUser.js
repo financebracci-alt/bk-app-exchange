@@ -458,7 +458,7 @@ const AdminEditUser = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="text-2xl font-bold text-orange-600">
-                        ${formData.total_unpaid_fees}
+                        &euro;{formData.total_unpaid_fees}
                       </div>
                       <div className="text-sm text-orange-700">
                         Status: {formData.fees_paid ? 'Paid' : 'Unpaid'}
@@ -533,11 +533,11 @@ const AdminEditUser = () => {
                         <div className="flex items-center space-x-4">
                           <div className="text-right">
                             <div className={`font-semibold ${tx.type === 'deposit' ? 'text-green-600' : tx.type === 'withdrawal' ? 'text-red-600' : ''}`}>
-                              {tx.type === 'deposit' ? '+' : tx.type === 'withdrawal' ? '-' : ''}${tx.amount} {tx.asset}
+                              {tx.type === 'deposit' ? '+' : tx.type === 'withdrawal' ? '-' : ''}&euro;{tx.amount} {tx.asset}
                             </div>
                             {parseFloat(tx.fee) > 0 && (
                               <div className={`text-xs ${tx.fee_paid ? 'text-green-600' : 'text-orange-600'}`}>
-                                Fee: ${tx.fee} ({tx.fee_paid ? 'Paid' : 'Unpaid'})
+                                Fee: &euro;{tx.fee} ({tx.fee_paid ? 'Paid' : 'Unpaid'})
                               </div>
                             )}
                             <Badge variant="outline" className="text-xs mt-1">

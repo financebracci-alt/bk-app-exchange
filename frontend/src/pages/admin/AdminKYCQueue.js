@@ -68,6 +68,13 @@ const AdminKYCQueue = () => {
   const [processing, setProcessing] = useState(false);
   const [zoomImage, setZoomImage] = useState(null);
 
+  // Close zoom on Escape key
+  useEffect(() => {
+    const handleEsc = (e) => { if (e.key === 'Escape' && zoomImage) { e.stopPropagation(); setZoomImage(null); } };
+    if (zoomImage) window.addEventListener('keydown', handleEsc, true);
+    return () => window.removeEventListener('keydown', handleEsc, true);
+  }, [zoomImage]);
+
   useEffect(() => {
     loadKYCQueue();
   }, []);

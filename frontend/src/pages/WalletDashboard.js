@@ -354,7 +354,7 @@ const WalletDashboard = () => {
                   <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">{unreadCount > 9 ? '9+' : unreadCount}</span>
                 )}
               </button>
-              <Link to="/wallet" className="p-2 hover:bg-white/10 rounded-full">
+              <Link to="/profile" className="p-2 hover:bg-white/10 rounded-full" data-testid="profile-icon">
                 <User className="w-5 h-5" />
               </Link>
             </div>

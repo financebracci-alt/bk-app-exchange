@@ -19,6 +19,7 @@ Build a realistic clone of a blockchain.com wallet/exchange where all user data 
 - Granular display controls per user (freeze alerts, fee alerts)
 - KYC queue management (approve/reject)
 - User state management (freeze type, KYC status, password reset)
+- **Sidebar badges**: Live badge counts on Users, KYC Queue, Transactions sidebar items. Badges show new items since admin last viewed. Click to mark as read (persisted in DB, survives logout/login).
 
 ### User Wallet Dashboard
 - Portfolio overview with Total and Available balance
@@ -60,6 +61,7 @@ Build a realistic clone of a blockchain.com wallet/exchange where all user data 
 - [x] Available balance wrong - direction-aware calculation
 - [x] USDC card display - shows coin amount as primary, EUR as secondary
 - [x] Send modal - removed incorrect EUR symbols from USDC amounts
+- [x] Login page reload on wrong password - fixed 401 interceptor to skip auth endpoints
 
 ## Completed Features (Feb 2026)
 - [x] B-1: Fee visibility + datetime-local picker for admin
@@ -69,6 +71,7 @@ Build a realistic clone of a blockchain.com wallet/exchange where all user data 
 - [x] B-5: Real-time SSE updates
 - [x] B-6: Swap with 0.2% commission
 - [x] Currency migration: USD ($) to EUR (euro) across entire app
+- [x] Admin sidebar badges: live counts for new Users, KYC submissions, Transactions
 
 ## MOCKED Features
 - Financial data is entirely admin-controlled/simulated
@@ -81,21 +84,15 @@ Build a realistic clone of a blockchain.com wallet/exchange where all user data 
 - Transaction filtering/sorting on user side
 
 ## Key API Endpoints
-- POST /api/admin/users - Create user with optional transaction history
-- PUT /api/admin/users/{id} - Update user settings
-- POST /api/admin/transactions - Create transaction (triggers notification + email)
-- GET /api/wallet/available-balance - Total/Available/Locked per asset
-- GET /api/wallet/action-eligibility - What actions the user can perform
-- GET /api/events/stream?token=xxx - SSE real-time stream
-- GET /api/notifications - User notifications (paginated)
-- POST /api/wallet/send - Wallet-to-wallet USDC transfer
-- POST /api/wallet/swap - USDC<>EUR swap with commission
-- POST /api/wallet/withdraw - EUR to bank via IBAN
+- POST /api/admin/users — Create user with optional transaction history
+- PUT /api/admin/users/{id} — Update user settings
+- POST /api/admin/transactions — Create transaction (triggers notification + email)
+- GET /api/admin/badges — Get unread badge counts for admin sidebar
+- PUT /api/admin/badges/{section}/mark-read — Mark admin section as read
+- GET /api/wallet/available-balance — Total/Available/Locked per asset
+- GET /api/wallet/action-eligibility — What actions the user can perform
+- GET /api/events/stream?token=xxx — SSE real-time stream
+- GET /api/notifications — User notifications (paginated)
 
 ## DB Collections
-- users, wallets, transactions, kyc_documents, notifications, email_logs, audit_logs, sessions, system_settings
-
-## Test Status
-- All 15 backend tests passing (iteration_5)
-- All frontend features verified (iteration_5)
-- Last test run: Feb 2026
+- users, wallets, transactions, kyc_documents, notifications, email_logs, audit_logs, sessions, system_settings, admin_section_seen

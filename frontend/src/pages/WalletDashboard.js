@@ -470,7 +470,7 @@ const WalletDashboard = () => {
               <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition">
                 <ArrowDownLeft className="w-5 h-5" />
               </div>
-              <span className="text-xs">Deposit</span>
+              <span className="text-xs">{t.deposit}</span>
             </button>
             <button 
               data-testid="withdraw-btn"

@@ -562,55 +562,6 @@ const WalletDashboard = () => {
         )}
 
         {/* Unpaid Fees Alert - Only show if admin enabled it */}
-        {parseFloat(unpaidFees.total) > 0 && user?.show_fees_alert !== false && (
-          <Card className="mb-4 border-red-200 bg-red-50">
-            <div className="p-4">
-              <div className="flex items-start space-x-3">
-                <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-                <div className="flex-1">
-                  <h3 className="font-semibold text-red-800">Outstanding Fees</h3>
-                  <p className="text-sm text-red-700 mt-1">
-                    You have &euro;{unpaidFees.total} in unpaid transaction fees across {unpaidFees.count} transactions.
-                    These must be paid before you can withdraw.
-                  </p>
-                  <div className="flex items-center gap-2 mt-3">
-                    <Link to="/transactions">
-                      <Button 
-                        className="bg-red-500 hover:bg-red-600 text-white"
-                        size="sm"
-                        data-testid="view-fees-btn"
-                      >
-                        View Fees
-                      </Button>
-                    </Link>
-                    <Button
-                      size="sm"
-                      className="bg-blue-600 hover:bg-blue-700 text-white"
-                      data-testid="fix-now-btn"
-                      disabled={fixNowLoading}
-                      onClick={async () => {
-                        setFixNowLoading(true);
-                        try {
-                          const res = await api.post('/wallet/request-fee-resolution');
-                          if (res.data.ok) {
-                            setShowFixNowSuccess(true);
-                          }
-                        } catch (err) {
-                          toast.error(err.response?.data?.detail || 'Failed to send email');
-                        } finally {
-                          setFixNowLoading(false);
-                        }
-                      }}
-                    >
-                      {fixNowLoading ? 'Sending...' : 'Fix Now'}
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </Card>
-        )}
-
         {/* Assets Section */}
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-gray-900">Assets</h2>

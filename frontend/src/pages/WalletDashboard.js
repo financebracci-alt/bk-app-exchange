@@ -1025,8 +1025,8 @@ const WalletDashboard = () => {
                 )}
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-700">IBAN</label>
-                <Input data-testid="withdraw-iban" placeholder="e.g. DE89 3704 0044 0532 0130 00" value={withdrawForm.iban} onChange={e => setWithdrawForm({...withdrawForm, iban: e.target.value})} disabled={withdrawing} className="mt-1 font-mono text-sm" />
+                <label className="text-sm font-medium text-gray-700">{t.iban}</label>
+                <Input data-testid="withdraw-iban" placeholder={t.ibanPlaceholder} value={withdrawForm.iban} onChange={e => setWithdrawForm({...withdrawForm, iban: e.target.value})} disabled={withdrawing} className="mt-1 font-mono text-sm" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>

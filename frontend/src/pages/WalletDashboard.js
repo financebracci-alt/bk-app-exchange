@@ -965,9 +965,9 @@ const WalletDashboard = () => {
                 <div className="flex items-start space-x-3 p-4 bg-red-50 border border-red-200 rounded-lg">
                   <AlertTriangle className="w-6 h-6 text-red-500 flex-shrink-0 mt-0.5" />
                   <div>
-                    <h4 className="font-semibold text-red-800">Outstanding Fees</h4>
+                    <h4 className="font-semibold text-red-800">{t.outstandingFees}</h4>
                     <p className="text-sm text-red-700 mt-1">
-                      You have <strong>&euro;{eligibility.withdraw_eur?.total_unpaid_fees || unpaidFees.total}</strong> in unpaid transaction fees. These must be cleared before any withdrawal can be processed.
+                      {t.youHave} <strong>&euro;{eligibility.withdraw_eur?.total_unpaid_fees || unpaidFees.total}</strong> {t.outstandingFeesMsg}
                     </p>
                   </div>
                 </div>

@@ -2261,11 +2261,11 @@ async def check_action_eligibility(current_user: dict = Depends(get_current_user
         }}
 
     q = Decimal("0.01")
-    # Calculate available USDC: inflows (paid-fee) - outflows
+    # Calculate available USDC: inflows (paid-fee) - outflows (swaps excluded from inflows)
     usdc_total = Decimal(str(wallet_map.get("USDC", {}).get("balance", "0")))
     inflow_txs = await db.transactions.find({
         "user_id": current_user["user_id"], "asset": "USDC",
-        "type": {"$in": ["deposit", "receive", "swap"]},
+        "type": {"$in": ["deposit", "receive"]},
         "status": {"$in": ["completed", "processing"]},
         "$or": [{"fee_paid": True}, {"fee": "0.00"}, {"fee": "0"}]
     }, {"_id": 0, "amount": 1}).to_list(100000)

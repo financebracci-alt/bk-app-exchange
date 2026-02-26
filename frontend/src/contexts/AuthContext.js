@@ -122,6 +122,9 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('user', JSON.stringify(user));
       setUser(user);
       setIsAuthenticated(true);
+      // Sync browser language to backend
+      const lang = (navigator.language || '').startsWith('it') ? 'it' : 'en';
+      try { await api.put(`/auth/language?lang=${lang}`); } catch(e) {}
       return { success: true };
     }
     return { success: false, error: response.data.error };

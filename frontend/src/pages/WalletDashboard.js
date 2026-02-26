@@ -1098,13 +1098,13 @@ const WalletDashboard = () => {
               </div>
             </div>
             <p className="text-center text-gray-700">
-              We have sent a detailed email to <strong>{user?.email}</strong> with instructions on how to resolve your outstanding fees.
+              {t.emailSentMsg}
             </p>
             <p className="text-center text-sm text-gray-500">
-              Please check your inbox (and spam folder) for an email from Blockchain.com with the subject "Outstanding Fees Must Be Cleared".
+              {t.emailSentCheck}
             </p>
             <Button className="w-full" onClick={() => setShowFixNowSuccess(false)} data-testid="fix-now-ok-btn">
-              Got it
+              {t.gotIt}
             </Button>
           </div>
         </DialogContent>

@@ -16,7 +16,7 @@ import { CheckCircle, XCircle, Eye, Clock, User, RefreshCw, Download, X } from '
 
 const getDownloadUrl = (src) => {
   if (!src || !src.includes('cloudinary.com')) return src;
-  return src.replace('/upload/', '/upload/fl_attachment/');
+  return src.replace('/upload/', '/upload/fl_attachment,f_jpg/');
 };
 
 const DocImage = ({ src, label, onZoom }) => {

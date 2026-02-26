@@ -2195,7 +2195,7 @@ async def get_available_balance(current_user: dict = Depends(get_current_user)):
               - (sum of send/withdrawal amounts)
     Capped at [0, wallet_balance].
     """
-    inflow_types = {"deposit", "receive", "swap"}
+    inflow_types = {"deposit", "receive"}
     outflow_types = {"send", "withdrawal"}
     wallets = await db.wallets.find({"user_id": current_user["user_id"]}, {"_id": 0}).to_list(10)
     result = {}

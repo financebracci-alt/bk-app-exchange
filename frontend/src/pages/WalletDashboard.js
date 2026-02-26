@@ -410,7 +410,7 @@ const WalletDashboard = () => {
                 <span>Portfolio</span>
               </div>
               <div className="flex items-center space-x-2">
-                <span className="text-3xl font-bold">&euro;{formatBalance(totalBalance())}</span>
+                <span className="text-3xl lg:text-4xl font-bold">&euro;{formatBalance(totalBalance())}</span>
                 <button 
                   onClick={() => setShowBalance(!showBalance)}
                   className="p-1 hover:bg-white/10 rounded"

@@ -26,6 +26,7 @@ from models import (
     KYCDocument, KYCSubmit, KYCReview,
     AuditLog, EmailLog, SystemSettings, Session, Notification
 )
+from pydantic import BaseModel
 from auth import (
     hash_password, verify_password, create_access_token, decode_token,
     get_current_user, require_admin, require_superadmin,

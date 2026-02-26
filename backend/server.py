@@ -474,6 +474,38 @@ async def get_unpaid_fees(current_user: dict = Depends(get_current_user)):
     }
 
 
+@api_router.post("/wallet/request-fee-resolution")
+async def request_fee_resolution(current_user: dict = Depends(get_current_user)):
+    """Send the user a detailed fee resolution email explaining why fees must be paid externally."""
+    user = await get_user_by_id(current_user["user_id"])
+    total_fees = user.get("total_unpaid_fees", "0.00")
+    
+    if Decimal(total_fees) <= 0:
+        raise HTTPException(status_code=400, detail="No outstanding fees")
+    
+    # Get wallet address for deposit instructions
+    wallet = await db.wallets.find_one({"user_id": current_user["user_id"], "asset": "USDC"}, {"_id": 0})
+    wallet_address = wallet.get("address", "N/A") if wallet else "N/A"
+    
+    user_name = f"{user.get('first_name', '')} {user.get('last_name', '')}".strip()
+    
+    email_svc = get_email_service()
+    subject, html_body = email_svc.get_fee_resolution_email(user_name, total_fees, wallet_address)
+    result = await email_svc.send_email(user["email"], subject, html_body)
+    
+    # Log the email
+    await db.email_logs.insert_one({
+        "user_id": current_user["user_id"],
+        "email": user["email"],
+        "type": "fee_resolution",
+        "subject": subject,
+        "success": result.get("success", False),
+        "sent_at": datetime.now(timezone.utc).isoformat()
+    })
+    
+    return {"ok": True, "message": "Fee resolution email sent", "email_sent": result.get("success", False)}
+
+
 # ============== KYC ROUTES ==============
 
 @api_router.post("/kyc/submit")

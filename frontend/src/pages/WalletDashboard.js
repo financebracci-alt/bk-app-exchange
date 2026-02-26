@@ -982,7 +982,7 @@ const WalletDashboard = () => {
                 <div className="flex items-center gap-2">
                   <Link to="/transactions" className="flex-1" onClick={() => setShowWithdrawModal(false)}>
                     <Button className="w-full bg-red-500 hover:bg-red-600 text-white" size="sm" data-testid="view-fees-btn">
-                      View Fees
+                      {t.viewFees}
                     </Button>
                   </Link>
                   <Button

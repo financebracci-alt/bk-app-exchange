@@ -178,8 +178,8 @@ const AdminKYCQueue = () => {
       )}
 
       {/* Review Modal */}
-      <Dialog open={!!selectedKYC} onOpenChange={(open) => { if (!zoomImage) setSelectedKYC(open ? selectedKYC : null); }}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" onInteractOutside={(e) => { if (zoomImage) e.preventDefault(); }} onPointerDownOutside={(e) => { if (zoomImage) e.preventDefault(); }}>
+      <Dialog open={!!selectedKYC} onOpenChange={(open) => { if (!open && !zoomImage) setSelectedKYC(null); }}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" onPointerDownOutside={(e) => { if (zoomImage) e.preventDefault(); }} onEscapeKeyDown={(e) => { if (zoomImage) { e.preventDefault(); setZoomImage(null); } }}>
           <DialogHeader>
             <DialogTitle>
               Review KYC - {selectedKYC?.user?.first_name} {selectedKYC?.user?.last_name}

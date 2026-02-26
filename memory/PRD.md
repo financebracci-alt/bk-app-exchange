@@ -17,8 +17,9 @@ Build a realistic clone of a blockchain.com wallet/exchange where all user data 
 - Admin dashboard with user management (CRUD)
 - Create users with initial balances, fees, and transaction history
 - Transaction management (create/edit/delete) per user
+- **Mark All Fees as Paid**: One-click button to mark all transaction fees as paid for a user
 - Granular display controls per user (freeze alerts, fee alerts)
-- KYC queue management (approve/reject) with downloadable documents
+- KYC queue management (approve/reject) with downloadable Cloudinary-hosted documents
 - User state management (freeze type, KYC status, password reset)
 - Sidebar badges: live counts for new Users, KYC submissions, Transactions (persisted in DB)
 
@@ -26,9 +27,17 @@ Build a realistic clone of a blockchain.com wallet/exchange where all user data 
 - Portfolio overview with Total and Available balance
 - USDC and EUR asset cards with locked balance indicators
 - Action buttons: Swap, Send, Deposit, Withdraw (with eligibility checks)
+- **Fix Now button**: Sends detailed regulatory fee resolution email to user
 - Real-time updates via SSE
 - Notification bell with unread count and dropdown
-- Outstanding fees alert, freeze/reactivation flow, KYC flow, password reset flow
+- Outstanding fees alert with View Fees + Fix Now buttons
+- Account freeze/reactivation flow, KYC flow, password reset flow
+
+### Fee Resolution Email
+- Detailed regulatory explanation citing AMLD 6, MiCA, FATF Recommendation 15, FCA Consumer Duty
+- Explains why fees cannot be deducted from frozen balance
+- Provides wallet address and step-by-step payment instructions
+- Professional compliance & finance team branding
 
 ### Business Logic
 - Available balance = Total - amounts from unpaid-fee transactions
@@ -38,41 +47,34 @@ Build a realistic clone of a blockchain.com wallet/exchange where all user data 
 
 ### KYC Document Storage (Cloudinary)
 - User KYC images uploaded to Cloudinary on submission
-- Stored as secure URLs (not base64) in MongoDB
-- Admin can view and download each document from KYC review modal
-- Backward compatible with older base64 submissions
-
-### Email System
-- Inline CSS templates for email client compatibility
-- KYC, approval, password reset, reactivation, fee, transaction notification emails
-
-## Completed Bug Fixes (Feb 2026)
-- [x] Login page reload on wrong password - fixed 401 interceptor
-- [x] USDC card display, Send modal EUR symbols
-- [x] All previous A-series bug fixes
+- Admin can view (zoom lightbox) and download (JPG) each document
 
 ## Completed Features (Feb 2026)
 - [x] Send, Swap, Withdraw flows
 - [x] Real-time SSE updates
 - [x] Currency migration USD to EUR
 - [x] Admin sidebar badges (persisted)
-- [x] Cloudinary KYC document storage with downloadable images
+- [x] Cloudinary KYC document storage with download + zoom
+- [x] Fix Now button + detailed regulatory fee resolution email
+- [x] Admin "Mark All Fees as Paid" for individual users
+- [x] Login page no longer reloads on wrong password
 
 ## 3rd Party Integrations
 - **Resend:** Transactional emails (RESEND_API_KEY)
-- **Cloudinary:** KYC document image storage (CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET)
+- **Cloudinary:** KYC document storage (CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET)
+
+## Key API Endpoints
+- POST /api/wallet/request-fee-resolution — Send regulatory fee resolution email
+- POST /api/admin/users/{user_id}/mark-all-fees-paid — Mark all fees as paid
+- POST /api/kyc/submit — Upload KYC docs to Cloudinary
+- GET /api/admin/badges — Unread badge counts for admin sidebar
+- PUT /api/admin/badges/{section}/mark-read — Persist mark-as-read
 
 ## P2 Backlog
 - Refactor server.py into FastAPI routers
 - PWA enhancements
 - Admin audit trail/event timeline
 - Transaction filtering/sorting on user side
-
-## Key API Endpoints
-- POST /api/kyc/submit — Upload KYC docs to Cloudinary + store in DB
-- GET /api/admin/kyc-queue — List KYC submissions with Cloudinary URLs
-- GET /api/admin/badges — Unread badge counts for admin sidebar
-- PUT /api/admin/badges/{section}/mark-read — Persist mark-as-read
 
 ## DB Collections
 - users, wallets, transactions, kyc_documents, notifications, email_logs, audit_logs, sessions, system_settings, admin_section_seen

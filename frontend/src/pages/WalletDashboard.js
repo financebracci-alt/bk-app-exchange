@@ -337,7 +337,7 @@ const WalletDashboard = () => {
     <div className="min-h-screen bg-gray-50">
       {/* Header - Purple Gradient */}
       <header className="bg-gradient-to-r from-[#1a1f3c] to-[#121530] text-white">
-        <div className="max-w-lg mx-auto px-4 pt-4 pb-6">
+        <div className="max-w-lg lg:max-w-5xl mx-auto px-4 pt-4 pb-6">
           {/* Top Bar */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center space-x-4">

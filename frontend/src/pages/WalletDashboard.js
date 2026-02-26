@@ -341,12 +341,7 @@ const WalletDashboard = () => {
           {/* Top Bar */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center space-x-4">
-              <button className="flex items-center space-x-2 text-gray-300 hover:text-white">
-                <span className="text-sm font-medium">Trading</span>
-              </button>
-              <button className="flex items-center space-x-2 text-white border-b-2 border-blue-400 pb-1">
-                <span className="text-sm font-medium">Wallet</span>
-              </button>
+              <span className="text-sm font-semibold text-white border-b-2 border-blue-400 pb-1">Wallet</span>
             </div>
             <div className="flex items-center space-x-3">
               <button

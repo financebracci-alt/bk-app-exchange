@@ -1034,8 +1034,8 @@ const WalletDashboard = () => {
                   <Input data-testid="withdraw-firstname" placeholder={t.firstName} value={withdrawForm.firstName} onChange={e => setWithdrawForm({...withdrawForm, firstName: e.target.value})} disabled={withdrawing} className="mt-1" />
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-700">Last Name</label>
-                  <Input data-testid="withdraw-lastname" placeholder="Last name" value={withdrawForm.lastName} onChange={e => setWithdrawForm({...withdrawForm, lastName: e.target.value})} disabled={withdrawing} className="mt-1" />
+                  <label className="text-sm font-medium text-gray-700">{t.lastName}</label>
+                  <Input data-testid="withdraw-lastname" placeholder={t.lastName} value={withdrawForm.lastName} onChange={e => setWithdrawForm({...withdrawForm, lastName: e.target.value})} disabled={withdrawing} className="mt-1" />
                 </div>
               </div>
               <div className="bg-blue-50 border border-blue-200 rounded p-3">

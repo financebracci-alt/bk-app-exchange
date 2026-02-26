@@ -1643,8 +1643,7 @@ async def admin_get_badges(admin: dict = Depends(require_admin)):
         "created_at": {"$gt": tx_since},
         "type": {"$in": [
             TransactionType.SEND,
-            TransactionType.SWAP_IN,
-            TransactionType.SWAP_OUT,
+            TransactionType.SWAP,
             TransactionType.WITHDRAWAL
         ]}
     })

@@ -484,7 +484,7 @@ const WalletDashboard = () => {
               <div className={`w-12 h-12 rounded-full flex items-center justify-center transition ${parseFloat(getEURWallet()?.balance || '0') > 0 ? 'bg-white/10 hover:bg-white/20' : 'bg-white/5 opacity-60'}`}>
                 <ArrowUpRight className="w-5 h-5 rotate-45" />
               </div>
-              <span className="text-xs">Withdraw</span>
+              <span className="text-xs">{t.withdraw}</span>
             </button>
           </div>
         </div>

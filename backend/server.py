@@ -303,6 +303,18 @@ async def get_me(current_user: dict = Depends(get_current_user)):
     }
 
 
+@api_router.put("/auth/language")
+async def update_language(current_user: dict = Depends(get_current_user), lang: str = "en"):
+    """Update user's preferred language"""
+    if lang not in ("en", "it"):
+        lang = "en"
+    await db.users.update_one(
+        {"id": current_user["user_id"]},
+        {"$set": {"preferred_language": lang}}
+    )
+    return {"ok": True}
+
+
 class ChangePasswordRequest(BaseModel):
     current_password: str
     new_password: str

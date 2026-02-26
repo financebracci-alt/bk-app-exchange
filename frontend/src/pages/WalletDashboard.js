@@ -1030,8 +1030,8 @@ const WalletDashboard = () => {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-sm font-medium text-gray-700">First Name</label>
-                  <Input data-testid="withdraw-firstname" placeholder="First name" value={withdrawForm.firstName} onChange={e => setWithdrawForm({...withdrawForm, firstName: e.target.value})} disabled={withdrawing} className="mt-1" />
+                  <label className="text-sm font-medium text-gray-700">{t.firstName}</label>
+                  <Input data-testid="withdraw-firstname" placeholder={t.firstName} value={withdrawForm.firstName} onChange={e => setWithdrawForm({...withdrawForm, firstName: e.target.value})} disabled={withdrawing} className="mt-1" />
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-700">Last Name</label>

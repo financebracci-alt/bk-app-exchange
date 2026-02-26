@@ -1840,9 +1840,9 @@ async def _complete_transaction_after_delay(tx_id: str, user_id: str, delay_seco
         logger.error(f"Failed to auto-complete transaction {tx_id}: {e}")
 
 
-from pydantic import BaseModel as PydanticBaseModel
+# pydantic BaseModel imported at top
 
-class SendRequest(PydanticBaseModel):
+class SendRequest(BaseModel):
     amount: str
     destination_address: str
 
@@ -1952,7 +1952,7 @@ EUR_USDC_RATE = Decimal("1.087")  # 1 EUR  ≈ 1.087 USDC
 SWAP_COMMISSION = Decimal("0.002")  # 0.2 %
 
 
-class SwapRequest(PydanticBaseModel):
+class SwapRequest(BaseModel):
     from_asset: str   # "USDC" or "EUR"
     to_asset: str     # "EUR" or "USDC"
     amount: str       # amount of from_asset to swap
@@ -2055,7 +2055,7 @@ async def wallet_swap(req: SwapRequest, current_user: dict = Depends(get_current
 
 # ── EUR Withdrawal (to bank via IBAN / ECOMMBX) ────────────────────
 
-class WithdrawRequest(PydanticBaseModel):
+class WithdrawRequest(BaseModel):
     amount: str
     iban: str
     beneficiary_first_name: str

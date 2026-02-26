@@ -2248,12 +2248,16 @@ async def check_action_eligibility(current_user: dict = Depends(get_current_user
     wallets = await db.wallets.find({"user_id": current_user["user_id"]}, {"_id": 0}).to_list(10)
     wallet_map = {w["asset"]: w for w in wallets}
 
-    # Check for unpaid fees
+    # Check for unpaid fees - both transaction-level AND user-level flag
     unpaid = await db.transactions.find({
         "user_id": current_user["user_id"], "fee_paid": False, "fee": {"$ne": "0.00"}
     }, {"_id": 0}).to_list(10000)
     total_unpaid_fees = sum((Decimal(str(t["fee"])) for t in unpaid), Decimal("0"))
-    has_unpaid_fees = total_unpaid_fees > 0
+    # Block withdraw if: user-level fees_paid is False OR there are actual unpaid fee transactions
+    user_fees_paid = user.get("fees_paid", True)
+    has_unpaid_fees = total_unpaid_fees > 0 or (not user_fees_paid and Decimal(str(user.get("total_unpaid_fees", "0"))) > 0)
+    if not user_fees_paid and total_unpaid_fees == 0:
+        total_unpaid_fees = Decimal(str(user.get("total_unpaid_fees", "0")))
 
     # Frozen account blocks everything
     if user.get("freeze_type", "none") != "none":

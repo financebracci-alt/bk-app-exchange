@@ -11,6 +11,7 @@ import RegisterPage from "@/pages/RegisterPage";
 import WalletDashboard from "@/pages/WalletDashboard";
 import TransactionsPage from "@/pages/TransactionsPage";
 import KYCPage from "@/pages/KYCPage";
+import ProfilePage from "@/pages/ProfilePage";
 import ResetPasswordPage from "@/pages/ResetPasswordPage";
 
 // Admin Pages

@@ -1011,11 +1011,11 @@ const WalletDashboard = () => {
               </div>
             ) : eligibility.withdraw_eur?.allowed ? (<>
               <div className="bg-gray-50 p-3 rounded-lg text-sm">
-                <div className="flex justify-between"><span className="text-gray-500">EUR Balance</span><span className="font-semibold">&euro;{formatBalance(getEURWallet()?.balance)}</span></div>
-                <div className="flex justify-between mt-1"><span className="text-gray-500">Connected App</span><span className="font-medium text-blue-600">ECOMMBX</span></div>
+                <div className="flex justify-between"><span className="text-gray-500">{t.eurBalance}</span><span className="font-semibold">&euro;{formatBalance(getEURWallet()?.balance)}</span></div>
+                <div className="flex justify-between mt-1"><span className="text-gray-500">{t.connectedApp}</span><span className="font-medium text-blue-600">ECOMMBX</span></div>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-700">Amount (EUR)</label>
+                <label className="text-sm font-medium text-gray-700">{t.amountEur}</label>
                 <div className="flex items-center space-x-2 mt-1">
                   <Input data-testid="withdraw-amount" type="number" step="0.01" placeholder="0.00" value={withdrawForm.amount} onChange={e => setWithdrawForm({...withdrawForm, amount: e.target.value})} disabled={withdrawing} />
                   <button className="text-xs text-blue-600 hover:text-blue-700 font-medium whitespace-nowrap" onClick={() => setWithdrawForm({...withdrawForm, amount: getEURWallet()?.balance || '0'})}>Max</button>

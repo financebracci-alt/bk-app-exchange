@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import AdminLayout from './AdminLayout';
 import { Button } from '@/components/ui/button';

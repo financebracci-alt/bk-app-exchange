@@ -41,6 +41,7 @@ const API = process.env.REACT_APP_BACKEND_URL;
 const WalletDashboard = () => {
   const navigate = useNavigate();
   const { user, wallets, logout, api, refreshUser } = useAuth();
+  const t = useMemo(() => getTranslations(), []);
   const [loading, setLoading] = useState(false);
   const [showBalance, setShowBalance] = useState(true);
   const [unpaidFees, setUnpaidFees] = useState({ total: '0.00', count: 0 });

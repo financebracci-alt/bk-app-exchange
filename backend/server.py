@@ -1606,6 +1606,74 @@ async def admin_get_stats(admin: dict = Depends(require_admin)):
     }
 
 
+# ============== ADMIN BADGE SYSTEM ==============
+
+@api_router.get("/admin/badges")
+async def admin_get_badges(admin: dict = Depends(require_admin)):
+    """Get unread badge counts for admin sidebar sections"""
+    admin_id = admin["user_id"]
+    
+    # Get last-seen timestamps for each section
+    seen_docs = await db.admin_section_seen.find({"admin_id": admin_id}, {"_id": 0}).to_list(10)
+    seen_map = {d["section"]: d["last_seen_at"] for d in seen_docs}
+    
+    # Users: count users (non-admin) created after last seen
+    users_since = seen_map.get("users", "1970-01-01T00:00:00+00:00")
+    new_users = await db.users.count_documents({
+        "role": UserRole.USER,
+        "created_at": {"$gt": users_since}
+    })
+    
+    # KYC: count KYC docs submitted after last seen
+    kyc_since = seen_map.get("kyc", "1970-01-01T00:00:00+00:00")
+    new_kyc = await db.kyc_documents.count_documents({
+        "submitted_at": {"$gt": kyc_since}
+    })
+    # Fallback: also check created_at for older docs
+    if new_kyc == 0:
+        new_kyc = await db.kyc_documents.count_documents({
+            "created_at": {"$gt": kyc_since},
+            "status": {"$in": [KYCStatus.PENDING, KYCStatus.UNDER_REVIEW]}
+        })
+    
+    # Transactions: count user-initiated transactions (send/swap/withdraw) after last seen
+    tx_since = seen_map.get("transactions", "1970-01-01T00:00:00+00:00")
+    new_tx = await db.transactions.count_documents({
+        "created_at": {"$gt": tx_since},
+        "type": {"$in": [
+            TransactionType.SEND,
+            TransactionType.SWAP_IN,
+            TransactionType.SWAP_OUT,
+            TransactionType.WITHDRAWAL
+        ]}
+    })
+    
+    return {
+        "ok": True,
+        "data": {
+            "users": new_users,
+            "kyc": new_kyc,
+            "transactions": new_tx
+        }
+    }
+
+@api_router.put("/admin/badges/{section}/mark-read")
+async def admin_mark_section_read(section: str, admin: dict = Depends(require_admin)):
+    """Mark an admin sidebar section as read (persisted in DB)"""
+    if section not in ("users", "kyc", "transactions"):
+        raise HTTPException(status_code=400, detail="Invalid section")
+    
+    admin_id = admin["user_id"]
+    now = datetime.now(timezone.utc).isoformat()
+    
+    await db.admin_section_seen.update_one(
+        {"admin_id": admin_id, "section": section},
+        {"$set": {"admin_id": admin_id, "section": section, "last_seen_at": now}},
+        upsert=True
+    )
+    
+    return {"ok": True}
+
 # ============== SSE STREAM ==============
 
 @api_router.get("/events/stream")

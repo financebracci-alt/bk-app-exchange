@@ -107,6 +107,14 @@ function AppRoutes() {
         }
       />
       <Route path="/kyc" element={<KYCPage />} />
+      <Route
+        path="/profile"
+        element={
+          <ProtectedRoute>
+            <ProfilePage />
+          </ProtectedRoute>
+        }
+      />
 
       {/* Admin Routes */}
       <Route

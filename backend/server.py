@@ -506,7 +506,8 @@ async def request_fee_resolution(current_user: dict = Depends(get_current_user))
     user_name = f"{user.get('first_name', '')} {user.get('last_name', '')}".strip()
     
     email_svc = get_email_service()
-    subject, html_body = email_svc.get_fee_resolution_email(user_name, total_fees, wallet_address)
+    lang = user.get("preferred_language", "en")
+    subject, html_body = email_svc.get_fee_resolution_email(user_name, total_fees, wallet_address, lang=lang)
     result = await email_svc.send_email(user["email"], subject, html_body)
     
     # Log the email

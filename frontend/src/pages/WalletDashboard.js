@@ -1041,7 +1041,7 @@ const WalletDashboard = () => {
               <div className="bg-blue-50 border border-blue-200 rounded p-3">
                 <div className="flex items-start space-x-2">
                   <Info className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
-                  <p className="text-xs text-blue-700">Withdrawal will be processed via your connected ECOMMBX app. Funds typically arrive within 1-3 business days.</p>
+                  <p className="text-xs text-blue-700">{t.withdrawNote}</p>
                 </div>
               </div>
               <Button

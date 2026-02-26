@@ -807,7 +807,7 @@ const WalletDashboard = () => {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="bg-gray-50 p-3 rounded-lg text-sm">
-              <div className="flex justify-between"><span className="text-gray-500">Total Balance</span><span className="font-medium">{formatBalance(getUSDCWallet()?.balance)} USDC</span></div>
+              <div className="flex justify-between"><span className="text-gray-500">{t.totalBalanceLabel}</span><span className="font-medium">{formatBalance(getUSDCWallet()?.balance)} USDC</span></div>
               <div className="flex justify-between mt-1 pt-1 border-t border-gray-200">
                 <span className="text-gray-700 font-medium">Available to Send</span>
                 <span className="font-semibold text-green-600">{formatBalance(availableBalance.USDC?.available || '0')} USDC</span>

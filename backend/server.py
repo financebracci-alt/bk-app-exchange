@@ -1255,6 +1255,50 @@ async def admin_delete_transaction(
     return {"ok": True, "message": "Transaction deleted"}
 
 
+@api_router.post("/admin/users/{user_id}/mark-all-fees-paid")
+async def admin_mark_all_fees_paid(
+    user_id: str,
+    request: Request,
+    admin: dict = Depends(require_admin)
+):
+    """Mark ALL transactions for a user as fee_paid=True and reset total_unpaid_fees."""
+    user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Update all unpaid-fee transactions for this user
+    result = await db.transactions.update_many(
+        {"user_id": user_id, "fee_paid": False, "fee": {"$ne": "0.00"}},
+        {"$set": {"fee_paid": True}}
+    )
+    
+    # Reset user's total unpaid fees and mark fees_paid
+    await db.users.update_one(
+        {"id": user_id},
+        {"$set": {
+            "total_unpaid_fees": "0.00",
+            "fees_paid": True,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    # Audit log
+    await log_audit(
+        admin_id=admin["user_id"],
+        admin_email=admin["email"],
+        action="all_fees_marked_paid",
+        target_type="user",
+        target_id=user_id,
+        details={"transactions_updated": result.modified_count},
+        ip_address=request.client.host if request.client else None
+    )
+    
+    return {
+        "ok": True,
+        "message": f"All fees marked as paid ({result.modified_count} transactions updated)"
+    }
+
+
 # --- Admin KYC Queue ---
 
 @api_router.get("/admin/kyc-queue")

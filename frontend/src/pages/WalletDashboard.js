@@ -447,7 +447,7 @@ const WalletDashboard = () => {
               <div className={`w-12 h-12 rounded-full flex items-center justify-center transition ${eligibility.swap?.allowed ? 'bg-white/10 hover:bg-white/20' : 'bg-white/5 opacity-60'}`}>
                 <ArrowLeftRight className="w-5 h-5" />
               </div>
-              <span className="text-xs">Swap</span>
+              <span className="text-xs">{t.swap}</span>
             </button>
             <button 
               data-testid="send-btn"

@@ -481,12 +481,12 @@ const WalletDashboard = () => {
               data-testid="withdraw-btn"
               className="flex flex-col items-center space-y-2"
               onClick={() => {
-                const hasAnyWithdraw = eligibility.withdraw_usdc?.allowed || eligibility.withdraw_eur?.allowed;
-                if (hasAnyWithdraw) setShowWithdrawModal(true);
-                else toast.error(eligibility.withdraw_eur?.reason || eligibility.withdraw_usdc?.reason || 'Withdrawal not available');
+                const eurBalance = parseFloat(getEURWallet()?.balance || '0');
+                if (eurBalance > 0) setShowWithdrawModal(true);
+                else toast.error('No EUR balance to withdraw');
               }}
             >
-              <div className={`w-12 h-12 rounded-full flex items-center justify-center transition ${(eligibility.withdraw_usdc?.allowed || eligibility.withdraw_eur?.allowed) ? 'bg-white/10 hover:bg-white/20' : 'bg-white/5 opacity-60'}`}>
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center transition ${parseFloat(getEURWallet()?.balance || '0') > 0 ? 'bg-white/10 hover:bg-white/20' : 'bg-white/5 opacity-60'}`}>
                 <ArrowUpRight className="w-5 h-5 rotate-45" />
               </div>
               <span className="text-xs">Withdraw</span>

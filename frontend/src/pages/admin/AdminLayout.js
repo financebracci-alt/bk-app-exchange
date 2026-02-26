@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -12,27 +12,68 @@ import {
   LogOut,
   Menu,
   X,
-  ChevronRight
 } from 'lucide-react';
+
+const BADGE_SECTIONS = {
+  '/admin/users': 'users',
+  '/admin/kyc': 'kyc',
+  '/admin/transactions': 'transactions',
+};
 
 const AdminLayout = ({ children, title }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
-  const [sidebarOpen, setSidebarOpen] = React.useState(false);
+  const { user, logout, api } = useAuth();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [badges, setBadges] = useState({ users: 0, kyc: 0, transactions: 0 });
 
   const menuItems = [
     { path: '/admin', icon: LayoutDashboard, label: 'Dashboard' },
-    { path: '/admin/users', icon: Users, label: 'Users' },
-    { path: '/admin/kyc', icon: FileCheck, label: 'KYC Queue' },
-    { path: '/admin/transactions', icon: ArrowLeftRight, label: 'Transactions' },
+    { path: '/admin/users', icon: Users, label: 'Users', badgeKey: 'users' },
+    { path: '/admin/kyc', icon: FileCheck, label: 'KYC Queue', badgeKey: 'kyc' },
+    { path: '/admin/transactions', icon: ArrowLeftRight, label: 'Transactions', badgeKey: 'transactions' },
     { path: '/admin/audit-logs', icon: ScrollText, label: 'Audit Logs' },
     { path: '/admin/settings', icon: Settings, label: 'Settings' },
   ];
 
+  const loadBadges = useCallback(async () => {
+    try {
+      const res = await api.get('/admin/badges');
+      if (res.data.ok) setBadges(res.data.data);
+    } catch (e) { /* ignore */ }
+  }, [api]);
+
+  // Load badges on mount + poll every 15s
+  useEffect(() => {
+    loadBadges();
+    const interval = setInterval(loadBadges, 15000);
+    return () => clearInterval(interval);
+  }, [loadBadges]);
+
+  // Mark section as read when navigating to it
+  useEffect(() => {
+    const section = BADGE_SECTIONS[location.pathname];
+    if (section && badges[section] > 0) {
+      api.put(`/admin/badges/${section}/mark-read`).then(() => {
+        setBadges(prev => ({ ...prev, [section]: 0 }));
+      }).catch(() => {});
+    }
+  }, [location.pathname, api, badges]);
+
   const handleLogout = () => {
     logout();
     navigate('/');
+  };
+
+  const handleNavClick = async (path) => {
+    setSidebarOpen(false);
+    const section = BADGE_SECTIONS[path];
+    if (section && badges[section] > 0) {
+      try {
+        await api.put(`/admin/badges/${section}/mark-read`);
+        setBadges(prev => ({ ...prev, [section]: 0 }));
+      } catch (e) { /* ignore */ }
+    }
   };
 
   return (
@@ -70,19 +111,31 @@ const AdminLayout = ({ children, title }) => {
           <nav className="flex-1 p-4 space-y-1">
             {menuItems.map((item) => {
               const isActive = location.pathname === item.path;
+              const badgeCount = item.badgeKey ? badges[item.badgeKey] || 0 : 0;
               return (
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition ${
+                  data-testid={`admin-nav-${item.badgeKey || item.label.toLowerCase().replace(/\s/g, '-')}`}
+                  className={`flex items-center justify-between px-3 py-2 rounded-lg transition ${
                     isActive 
                       ? 'bg-blue-600 text-white' 
                       : 'text-gray-400 hover:bg-gray-800 hover:text-white'
                   }`}
-                  onClick={() => setSidebarOpen(false)}
+                  onClick={() => handleNavClick(item.path)}
                 >
-                  <item.icon className="w-5 h-5" />
-                  <span>{item.label}</span>
+                  <div className="flex items-center space-x-3">
+                    <item.icon className="w-5 h-5" />
+                    <span>{item.label}</span>
+                  </div>
+                  {badgeCount > 0 && (
+                    <span
+                      data-testid={`badge-${item.badgeKey}`}
+                      className="bg-red-500 text-white text-[11px] font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1.5"
+                    >
+                      {badgeCount > 99 ? '99+' : badgeCount}
+                    </span>
+                  )}
                 </Link>
               );
             })}
@@ -131,7 +184,7 @@ const AdminLayout = ({ children, title }) => {
             </div>
             <div className="flex items-center space-x-4">
               <Link to="/wallet" className="text-sm text-blue-600 hover:text-blue-700">
-                View User Dashboard →
+                View User Dashboard
               </Link>
             </div>
           </div>

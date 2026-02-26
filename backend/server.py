@@ -1297,6 +1297,12 @@ async def admin_mark_all_fees_paid(
         ip_address=request.client.host if request.client else None
     )
     
+    # Push real-time SSE update to the user
+    await notify_user(user_id, "fees_updated", {
+        "fees_paid": True,
+        "total_unpaid_fees": "0.00"
+    })
+    
     return {
         "ok": True,
         "message": f"All fees marked as paid ({result.modified_count} transactions updated)"

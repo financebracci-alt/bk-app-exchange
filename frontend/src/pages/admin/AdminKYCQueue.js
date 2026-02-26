@@ -245,34 +245,33 @@ const AdminKYCQueue = () => {
                   Approve
                 </Button>
               </div>
+
+              {/* Image Zoom Lightbox — inside Dialog to prevent close conflicts */}
+              {zoomImage && (
+                <div
+                  data-testid="image-zoom-overlay"
+                  className="fixed inset-0 z-[200] bg-black/90 flex items-center justify-center cursor-pointer"
+                  onClick={() => setZoomImage(null)}
+                >
+                  <button
+                    className="absolute top-4 right-4 text-white/80 hover:text-white p-2"
+                    onClick={(e) => { e.stopPropagation(); setZoomImage(null); }}
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                  <p className="absolute top-4 left-4 text-white/70 text-sm">{zoomImage.label}</p>
+                  <img
+                    src={zoomImage.src}
+                    alt={zoomImage.label}
+                    className="max-w-[90vw] max-h-[85vh] object-contain rounded-lg"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </div>
+              )}
             </div>
           )}
         </DialogContent>
       </Dialog>
-
-      {/* Image Zoom Lightbox — rendered via portal to avoid Dialog interference */}
-      {zoomImage && createPortal(
-        <div
-          data-testid="image-zoom-overlay"
-          className="fixed inset-0 z-[200] bg-black/90 flex items-center justify-center cursor-pointer"
-          onClick={() => setZoomImage(null)}
-        >
-          <button
-            className="absolute top-4 right-4 text-white/80 hover:text-white p-2 z-[201]"
-            onClick={(e) => { e.stopPropagation(); setZoomImage(null); }}
-          >
-            <X className="w-6 h-6" />
-          </button>
-          <p className="absolute top-4 left-4 text-white/70 text-sm">{zoomImage.label}</p>
-          <img
-            src={zoomImage.src}
-            alt={zoomImage.label}
-            className="max-w-[90vw] max-h-[85vh] object-contain rounded-lg"
-            onClick={(e) => e.stopPropagation()}
-          />
-        </div>,
-        document.body
-      )}
     </AdminLayout>
   );
 };

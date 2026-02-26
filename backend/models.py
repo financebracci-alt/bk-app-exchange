@@ -206,6 +206,7 @@ class UserPublic(BaseModel):
     fees_paid: bool
     password_reset_required: bool
     email_verified: bool
+    preferred_language: str = "en"
     created_at: str
     # Display settings
     show_fees_alert: bool = True

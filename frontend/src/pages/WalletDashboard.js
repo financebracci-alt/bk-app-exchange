@@ -341,7 +341,7 @@ const WalletDashboard = () => {
           {/* Top Bar */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center space-x-4">
-              <span className="text-sm font-semibold text-white border-b-2 border-blue-400 pb-1">Wallet</span>
+              <span className="text-sm font-semibold text-white border-b-2 border-blue-400 pb-1">{t.wallet}</span>
             </div>
             <div className="flex items-center space-x-3">
               <button

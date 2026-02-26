@@ -1021,7 +1021,7 @@ const WalletDashboard = () => {
                   <button className="text-xs text-blue-600 hover:text-blue-700 font-medium whitespace-nowrap" onClick={() => setWithdrawForm({...withdrawForm, amount: getEURWallet()?.balance || '0'})}>Max</button>
                 </div>
                 {withdrawForm.amount && parseFloat(withdrawForm.amount) > parseFloat(getEURWallet()?.balance || '0') && (
-                  <p className="text-xs text-red-500 mt-1">Amount exceeds EUR balance</p>
+                  <p className="text-xs text-red-500 mt-1">{t.exceedsEurBalance}</p>
                 )}
               </div>
               <div>

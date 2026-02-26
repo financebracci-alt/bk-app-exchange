@@ -243,16 +243,18 @@ const AdminKYCQueue = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Image Zoom Lightbox */}
+      {/* Image Zoom Lightbox — rendered outside the Dialog via portal */}
       {zoomImage && (
         <div
           data-testid="image-zoom-overlay"
-          className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center cursor-pointer"
-          onClick={() => setZoomImage(null)}
+          className="fixed inset-0 z-[200] bg-black/90 flex items-center justify-center cursor-pointer"
+          onClick={(e) => { e.stopPropagation(); setZoomImage(null); }}
+          onPointerDown={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
         >
           <button
-            className="absolute top-4 right-4 text-white/80 hover:text-white p-2"
-            onClick={() => setZoomImage(null)}
+            className="absolute top-4 right-4 text-white/80 hover:text-white p-2 z-[201]"
+            onClick={(e) => { e.stopPropagation(); setZoomImage(null); }}
           >
             <X className="w-6 h-6" />
           </button>

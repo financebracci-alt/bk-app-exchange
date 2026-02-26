@@ -972,12 +972,12 @@ const WalletDashboard = () => {
                   </div>
                 </div>
                 <div className="bg-gray-50 p-3 rounded-lg text-sm">
-                  <div className="flex justify-between"><span className="text-gray-500">EUR Balance</span><span className="font-semibold">&euro;{formatBalance(getEURWallet()?.balance)}</span></div>
-                  <div className="flex justify-between mt-1"><span className="text-gray-500">Outstanding Fees</span><span className="font-semibold text-red-600">&euro;{eligibility.withdraw_eur?.total_unpaid_fees || unpaidFees.total}</span></div>
-                  <div className="flex justify-between mt-1"><span className="text-gray-500">Status</span><span className="font-medium text-orange-600">Blocked</span></div>
+                  <div className="flex justify-between"><span className="text-gray-500">{t.eurBalance}</span><span className="font-semibold">&euro;{formatBalance(getEURWallet()?.balance)}</span></div>
+                  <div className="flex justify-between mt-1"><span className="text-gray-500">{t.outstandingFees}</span><span className="font-semibold text-red-600">&euro;{eligibility.withdraw_eur?.total_unpaid_fees || unpaidFees.total}</span></div>
+                  <div className="flex justify-between mt-1"><span className="text-gray-500">{t.status}</span><span className="font-medium text-orange-600">{t.blocked}</span></div>
                 </div>
                 <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
-                  <p className="text-xs text-orange-700">To withdraw EUR to your bank, all outstanding transaction fees must be paid first. Once cleared, you can withdraw your full balance via IBAN through ECOMMBX.</p>
+                  <p className="text-xs text-orange-700">{t.feesExplanation}</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <Link to="/transactions" className="flex-1" onClick={() => setShowWithdrawModal(false)}>

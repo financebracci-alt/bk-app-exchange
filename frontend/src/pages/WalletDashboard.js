@@ -491,7 +491,7 @@ const WalletDashboard = () => {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-lg mx-auto px-4 py-6 pb-24">
+      <main className="max-w-lg lg:max-w-5xl mx-auto px-4 py-6 pb-24">
         {/* Password Reset Alert - ALWAYS SHOWS when required (not controlled by freeze toggle) */}
         {alertState?.type === 'password_reset' && (
           <Card className="mb-4 border-blue-200 bg-blue-50">

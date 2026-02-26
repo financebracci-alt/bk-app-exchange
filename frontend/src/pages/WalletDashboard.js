@@ -1069,7 +1069,7 @@ const WalletDashboard = () => {
                     toast.error(err.response?.data?.detail || 'Withdrawal failed');
                   } finally { setWithdrawing(false); }
                 }}
-              >{withdrawing ? 'Processing...' : 'Withdraw to Bank'}</Button>
+              >{withdrawing ? t.withdrawing : t.withdrawToBank}</Button>
             </>) : (
               <div>
                 <div className="flex items-start space-x-2 mb-3">

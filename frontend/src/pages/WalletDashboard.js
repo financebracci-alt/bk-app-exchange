@@ -1089,7 +1089,7 @@ const WalletDashboard = () => {
       <Dialog open={showFixNowSuccess} onOpenChange={setShowFixNowSuccess}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Email Sent Successfully</DialogTitle>
+            <DialogTitle>{t.emailSentTitle}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="flex items-center justify-center">

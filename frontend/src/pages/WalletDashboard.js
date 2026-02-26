@@ -26,8 +26,6 @@ import {
   Eye,
   EyeOff,
   Home,
-  TrendingUp,
-  Grid3X3,
   Repeat,
   Bell,
   CheckCircle,

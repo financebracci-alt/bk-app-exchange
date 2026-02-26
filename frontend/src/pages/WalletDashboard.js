@@ -63,6 +63,7 @@ const WalletDashboard = () => {
   const [sendForm, setSendForm] = useState({ amount: '', address: '' });
   const [swapForm, setSwapForm] = useState({ amount: '', direction: 'USDC_EUR' });
   const [withdrawForm, setWithdrawForm] = useState({ amount: '', iban: '', firstName: '', lastName: '' });
+  const [fixNowLoading, setFixNowLoading] = useState(false);
   const [sendingTx, setSendingTx] = useState(false);
   const [swapping, setSwapping] = useState(false);
   const [swapResult, setSwapResult] = useState(null);

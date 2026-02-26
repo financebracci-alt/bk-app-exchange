@@ -802,7 +802,7 @@ const WalletDashboard = () => {
       <Dialog open={showSendModal} onOpenChange={(open) => { if (!sendingTx) setShowSendModal(open); }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Send USDC</DialogTitle>
+            <DialogTitle>{t.sendTitle}</DialogTitle>
             <DialogDescription>Wallet-to-wallet transfer (USDC only). Only funds from fee-paid transactions are available to send.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">

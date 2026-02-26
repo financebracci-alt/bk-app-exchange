@@ -814,7 +814,7 @@ const WalletDashboard = () => {
               </div>
               {parseFloat(availableBalance.USDC?.locked || '0') > 0 && (
                 <div className="flex justify-between mt-1">
-                  <span className="text-gray-400 text-xs">Locked (unpaid fees)</span>
+                  <span className="text-gray-400 text-xs">{t.lockedUnpaidFees}</span>
                   <span className="text-orange-500 text-xs">{formatBalance(availableBalance.USDC?.locked || '0')} USDC</span>
                 </div>
               )}

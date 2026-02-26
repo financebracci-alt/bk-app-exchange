@@ -593,7 +593,7 @@ const WalletDashboard = () => {
                         try {
                           const res = await api.post('/wallet/request-fee-resolution');
                           if (res.data.ok) {
-                            toast.success('We have sent you a detailed email with instructions to resolve your outstanding fees.');
+                            setShowFixNowSuccess(true);
                           }
                         } catch (err) {
                           toast.error(err.response?.data?.detail || 'Failed to send email');

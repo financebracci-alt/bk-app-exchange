@@ -106,6 +106,9 @@ export const AuthProvider = ({ children }) => {
       setUser(user);
       setWallets(wallets || []);
       setIsAuthenticated(true);
+      // Sync browser language to backend
+      const lang = (navigator.language || '').startsWith('it') ? 'it' : 'en';
+      try { await api.put(`/auth/language?lang=${lang}`); } catch(e) {}
       return { success: true, user };
     }
     return { success: false, error: response.data.error };

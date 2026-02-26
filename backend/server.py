@@ -124,6 +124,7 @@ async def startup_event():
     await db.kyc_documents.create_index("user_id")
     await db.audit_logs.create_index("admin_id")
     await db.audit_logs.create_index("created_at")
+    await db.admin_section_seen.create_index([("admin_id", 1), ("section", 1)], unique=True)
     
     # Create default superadmin if not exists
     admin_email = "admin@blockchain.com"

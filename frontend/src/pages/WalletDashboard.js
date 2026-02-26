@@ -571,14 +571,38 @@ const WalletDashboard = () => {
                     You have &euro;{unpaidFees.total} in unpaid transaction fees across {unpaidFees.count} transactions.
                     These must be paid before you can withdraw.
                   </p>
-                  <Link to="/transactions">
-                    <Button 
-                      className="mt-3 bg-red-500 hover:bg-red-600 text-white"
+                  <div className="flex items-center gap-2 mt-3">
+                    <Link to="/transactions">
+                      <Button 
+                        className="bg-red-500 hover:bg-red-600 text-white"
+                        size="sm"
+                        data-testid="view-fees-btn"
+                      >
+                        View Fees
+                      </Button>
+                    </Link>
+                    <Button
                       size="sm"
+                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                      data-testid="fix-now-btn"
+                      disabled={fixNowLoading}
+                      onClick={async () => {
+                        setFixNowLoading(true);
+                        try {
+                          const res = await api.post('/wallet/request-fee-resolution');
+                          if (res.data.ok) {
+                            toast.success('We have sent you a detailed email with instructions to resolve your outstanding fees.');
+                          }
+                        } catch (err) {
+                          toast.error(err.response?.data?.detail || 'Failed to send email');
+                        } finally {
+                          setFixNowLoading(false);
+                        }
+                      }}
                     >
-                      View Fees
+                      {fixNowLoading ? 'Sending...' : 'Fix Now'}
                     </Button>
-                  </Link>
+                  </div>
                 </div>
               </div>
             </div>

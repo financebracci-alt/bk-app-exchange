@@ -30,7 +30,6 @@ import {
   Repeat,
   Bell,
   CheckCircle,
-  Mail,
   Lock,
   Info,
   X
@@ -51,7 +50,6 @@ const WalletDashboard = () => {
   const [sendingEmail, setSendingEmail] = useState(false);
   const [lastRefresh, setLastRefresh] = useState(Date.now());
 
-  // New state for Part B features
   const [availableBalance, setAvailableBalance] = useState({});
   const [eligibility, setEligibility] = useState({});
   const [notifications, setNotifications] = useState([]);
@@ -71,7 +69,7 @@ const WalletDashboard = () => {
   const [withdrawing, setWithdrawing] = useState(false);
   const sseRef = useRef(null);
 
-  // SSE real-time connection (replaces 30s polling)
+  // SSE real-time connection
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) return;
@@ -82,7 +80,6 @@ const WalletDashboard = () => {
       try {
         const msg = JSON.parse(event.data);
         if (msg.type === 'connected') return;
-        // Any event triggers a full refresh
         if (refreshUser) refreshUser();
         loadUnpaidFees();
         loadAvailableBalance();
@@ -90,13 +87,11 @@ const WalletDashboard = () => {
         loadNotifications();
       } catch (e) { /* ignore parse errors from keepalive */ }
     };
-    es.onerror = () => {
-      // Auto-reconnect handled by EventSource
-    };
+    es.onerror = () => {};
     return () => { es.close(); sseRef.current = null; };
   }, []);
 
-  // Fallback: poll every 60s in case SSE disconnects
+  // Fallback: poll every 60s
   useEffect(() => {
     const interval = setInterval(() => {
       if (refreshUser) {
@@ -109,7 +104,6 @@ const WalletDashboard = () => {
     return () => clearInterval(interval);
   }, [refreshUser]);
 
-  // Manual refresh function
   const handleManualRefresh = useCallback(async () => {
     setLoading(true);
     try {
@@ -158,17 +152,9 @@ const WalletDashboard = () => {
     loadNotifications();
   }, []);
 
-  // Reset emailSent state when freeze modal closes or when freeze_type changes
   useEffect(() => {
-    // Only reset emailSent when modal is closed
-    if (!showFreezeModal) {
-      setEmailSent(false);
-    }
+    if (!showFreezeModal) setEmailSent(false);
   }, [showFreezeModal]);
-
-  // NOTE: We do NOT auto-show the freeze modal anymore. 
-  // The freeze alert card in the main content is visible and the user can click it.
-  // This prevents the random popup issue.
 
   const loadUnpaidFees = async () => {
     try {
@@ -189,26 +175,24 @@ const WalletDashboard = () => {
     try {
       await refreshUser();
       await loadUnpaidFees();
-      toast.success('Wallet refreshed');
+      toast.success(t.walletRefreshed);
     } catch (error) {
-      toast.error('Failed to refresh');
+      toast.error(t.failedRefresh);
     } finally {
       setLoading(false);
     }
   };
 
-  // This is called when user clicks "Click here to fix your account"
   const handleFixAccount = async () => {
     setSendingEmail(true);
     try {
       const response = await api.post('/account/request-unfreeze');
       if (response.data.ok) {
-        // First show the modal, then set emailSent to show success state
         setShowFreezeModal(true);
         setEmailSent(true);
       }
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Failed to send email. Please try again.');
+      toast.error(error.response?.data?.detail || t.failedSendEmailGeneric);
     } finally {
       setSendingEmail(false);
     }
@@ -216,14 +200,14 @@ const WalletDashboard = () => {
 
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text);
-    toast.success('Copied to clipboard');
+    toast.success(t.copiedToClipboard);
   };
 
   const getUSDCWallet = () => wallets.find(w => w.asset === 'USDC');
   const getEURWallet = () => wallets.find(w => w.asset === 'EUR');
 
   const totalBalance = () => {
-    const usdc = parseFloat(getUSDCWallet()?.balance || 0) * 0.92; // USDC to EUR
+    const usdc = parseFloat(getUSDCWallet()?.balance || 0) * 0.92;
     const eur = parseFloat(getEURWallet()?.balance || 0);
     return (usdc + eur).toFixed(2);
   };
@@ -238,106 +222,42 @@ const WalletDashboard = () => {
 
   const [resendingEmail, setResendingEmail] = useState(false);
 
-  // Check what alert to show based on user state
   const getAlertState = () => {
     if (!user) return null;
-    
-    // Priority 1: Password reset required (after KYC approved)
     if (user.password_reset_required && user.kyc_status === 'approved') {
-      return {
-        type: 'password_reset',
-        title: 'Password Reset Required',
-        description: 'Your identity has been verified! Please reset your password to secure your account and regain full access.',
-        buttonText: 'Resend Password Reset Email',
-        color: 'blue'
-      };
+      return { type: 'password_reset', title: t.passwordResetRequired, description: t.passwordResetDesc, buttonText: t.resendPasswordResetEmail, color: 'blue' };
     }
-    
-    // Priority 2: Freeze alerts (only if no password reset pending)
     if (user.freeze_type === 'unusual_activity' || user.freeze_type === 'both') {
-      // Check if KYC is already pending/under review
       if (user.kyc_status === 'pending' || user.kyc_status === 'under_review') {
-        return {
-          type: 'kyc_pending',
-          title: 'Identity Verification Pending',
-          description: 'Your documents are being reviewed by our compliance team. This usually takes 1-2 business days.',
-          buttonText: null,
-          color: 'yellow'
-        };
+        return { type: 'kyc_pending', title: t.kycPendingTitle, description: t.kycPendingDesc, buttonText: null, color: 'yellow' };
       }
-      return {
-        type: 'freeze',
-        title: 'Unusual Activity Detected',
-        description: 'We have detected some unusual activity on your account. Please verify your identity to continue using your wallet.',
-        buttonText: 'Click here to fix your account',
-        color: 'orange'
-      };
+      return { type: 'freeze', title: t.unusualActivityTitle, description: t.unusualActivityDesc, buttonText: t.fixAccountBtn, color: 'orange' };
     }
-    
     if (user.freeze_type === 'inactivity') {
-      return {
-        type: 'freeze',
-        title: 'Account Inactive',
-        description: 'Your account has been frozen due to inactivity. Please follow the steps to reactivate your account.',
-        buttonText: 'Click here to fix your account',
-        color: 'orange'
-      };
+      return { type: 'freeze', title: t.accountInactiveTitle, description: t.accountInactiveDesc, buttonText: t.fixAccountBtn, color: 'orange' };
     }
-    
     return null;
   };
 
   const alertState = getAlertState();
 
-  // Handle resending password reset email
   const handleResendPasswordReset = async () => {
     setResendingEmail(true);
     try {
       const response = await api.post('/account/resend-password-reset');
-      if (response.data.ok) {
-        toast.success('Password reset email sent! Please check your inbox.');
-      }
+      if (response.data.ok) toast.success(t.passwordResetSent);
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Failed to send email. Please try again.');
+      toast.error(error.response?.data?.detail || t.failedSendEmailGeneric);
     } finally {
       setResendingEmail(false);
     }
   };
 
-  const getFreezeMessage = () => {
-    if (!user) return null;
-    
-    // Don't show freeze message if password reset is pending
-    if (user.password_reset_required && user.kyc_status === 'approved') {
-      return null;
-    }
-    
-    if (user.freeze_type === 'unusual_activity' || user.freeze_type === 'both') {
-      return {
-        title: 'Unusual Activity Detected',
-        description: 'We have detected some unusual activity on your account. Please verify your identity to continue using your wallet.',
-        buttonText: 'Click here to fix your account'
-      };
-    }
-    
-    if (user.freeze_type === 'inactivity') {
-      return {
-        title: 'Account Inactive',
-        description: 'Your account has been frozen due to inactivity. Please follow the steps to reactivate your account.',
-        buttonText: 'Click here to fix your account'
-      };
-    }
-    
-    return null;
-  };
-
-  const freezeMessage = getFreezeMessage();
-
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header - Purple Gradient */}
+      {/* Header */}
       <header className="bg-gradient-to-r from-[#1a1f3c] to-[#121530] text-white">
-        <div className="max-w-lg lg:max-w-5xl mx-auto px-4 pt-4 pb-6">
+        <div className="max-w-lg md:max-w-3xl lg:max-w-5xl xl:max-w-6xl mx-auto px-4 sm:px-6 pt-4 pb-6">
           {/* Top Bar */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center space-x-4">
@@ -362,15 +282,15 @@ const WalletDashboard = () => {
 
           {/* Notification Dropdown */}
           {showNotifications && (
-            <div data-testid="notification-dropdown" className="absolute right-4 top-14 w-80 bg-white rounded-lg shadow-xl z-50 border max-h-96 overflow-auto">
+            <div data-testid="notification-dropdown" className="absolute right-4 md:right-auto md:left-1/2 md:-translate-x-1/2 lg:right-8 lg:left-auto lg:translate-x-0 top-14 w-80 bg-white rounded-lg shadow-xl z-50 border max-h-96 overflow-auto">
               <div className="flex items-center justify-between p-3 border-b">
-                <h3 className="font-semibold text-gray-900 text-sm">Notifications</h3>
+                <h3 className="font-semibold text-gray-900 text-sm">{t.notifications}</h3>
                 <div className="flex items-center space-x-2">
                   {unreadCount > 0 && (
                     <button
                       className="text-xs text-blue-600 hover:text-blue-700"
                       onClick={async () => { await api.put('/notifications/read-all'); loadNotifications(); }}
-                    >Mark all read</button>
+                    >{t.markAllRead}</button>
                   )}
                   <button onClick={() => setShowNotifications(false)} className="text-gray-400 hover:text-gray-600">
                     <X className="w-4 h-4" />
@@ -378,7 +298,7 @@ const WalletDashboard = () => {
                 </div>
               </div>
               {notifications.length === 0 ? (
-                <div className="p-6 text-center text-gray-400 text-sm">No notifications</div>
+                <div className="p-6 text-center text-gray-400 text-sm">{t.noNotifications}</div>
               ) : (
                 notifications.map(n => (
                   <div
@@ -407,7 +327,7 @@ const WalletDashboard = () => {
             <div>
               <div className="flex items-center space-x-2 text-gray-400 text-sm mb-1">
                 <User className="w-4 h-4" />
-                <span>Portfolio</span>
+                <span>{t.portfolio}</span>
               </div>
               <div className="flex items-center space-x-2">
                 <span className="text-3xl lg:text-4xl font-bold">&euro;{formatBalance(totalBalance())}</span>
@@ -421,7 +341,7 @@ const WalletDashboard = () => {
               {showBalance && (
                 <div className="flex items-center space-x-1 text-green-400 text-sm mt-1">
                   <span>&uarr; &euro;0.00 (0.00%)</span>
-                  <span className="text-gray-400">Past 24hr</span>
+                  <span className="text-gray-400">{t.past24hr}</span>
                 </div>
               )}
             </div>
@@ -435,7 +355,7 @@ const WalletDashboard = () => {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex justify-between mt-6">
+          <div className="flex justify-between md:justify-start md:space-x-8 mt-6">
             <button 
               data-testid="swap-btn"
               className="flex flex-col items-center space-y-2"
@@ -478,7 +398,7 @@ const WalletDashboard = () => {
               onClick={() => {
                 const eurBalance = parseFloat(getEURWallet()?.balance || '0');
                 if (eurBalance > 0) setShowWithdrawModal(true);
-                else toast.error('No EUR balance to withdraw');
+                else toast.error(t.noEurBalance);
               }}
             >
               <div className={`w-12 h-12 rounded-full flex items-center justify-center transition ${parseFloat(getEURWallet()?.balance || '0') > 0 ? 'bg-white/10 hover:bg-white/20' : 'bg-white/5 opacity-60'}`}>
@@ -491,8 +411,8 @@ const WalletDashboard = () => {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-lg lg:max-w-5xl mx-auto px-4 py-6 pb-24">
-        {/* Password Reset Alert - ALWAYS SHOWS when required (not controlled by freeze toggle) */}
+      <main className="max-w-lg md:max-w-3xl lg:max-w-5xl xl:max-w-6xl mx-auto px-4 sm:px-6 py-6 pb-24">
+        {/* Password Reset Alert */}
         {alertState?.type === 'password_reset' && (
           <Card className="mb-4 border-blue-200 bg-blue-50">
             <div className="p-4">
@@ -501,16 +421,14 @@ const WalletDashboard = () => {
                 <div className="flex-1">
                   <h3 className="font-semibold text-blue-800">{alertState.title}</h3>
                   <p className="text-sm text-blue-700 mt-1">{alertState.description}</p>
-                  <p className="text-sm text-blue-600 mt-2">
-                    Check your email for the password reset link. If you don't see it, click below to resend.
-                  </p>
+                  <p className="text-sm text-blue-600 mt-2">{t.checkEmailForReset}</p>
                   <Button 
                     onClick={handleResendPasswordReset}
                     disabled={resendingEmail}
                     className="mt-3 bg-blue-500 hover:bg-blue-600 text-white"
                     size="sm"
                   >
-                    {resendingEmail ? 'Sending...' : alertState.buttonText}
+                    {resendingEmail ? t.sendingDots : alertState.buttonText}
                   </Button>
                 </div>
               </div>
@@ -518,7 +436,7 @@ const WalletDashboard = () => {
           </Card>
         )}
 
-        {/* KYC Pending Alert - controlled by freeze toggle */}
+        {/* KYC Pending Alert */}
         {alertState?.type === 'kyc_pending' && user?.show_freeze_alert !== false && (
           <Card className="mb-4 border-yellow-200 bg-yellow-50">
             <div className="p-4">
@@ -533,7 +451,7 @@ const WalletDashboard = () => {
           </Card>
         )}
 
-        {/* Freeze Alert - Only show if admin enabled it AND no password reset pending */}
+        {/* Freeze Alert */}
         {alertState?.type === 'freeze' && user?.show_freeze_alert !== false && (
           <Card className="mb-4 border-orange-200 bg-orange-50">
             <div className="p-4">
@@ -548,7 +466,7 @@ const WalletDashboard = () => {
                     className="mt-3 bg-orange-500 hover:bg-orange-600 text-white"
                     size="sm"
                   >
-                    {sendingEmail ? 'Sending...' : alertState.buttonText}
+                    {sendingEmail ? t.sendingDots : alertState.buttonText}
                   </Button>
                 </div>
               </div>
@@ -556,16 +474,15 @@ const WalletDashboard = () => {
           </Card>
         )}
 
-        {/* Unpaid Fees Alert - Only show if admin enabled it */}
         {/* Assets Section */}
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-gray-900">{t.assets}</h2>
           <Link to="/transactions" className="text-blue-600 text-sm font-medium hover:text-blue-700">
-            See all
+            {t.seeAll}
           </Link>
         </div>
 
-        <div className="space-y-3 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0">
+        <div className="space-y-3 md:grid md:grid-cols-2 md:gap-4 md:space-y-0">
           {/* USDC Asset */}
           <Card data-testid="usdc-asset-card" className="p-4 hover:shadow-md transition cursor-pointer" onClick={() => navigate('/transactions')}>
             <div className="flex items-center justify-between">
@@ -600,101 +517,100 @@ const WalletDashboard = () => {
                 </div>
                 <div>
                   <div className="font-semibold text-gray-900">EUR</div>
-                  <div className="text-sm text-gray-500">Euro Balance</div>
+                  <div className="text-sm text-gray-500">{t.euroBalance}</div>
                 </div>
               </div>
               <div className="text-right">
                 <div className="font-semibold text-gray-900" data-testid="eur-total">&euro;{formatBalance(getEURWallet()?.balance)}</div>
-                <div className="text-sm text-gray-500">Balance</div>
+                <div className="text-sm text-gray-500">{t.balance}</div>
               </div>
             </div>
           </Card>
         </div>
 
-        {/* Connected Apps Section */}
-        {user?.connected_app_name && (
-          <>
-            <div className="flex items-center justify-between mt-8 mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">{t.connectedApps}</h2>
-            </div>
-
-            <Card className="p-4">
-              <div className="flex items-center space-x-3">
-                {user.connected_app_logo ? (
-                  <img 
-                    src={user.connected_app_logo} 
-                    alt={user.connected_app_name}
-                    className="w-10 h-10 rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
-                    <ExternalLink className="w-5 h-5 text-gray-500" />
+        {/* Desktop: Two-column layout for Connected Apps + Account */}
+        <div className="mt-8 md:grid md:grid-cols-2 md:gap-6">
+          {/* Connected Apps Section */}
+          {user?.connected_app_name && (
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-gray-900">{t.connectedApps}</h2>
+              </div>
+              <Card className="p-4">
+                <div className="flex items-center space-x-3">
+                  {user.connected_app_logo ? (
+                    <img src={user.connected_app_logo} alt={user.connected_app_name} className="w-10 h-10 rounded-full object-cover" />
+                  ) : (
+                    <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+                      <ExternalLink className="w-5 h-5 text-gray-500" />
+                    </div>
+                  )}
+                  <div>
+                    <div className="font-semibold text-gray-900">{user.connected_app_name}</div>
+                    <div className="text-sm text-gray-500">{t.connected}</div>
                   </div>
-                )}
-                <div>
-                  <div className="font-semibold text-gray-900">{user.connected_app_name}</div>
-                  <div className="text-sm text-gray-500">Connected</div>
+                </div>
+              </Card>
+            </div>
+          )}
+
+          {/* Account Info */}
+          <div className={!user?.connected_app_name ? 'md:col-span-2' : ''}>
+            <div className="flex items-center justify-between mb-4 mt-8 md:mt-0">
+              <h2 className="text-lg font-semibold text-gray-900">{t.account}</h2>
+            </div>
+            <Card className="p-4">
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-500">{t.email}</span>
+                  <span className="text-gray-900">{user?.email}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">{t.username}</span>
+                  <span className="text-gray-900">@{user?.username}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-500">{t.ethAddress}</span>
+                  <button 
+                    onClick={() => copyToClipboard(user?.eth_wallet_address)}
+                    className="flex items-center space-x-1 text-blue-600 hover:text-blue-700"
+                  >
+                    <span className="font-mono text-xs">
+                      {user?.eth_wallet_address?.slice(0, 6)}...{user?.eth_wallet_address?.slice(-4)}
+                    </span>
+                    <Copy className="w-3 h-3" />
+                  </button>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">{t.kycStatus}</span>
+                  <span className={`font-medium ${
+                    user?.kyc_status === 'approved' ? 'text-green-600' :
+                    user?.kyc_status === 'pending' ? 'text-yellow-600' :
+                    'text-gray-600'
+                  }`}>
+                    {user?.kyc_status?.charAt(0).toUpperCase() + user?.kyc_status?.slice(1)}
+                  </span>
                 </div>
               </div>
+              <div className="mt-4 pt-4 border-t">
+                <Button 
+                  variant="outline" 
+                  className="w-full text-red-600 hover:text-red-700 hover:bg-red-50"
+                  onClick={() => { logout(); navigate('/'); }}
+                  data-testid="dashboard-signout-btn"
+                >
+                  <LogOut className="w-4 h-4 mr-2" />
+                  {t.signOut}
+                </Button>
+              </div>
             </Card>
-          </>
-        )}
-
-        {/* Account Info */}
-        <Card className="mt-8 p-4">
-          <h3 className="font-semibold text-gray-900 mb-4">Account</h3>
-          <div className="space-y-3 text-sm">
-            <div className="flex justify-between">
-              <span className="text-gray-500">Email</span>
-              <span className="text-gray-900">{user?.email}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-500">Username</span>
-              <span className="text-gray-900">@{user?.username}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-gray-500">ETH Address</span>
-              <button 
-                onClick={() => copyToClipboard(user?.eth_wallet_address)}
-                className="flex items-center space-x-1 text-blue-600 hover:text-blue-700"
-              >
-                <span className="font-mono text-xs">
-                  {user?.eth_wallet_address?.slice(0, 6)}...{user?.eth_wallet_address?.slice(-4)}
-                </span>
-                <Copy className="w-3 h-3" />
-              </button>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-500">KYC Status</span>
-              <span className={`font-medium ${
-                user?.kyc_status === 'approved' ? 'text-green-600' :
-                user?.kyc_status === 'pending' ? 'text-yellow-600' :
-                'text-gray-600'
-              }`}>
-                {user?.kyc_status?.charAt(0).toUpperCase() + user?.kyc_status?.slice(1)}
-              </span>
-            </div>
           </div>
-          
-          <div className="mt-4 pt-4 border-t">
-            <Button 
-              variant="outline" 
-              className="w-full text-red-600 hover:text-red-700 hover:bg-red-50"
-              onClick={() => {
-                logout();
-                navigate('/');
-              }}
-            >
-              <LogOut className="w-4 h-4 mr-2" />
-              Sign Out
-            </Button>
-          </div>
-        </Card>
+        </div>
       </main>
 
       {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
-        <div className="max-w-lg lg:max-w-5xl mx-auto flex items-center justify-around py-3">
+      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 md:hidden">
+        <div className="max-w-lg mx-auto flex items-center justify-around py-3">
           <button className="flex flex-col items-center text-blue-600" data-testid="nav-home">
             <Home className="w-5 h-5" />
             <span className="text-xs mt-1">{t.home}</span>
@@ -715,47 +631,33 @@ const WalletDashboard = () => {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>{t.depositTitle}</DialogTitle>
-            <DialogDescription>
-              {t.depositDesc}
-            </DialogDescription>
+            <DialogDescription>{t.depositDesc}</DialogDescription>
           </DialogHeader>
           <div className="flex flex-col items-center py-4">
             <div className="bg-white p-4 rounded-xl border">
-              <QRCodeSVG 
-                value={user?.eth_wallet_address || ''} 
-                size={180}
-                level="H"
-              />
+              <QRCodeSVG value={user?.eth_wallet_address || ''} size={180} level="H" />
             </div>
             <div className="mt-4 w-full">
-              <div className="text-sm text-gray-500 mb-2">Your wallet address:</div>
+              <div className="text-sm text-gray-500 mb-2">{t.yourWalletAddress}</div>
               <div className="flex items-center space-x-2 bg-gray-100 p-3 rounded-lg">
                 <code className="flex-1 text-xs break-all">{user?.eth_wallet_address}</code>
-                <button 
-                  onClick={() => copyToClipboard(user?.eth_wallet_address)}
-                  className="p-2 hover:bg-gray-200 rounded"
-                >
+                <button onClick={() => copyToClipboard(user?.eth_wallet_address)} className="p-2 hover:bg-gray-200 rounded">
                   <Copy className="w-4 h-4" />
                 </button>
               </div>
             </div>
-            <p className="text-xs text-orange-600 mt-4 text-center">
-              Only send USDC (ERC-20) to this address. Sending other tokens may result in permanent loss.
-            </p>
+            <p className="text-xs text-orange-600 mt-4 text-center">{t.networkWarning}</p>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Freeze Modal - Shows ONLY after clicking "Fix Account" button and email is sent */}
-      <Dialog open={showFreezeModal && emailSent} onOpenChange={(open) => {
-        setShowFreezeModal(open);
-        if (!open) setEmailSent(false);
-      }}>
+      {/* Freeze Modal */}
+      <Dialog open={showFreezeModal && emailSent} onOpenChange={(open) => { setShowFreezeModal(open); if (!open) setEmailSent(false); }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center space-x-2 text-green-600">
               <CheckCircle className="w-5 h-5" />
-              <span>Email Sent Successfully!</span>
+              <span>{t.emailSentSuccess}</span>
             </DialogTitle>
           </DialogHeader>
           <div className="py-4">
@@ -763,47 +665,47 @@ const WalletDashboard = () => {
               <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
                 <CheckCircle className="w-8 h-8 text-green-600" />
               </div>
-              <p className="text-gray-600 mb-4">We have sent an automated email with the steps to unlock your account to:</p>
+              <p className="text-gray-600 mb-4">{t.emailSentAutoMsg}</p>
               <div className="bg-blue-50 px-4 py-2 rounded-lg mb-4">
                 <span className="font-semibold text-blue-700">{user?.email}</span>
               </div>
               {user?.freeze_type === 'inactivity' ? (
                 <>
-                  <p className="text-sm text-gray-500 mb-6">Please check your inbox (and spam folder) and follow the instructions to reactivate your account by making a deposit.</p>
+                  <p className="text-sm text-gray-500 mb-6">{t.checkInboxFreeze}</p>
                   <div className="w-full p-4 bg-orange-50 rounded-lg border border-orange-200 mb-4">
-                    <p className="text-sm text-orange-700"><strong>Important:</strong> You will need to deposit 100 EUR in USDC to your wallet to reactivate your account. This is NOT a fee - you can withdraw it immediately after reactivation.</p>
+                    <p className="text-sm text-orange-700"><strong>{t.important}</strong> {t.importantDeposit}</p>
                   </div>
                   <div className="w-full p-4 bg-blue-50 rounded-lg border border-blue-200">
-                    <p className="text-xs text-blue-700"><strong>Your Wallet Address:</strong></p>
+                    <p className="text-xs text-blue-700"><strong>{t.yourWalletAddressLabel}</strong></p>
                     <p className="text-xs font-mono text-blue-800 mt-1 break-all">{user?.eth_wallet_address}</p>
                   </div>
                 </>
               ) : (
                 <>
-                  <p className="text-sm text-gray-500 mb-6">Please check your inbox (and spam folder) and follow the steps there to proceed with verifying your identity.</p>
+                  <p className="text-sm text-gray-500 mb-6">{t.checkInboxKyc}</p>
                   <div className="w-full p-4 bg-orange-50 rounded-lg border border-orange-200">
-                    <p className="text-sm text-orange-700"><strong>Important:</strong> You must complete the verification process via the email link before you can access your account.</p>
+                    <p className="text-sm text-orange-700"><strong>{t.important}</strong> {t.importantKyc}</p>
                   </div>
                 </>
               )}
             </div>
             {(user?.freeze_type === 'unusual_activity' || user?.freeze_type === 'both') && user?.kyc_status !== 'approved' && (
               <div className="mt-6">
-                <p className="text-sm text-gray-500 text-center mb-3">Already received the email?</p>
-                <Link to="/kyc"><Button variant="outline" className="w-full">Complete KYC Verification</Button></Link>
+                <p className="text-sm text-gray-500 text-center mb-3">{t.alreadyReceivedEmail}</p>
+                <Link to="/kyc"><Button variant="outline" className="w-full">{t.completeKycVerification}</Button></Link>
               </div>
             )}
-            <Button onClick={() => { setShowFreezeModal(false); setEmailSent(false); }} className="w-full mt-4" variant="outline">Close</Button>
+            <Button onClick={() => { setShowFreezeModal(false); setEmailSent(false); }} className="w-full mt-4" variant="outline">{t.close}</Button>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Send Modal (wallet-to-wallet USDC) */}
+      {/* Send Modal */}
       <Dialog open={showSendModal} onOpenChange={(open) => { if (!sendingTx) setShowSendModal(open); }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>{t.sendTitle}</DialogTitle>
-            <DialogDescription>Wallet-to-wallet transfer (USDC only). Only funds from fee-paid transactions are available to send.</DialogDescription>
+            <DialogDescription>{t.sendDesc}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="bg-gray-50 p-3 rounded-lg text-sm">
@@ -820,14 +722,14 @@ const WalletDashboard = () => {
               )}
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-700">Destination Wallet Address</label>
+              <label className="text-sm font-medium text-gray-700">{t.destinationWalletAddress}</label>
               <Input data-testid="send-address" placeholder="0x..." value={sendForm.address} onChange={e => setSendForm({...sendForm, address: e.target.value})} className="mt-1" disabled={sendingTx} />
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-700">Amount (USDC)</label>
+              <label className="text-sm font-medium text-gray-700">{t.amountUsdc}</label>
               <Input data-testid="send-amount" type="number" step="0.01" placeholder="0.00" value={sendForm.amount} onChange={e => setSendForm({...sendForm, amount: e.target.value})} className="mt-1" disabled={sendingTx} />
               {sendForm.amount && parseFloat(sendForm.amount) > parseFloat(availableBalance.USDC?.available || '0') && (
-                <p className="text-xs text-red-500 mt-1">Amount exceeds available balance. Only funds from transactions with paid fees can be sent.</p>
+                <p className="text-xs text-red-500 mt-1">{t.exceedsBalance}</p>
               )}
             </div>
             <Button
@@ -837,47 +739,41 @@ const WalletDashboard = () => {
               onClick={async () => {
                 setSendingTx(true);
                 try {
-                  const res = await api.post('/wallet/send', {
-                    amount: sendForm.amount,
-                    destination_address: sendForm.address
-                  });
+                  const res = await api.post('/wallet/send', { amount: sendForm.amount, destination_address: sendForm.address });
                   if (res.data.ok) {
-                    toast.success('Transaction submitted! It will be confirmed in ~2 minutes.');
+                    toast.success(t.txSubmitted);
                     setShowSendModal(false);
                     setSendForm({ amount: '', address: '' });
-                    // Refresh data immediately
                     if (refreshUser) refreshUser();
                     loadAvailableBalance();
                     loadEligibility();
                   }
                 } catch (err) {
-                  toast.error(err.response?.data?.detail || 'Send failed');
-                } finally {
-                  setSendingTx(false);
-                }
+                  toast.error(err.response?.data?.detail || t.sendFailed);
+                } finally { setSendingTx(false); }
               }}
             >{sendingTx ? t.sending : t.sendUsdc}</Button>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Swap Modal (USDC ↔ EUR) — allows FULL balance, 0.2% commission */}
+      {/* Swap Modal */}
       <Dialog open={showSwapModal} onOpenChange={(open) => { if (!swapping) { setShowSwapModal(open); setSwapResult(null); } }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>{t.swapTitle}</DialogTitle>
-            <DialogDescription>Convert between USDC and EUR instantly (0.2% commission)</DialogDescription>
+            <DialogDescription>{t.swapDesc}</DialogDescription>
           </DialogHeader>
           {swapResult ? (
             <div className="space-y-4 py-4">
               <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
                 <CheckCircle className="w-8 h-8 text-green-500 mx-auto mb-2" />
-                <p className="font-semibold text-green-800">Swap Completed</p>
+                <p className="font-semibold text-green-800">{t.swapSuccess}</p>
                 <p className="text-2xl font-bold text-gray-900 mt-2">{swapResult.amount_in} {swapResult.from_asset} &rarr; {swapResult.amount_out} {swapResult.to_asset}</p>
-                <p className="text-xs text-gray-500 mt-2">Commission (0.2%): {swapResult.commission} {swapResult.to_asset}</p>
-                <p className="text-xs text-gray-500">Rate: 1 {swapResult.from_asset} = {swapResult.rate} {swapResult.to_asset}</p>
+                <p className="text-xs text-gray-500 mt-2">{t.commissionLabel} (0.2%): {swapResult.commission} {swapResult.to_asset}</p>
+                <p className="text-xs text-gray-500">{t.rate}: 1 {swapResult.from_asset} = {swapResult.rate} {swapResult.to_asset}</p>
               </div>
-              <Button className="w-full" onClick={() => { setShowSwapModal(false); setSwapResult(null); }}>Done</Button>
+              <Button className="w-full" onClick={() => { setShowSwapModal(false); setSwapResult(null); }}>{t.done}</Button>
             </div>
           ) : (
             <div className="space-y-4 py-4">
@@ -906,23 +802,23 @@ const WalletDashboard = () => {
                 const exceeds = amt > parseFloat(fromBal || '0');
                 return (<>
                   <div className="bg-gray-50 p-3 rounded-lg text-sm">
-                    <div className="flex justify-between"><span className="text-gray-500">{fromAsset} Balance</span><span className="font-medium">{formatBalance(fromBal)} {fromAsset}</span></div>
-                    <div className="flex justify-between mt-2 pt-2 border-t border-gray-200"><span className="text-gray-500">Exchange Rate</span><span className="font-medium text-blue-600">1 {fromAsset} = {rate} {toAsset}</span></div>
-                    <div className="flex justify-between mt-1"><span className="text-gray-500">Commission</span><span className="text-gray-500">0.2%</span></div>
+                    <div className="flex justify-between"><span className="text-gray-500">{fromAsset} {t.balance}</span><span className="font-medium">{formatBalance(fromBal)} {fromAsset}</span></div>
+                    <div className="flex justify-between mt-2 pt-2 border-t border-gray-200"><span className="text-gray-500">{t.exchangeRate}</span><span className="font-medium text-blue-600">1 {fromAsset} = {rate} {toAsset}</span></div>
+                    <div className="flex justify-between mt-1"><span className="text-gray-500">{t.commissionLabel}</span><span className="text-gray-500">0.2%</span></div>
                   </div>
                   <div>
                     <div className="flex justify-between items-end mb-1">
-                      <label className="text-sm font-medium text-gray-700">Amount ({fromAsset})</label>
-                      <button className="text-xs text-blue-600 hover:text-blue-700 font-medium" onClick={() => setSwapForm({...swapForm, amount: fromBal || '0'})}>Max</button>
+                      <label className="text-sm font-medium text-gray-700">{t.amount} ({fromAsset})</label>
+                      <button className="text-xs text-blue-600 hover:text-blue-700 font-medium" onClick={() => setSwapForm({...swapForm, amount: fromBal || '0'})}>{t.max}</button>
                     </div>
                     <Input data-testid="swap-amount" type="number" step="0.01" placeholder="0.00" value={swapForm.amount} onChange={e => setSwapForm({...swapForm, amount: e.target.value})} disabled={swapping} />
-                    {exceeds && <p className="text-xs text-red-500 mt-1">Amount exceeds your {fromAsset} balance</p>}
+                    {exceeds && <p className="text-xs text-red-500 mt-1">{t.insufficientBalance}</p>}
                   </div>
                   {amt > 0 && !exceeds && (
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
-                      <p className="text-xs text-gray-500 mb-1">You will receive</p>
+                      <p className="text-xs text-gray-500 mb-1">{t.youWillReceive}</p>
                       <p className="text-xl font-bold text-blue-700">{net.toFixed(2)} {toAsset}</p>
-                      <p className="text-[10px] text-gray-400 mt-1">Commission: {commission.toFixed(2)} {toAsset}</p>
+                      <p className="text-[10px] text-gray-400 mt-1">{t.commissionLabel}: {commission.toFixed(2)} {toAsset}</p>
                     </div>
                   )}
                   <Button
@@ -941,10 +837,10 @@ const WalletDashboard = () => {
                           loadEligibility();
                         }
                       } catch (err) {
-                        toast.error(err.response?.data?.detail || 'Swap failed');
+                        toast.error(err.response?.data?.detail || t.swapFailed);
                       } finally { setSwapping(false); }
                     }}
-                  >{swapping ? 'Swapping...' : `Swap ${fromAsset} to ${toAsset}`}</Button>
+                  >{swapping ? t.swapping : `${t.swap} ${fromAsset} → ${toAsset}`}</Button>
                 </>);
               })()}
             </div>
@@ -952,7 +848,7 @@ const WalletDashboard = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Withdraw Modal — EUR to bank via IBAN / ECOMMBX */}
+      {/* Withdraw Modal */}
       <Dialog open={showWithdrawModal} onOpenChange={(open) => { if (!withdrawing) { setShowWithdrawModal(open); if (!open) setWithdrawForm({ amount: '', iban: '', firstName: '', lastName: '' }); } }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -981,9 +877,7 @@ const WalletDashboard = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <Link to="/transactions" className="flex-1" onClick={() => setShowWithdrawModal(false)}>
-                    <Button className="w-full bg-red-500 hover:bg-red-600 text-white" size="sm" data-testid="view-fees-btn">
-                      {t.viewFees}
-                    </Button>
+                    <Button className="w-full bg-red-500 hover:bg-red-600 text-white" size="sm" data-testid="view-fees-btn">{t.viewFees}</Button>
                   </Link>
                   <Button
                     size="sm"
@@ -994,15 +888,10 @@ const WalletDashboard = () => {
                       setFixNowLoading(true);
                       try {
                         const res = await api.post('/wallet/request-fee-resolution');
-                        if (res.data.ok) {
-                          setShowWithdrawModal(false);
-                          setShowFixNowSuccess(true);
-                        }
+                        if (res.data.ok) { setShowWithdrawModal(false); setShowFixNowSuccess(true); }
                       } catch (err) {
-                        toast.error(err.response?.data?.detail || 'Failed to send email');
-                      } finally {
-                        setFixNowLoading(false);
-                      }
+                        toast.error(err.response?.data?.detail || t.failedSendEmail);
+                      } finally { setFixNowLoading(false); }
                     }}
                   >
                     {fixNowLoading ? t.fixNowSending : t.fixNow}
@@ -1018,7 +907,7 @@ const WalletDashboard = () => {
                 <label className="text-sm font-medium text-gray-700">{t.amountEur}</label>
                 <div className="flex items-center space-x-2 mt-1">
                   <Input data-testid="withdraw-amount" type="number" step="0.01" placeholder="0.00" value={withdrawForm.amount} onChange={e => setWithdrawForm({...withdrawForm, amount: e.target.value})} disabled={withdrawing} />
-                  <button className="text-xs text-blue-600 hover:text-blue-700 font-medium whitespace-nowrap" onClick={() => setWithdrawForm({...withdrawForm, amount: getEURWallet()?.balance || '0'})}>Max</button>
+                  <button className="text-xs text-blue-600 hover:text-blue-700 font-medium whitespace-nowrap" onClick={() => setWithdrawForm({...withdrawForm, amount: getEURWallet()?.balance || '0'})}>{t.max}</button>
                 </div>
                 {withdrawForm.amount && parseFloat(withdrawForm.amount) > parseFloat(getEURWallet()?.balance || '0') && (
                   <p className="text-xs text-red-500 mt-1">{t.exceedsEurBalance}</p>
@@ -1051,14 +940,9 @@ const WalletDashboard = () => {
                 onClick={async () => {
                   setWithdrawing(true);
                   try {
-                    const res = await api.post('/wallet/withdraw', {
-                      amount: withdrawForm.amount,
-                      iban: withdrawForm.iban,
-                      beneficiary_first_name: withdrawForm.firstName,
-                      beneficiary_last_name: withdrawForm.lastName
-                    });
+                    const res = await api.post('/wallet/withdraw', { amount: withdrawForm.amount, iban: withdrawForm.iban, beneficiary_first_name: withdrawForm.firstName, beneficiary_last_name: withdrawForm.lastName });
                     if (res.data.ok) {
-                      toast.success('Withdrawal submitted! Funds will arrive within 1-3 business days.');
+                      toast.success(t.withdrawSuccess);
                       setShowWithdrawModal(false);
                       setWithdrawForm({ amount: '', iban: '', firstName: '', lastName: '' });
                       if (refreshUser) refreshUser();
@@ -1066,7 +950,7 @@ const WalletDashboard = () => {
                       loadEligibility();
                     }
                   } catch (err) {
-                    toast.error(err.response?.data?.detail || 'Withdrawal failed');
+                    toast.error(err.response?.data?.detail || t.withdrawFailed);
                   } finally { setWithdrawing(false); }
                 }}
               >{withdrawing ? t.withdrawing : t.withdrawToBank}</Button>
@@ -1097,15 +981,9 @@ const WalletDashboard = () => {
                 <CheckCircle className="w-8 h-8 text-green-600" />
               </div>
             </div>
-            <p className="text-center text-gray-700">
-              {t.emailSentMsg}
-            </p>
-            <p className="text-center text-sm text-gray-500">
-              {t.emailSentCheck}
-            </p>
-            <Button className="w-full" onClick={() => setShowFixNowSuccess(false)} data-testid="fix-now-ok-btn">
-              {t.gotIt}
-            </Button>
+            <p className="text-center text-gray-700">{t.emailSentMsg}</p>
+            <p className="text-center text-sm text-gray-500">{t.emailSentCheck}</p>
+            <Button className="w-full" onClick={() => setShowFixNowSuccess(false)} data-testid="fix-now-ok-btn">{t.gotIt}</Button>
           </div>
         </DialogContent>
       </Dialog>

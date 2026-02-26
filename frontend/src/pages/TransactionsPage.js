@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { getTranslations } from '@/i18n';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -9,12 +10,12 @@ import {
   ArrowUpRight, 
   ArrowDownLeft, 
   ArrowLeftRight,
-  Filter,
   AlertTriangle
 } from 'lucide-react';
 
 const TransactionsPage = () => {
   const { api } = useAuth();
+  const t = useMemo(() => getTranslations(), []);
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -29,9 +30,7 @@ const TransactionsPage = () => {
     setLoading(true);
     try {
       const params = { page, page_size: 20 };
-      if (filter !== 'all') {
-        params.type = filter;
-      }
+      if (filter !== 'all') params.type = filter;
       const response = await api.get('/wallet/transactions', { params });
       if (response.data.ok) {
         setTransactions(response.data.data.transactions);
@@ -46,17 +45,22 @@ const TransactionsPage = () => {
 
   const getTransactionIcon = (type) => {
     switch (type) {
-      case 'deposit':
-      case 'receive':
+      case 'deposit': case 'receive':
         return <ArrowDownLeft className="w-4 h-4 text-green-600" />;
-      case 'withdrawal':
-      case 'send':
+      case 'withdrawal': case 'send':
         return <ArrowUpRight className="w-4 h-4 text-red-600" />;
       case 'swap':
         return <ArrowLeftRight className="w-4 h-4 text-blue-600" />;
       default:
         return <ArrowDownLeft className="w-4 h-4 text-gray-600" />;
     }
+  };
+
+  const statusLabels = {
+    completed: t.completed,
+    processing: t.processing,
+    pending: t.pending,
+    failed: t.failed,
   };
 
   const getStatusBadge = (status) => {
@@ -66,21 +70,22 @@ const TransactionsPage = () => {
       pending: 'bg-yellow-100 text-yellow-700',
       failed: 'bg-red-100 text-red-700',
     };
-    return (
-      <Badge className={styles[status] || 'bg-gray-100 text-gray-700'}>
-        {status}
-      </Badge>
-    );
+    return <Badge className={styles[status] || 'bg-gray-100 text-gray-700'}>{statusLabels[status] || status}</Badge>;
+  };
+
+  const filterLabels = {
+    all: t.all,
+    deposit: t.deposits,
+    receive: t.receives,
+    send: t.sends,
+    swap: t.swaps,
   };
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+      month: 'short', day: 'numeric', year: 'numeric',
+      hour: '2-digit', minute: '2-digit'
     });
   };
 
@@ -88,17 +93,17 @@ const TransactionsPage = () => {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-lg mx-auto px-4 py-4">
+        <div className="max-w-lg md:max-w-3xl lg:max-w-5xl xl:max-w-6xl mx-auto px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between">
             <Link to="/wallet" className="flex items-center text-gray-600 hover:text-gray-900">
               <ArrowLeft className="w-5 h-5 mr-2" />
-              <span className="font-semibold">Transactions</span>
+              <span className="font-semibold">{t.transactions}</span>
             </Link>
           </div>
         </div>
       </header>
 
-      <main className="max-w-lg mx-auto px-4 py-6">
+      <main className="max-w-lg md:max-w-3xl lg:max-w-5xl xl:max-w-6xl mx-auto px-4 sm:px-6 py-6">
         {/* Filter */}
         <div className="flex items-center space-x-2 mb-4 overflow-x-auto pb-2">
           {['all', 'deposit', 'receive', 'send', 'swap'].map((f) => (
@@ -107,9 +112,9 @@ const TransactionsPage = () => {
               variant={filter === f ? 'default' : 'outline'}
               size="sm"
               onClick={() => setFilter(f)}
-              className="capitalize"
+              data-testid={`filter-${f}`}
             >
-              {f}
+              {filterLabels[f]}
             </Button>
           ))}
         </div>
@@ -121,10 +126,10 @@ const TransactionsPage = () => {
           </div>
         ) : transactions.length === 0 ? (
           <Card className="p-8 text-center">
-            <p className="text-gray-500">No transactions found</p>
+            <p className="text-gray-500">{t.noTransactions}</p>
           </Card>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-3 md:grid md:grid-cols-2 md:gap-4 md:space-y-0">
             {transactions.map((tx) => (
               <Card key={tx.id} className="p-4">
                 <div className="flex items-start justify-between">
@@ -155,7 +160,7 @@ const TransactionsPage = () => {
                     <div className="flex items-center justify-between text-sm">
                       <div className="flex items-center text-orange-600">
                         <AlertTriangle className="w-4 h-4 mr-1" />
-                        <span>Unpaid Fee</span>
+                        <span>{t.unpaidFee}</span>
                       </div>
                       <span className="font-semibold text-orange-600">&euro;{tx.fee}</span>
                     </div>
@@ -175,10 +180,10 @@ const TransactionsPage = () => {
               onClick={() => setPage(p => Math.max(1, p - 1))}
               disabled={page === 1}
             >
-              Previous
+              {t.previous}
             </Button>
             <span className="text-sm text-gray-600">
-              Page {page} of {totalPages}
+              {t.pageOf.replace('{page}', page).replace('{total}', totalPages)}
             </span>
             <Button
               variant="outline"
@@ -186,7 +191,7 @@ const TransactionsPage = () => {
               onClick={() => setPage(p => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
             >
-              Next
+              {t.next}
             </Button>
           </div>
         )}

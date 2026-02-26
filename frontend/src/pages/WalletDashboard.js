@@ -695,21 +695,17 @@ const WalletDashboard = () => {
       {/* Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
         <div className="max-w-lg mx-auto flex items-center justify-around py-3">
-          <button className="flex flex-col items-center text-blue-600">
+          <button className="flex flex-col items-center text-blue-600" data-testid="nav-home">
             <Home className="w-5 h-5" />
             <span className="text-xs mt-1">Home</span>
           </button>
-          <button className="flex flex-col items-center text-gray-400">
-            <TrendingUp className="w-5 h-5" />
-            <span className="text-xs mt-1">Prices</span>
-          </button>
-          <button className="flex flex-col items-center text-gray-400">
-            <Grid3X3 className="w-5 h-5" />
-            <span className="text-xs mt-1">NFTs</span>
-          </button>
-          <button className="flex flex-col items-center text-gray-400">
+          <button
+            className="flex flex-col items-center text-gray-400 hover:text-blue-600 transition"
+            data-testid="nav-swap"
+            onClick={() => setShowSwapModal(true)}
+          >
             <Repeat className="w-5 h-5" />
-            <span className="text-xs mt-1">DEX</span>
+            <span className="text-xs mt-1">Swap</span>
           </button>
         </div>
       </nav>

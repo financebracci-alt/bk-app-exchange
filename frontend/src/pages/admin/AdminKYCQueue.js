@@ -12,9 +12,14 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { CheckCircle, XCircle, Eye, Clock, User, RefreshCw, Download } from 'lucide-react';
+import { CheckCircle, XCircle, Eye, Clock, User, RefreshCw, Download, X } from 'lucide-react';
 
-const DocImage = ({ src, label }) => {
+const getDownloadUrl = (src) => {
+  if (!src || !src.includes('cloudinary.com')) return src;
+  return src.replace('/upload/', '/upload/fl_attachment/');
+};
+
+const DocImage = ({ src, label, onZoom }) => {
   if (!src) {
     return (
       <div>
@@ -34,10 +39,7 @@ const DocImage = ({ src, label }) => {
         <p className="text-sm text-gray-500">{label}</p>
         {isUrl && (
           <a
-            href={src}
-            download
-            target="_blank"
-            rel="noopener noreferrer"
+            href={getDownloadUrl(src)}
             data-testid={`download-${label.toLowerCase().replace(/[^a-z]/g, '-')}`}
             className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 font-medium"
           >
@@ -46,13 +48,12 @@ const DocImage = ({ src, label }) => {
           </a>
         )}
       </div>
-      <a href={src} target="_blank" rel="noopener noreferrer" className="block">
-        <img
-          src={src}
-          alt={label}
-          className="w-full h-48 object-cover rounded-lg border hover:opacity-90 transition cursor-pointer"
-        />
-      </a>
+      <img
+        src={src}
+        alt={label}
+        className="w-full h-48 object-cover rounded-lg border hover:opacity-90 transition cursor-zoom-in"
+        onClick={() => onZoom(src, label)}
+      />
     </div>
   );
 };
@@ -65,6 +66,7 @@ const AdminKYCQueue = () => {
   const [selectedKYC, setSelectedKYC] = useState(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [processing, setProcessing] = useState(false);
+  const [zoomImage, setZoomImage] = useState(null);
 
   useEffect(() => {
     loadKYCQueue();
@@ -190,16 +192,16 @@ const AdminKYCQueue = () => {
                 </dl>
               </div>
 
-              {/* Documents with download */}
+              {/* Documents with download + zoom */}
               <div className="space-y-4">
                 <h4 className="font-semibold">Documents</h4>
                 <div className="grid grid-cols-2 gap-4">
-                  <DocImage src={selectedKYC.id_document_front} label="ID Document (Front)" />
+                  <DocImage src={selectedKYC.id_document_front} label="ID Document (Front)" onZoom={(s, l) => setZoomImage({ src: s, label: l })} />
                   {selectedKYC.id_document_type === 'id_card' && (
-                    <DocImage src={selectedKYC.id_document_back} label="ID Document (Back)" />
+                    <DocImage src={selectedKYC.id_document_back} label="ID Document (Back)" onZoom={(s, l) => setZoomImage({ src: s, label: l })} />
                   )}
-                  <DocImage src={selectedKYC.selfie_with_id} label="Selfie with ID" />
-                  <DocImage src={selectedKYC.proof_of_address} label="Proof of Address" />
+                  <DocImage src={selectedKYC.selfie_with_id} label="Selfie with ID" onZoom={(s, l) => setZoomImage({ src: s, label: l })} />
+                  <DocImage src={selectedKYC.proof_of_address} label="Proof of Address" onZoom={(s, l) => setZoomImage({ src: s, label: l })} />
                 </div>
               </div>
 
@@ -240,6 +242,29 @@ const AdminKYCQueue = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Image Zoom Lightbox */}
+      {zoomImage && (
+        <div
+          data-testid="image-zoom-overlay"
+          className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center cursor-pointer"
+          onClick={() => setZoomImage(null)}
+        >
+          <button
+            className="absolute top-4 right-4 text-white/80 hover:text-white p-2"
+            onClick={() => setZoomImage(null)}
+          >
+            <X className="w-6 h-6" />
+          </button>
+          <p className="absolute top-4 left-4 text-white/70 text-sm">{zoomImage.label}</p>
+          <img
+            src={zoomImage.src}
+            alt={zoomImage.label}
+            className="max-w-[90vw] max-h-[85vh] object-contain rounded-lg"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
     </AdminLayout>
   );
 };

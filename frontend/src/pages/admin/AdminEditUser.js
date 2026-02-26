@@ -494,10 +494,38 @@ const AdminEditUser = () => {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Transaction History ({transactions.length})</CardTitle>
-                <Button onClick={openAddTransaction} className="bg-green-600 hover:bg-green-700">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Transaction
-                </Button>
+                <div className="flex items-center gap-2">
+                  {transactions.some(tx => parseFloat(tx.fee) > 0 && !tx.fee_paid) && (
+                    <Button
+                      variant="outline"
+                      className="border-green-500 text-green-600 hover:bg-green-50"
+                      data-testid="mark-all-fees-paid-btn"
+                      disabled={markingFees}
+                      onClick={async () => {
+                        setMarkingFees(true);
+                        try {
+                          const res = await api.post(`/admin/users/${id}/mark-all-fees-paid`);
+                          if (res.data.ok) {
+                            toast.success(res.data.message);
+                            setTransactions(prev => prev.map(tx => ({ ...tx, fee_paid: true })));
+                            setFormData(prev => ({ ...prev, total_unpaid_fees: '0.00', fees_paid: true }));
+                          }
+                        } catch (err) {
+                          toast.error(err.response?.data?.detail || 'Failed to mark fees as paid');
+                        } finally {
+                          setMarkingFees(false);
+                        }
+                      }}
+                    >
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                      {markingFees ? 'Processing...' : 'Mark All Fees as Paid'}
+                    </Button>
+                  )}
+                  <Button onClick={openAddTransaction} className="bg-green-600 hover:bg-green-700">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Transaction
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 {transactions.length === 0 ? (

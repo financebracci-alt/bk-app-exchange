@@ -865,7 +865,7 @@ const WalletDashboard = () => {
       <Dialog open={showSwapModal} onOpenChange={(open) => { if (!swapping) { setShowSwapModal(open); setSwapResult(null); } }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Swap</DialogTitle>
+            <DialogTitle>{t.swapTitle}</DialogTitle>
             <DialogDescription>Convert between USDC and EUR instantly (0.2% commission)</DialogDescription>
           </DialogHeader>
           {swapResult ? (

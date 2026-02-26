@@ -24,7 +24,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { ArrowLeft, Save, Mail, RefreshCw, Wallet, History, User, Shield, Eye, EyeOff, AlertTriangle, DollarSign, Plus, Edit, Trash2, ArrowDownLeft, ArrowUpRight } from 'lucide-react';
+import { ArrowLeft, Save, Mail, RefreshCw, Wallet, History, User, Shield, Eye, EyeOff, AlertTriangle, DollarSign, Plus, Edit, Trash2, ArrowDownLeft, ArrowUpRight, CheckCircle } from 'lucide-react';
 
 const AdminEditUser = () => {
   const { userId } = useParams();

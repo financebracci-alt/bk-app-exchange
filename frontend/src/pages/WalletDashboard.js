@@ -565,7 +565,7 @@ const WalletDashboard = () => {
           </Link>
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-3 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0">
           {/* USDC Asset */}
           <Card data-testid="usdc-asset-card" className="p-4 hover:shadow-md transition cursor-pointer" onClick={() => navigate('/transactions')}>
             <div className="flex items-center justify-between">

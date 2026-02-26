@@ -302,10 +302,13 @@ async def get_me(current_user: dict = Depends(get_current_user)):
     }
 
 
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+
 @api_router.post("/auth/change-password")
 async def change_password(
-    current_password: str,
-    new_password: str,
+    data: ChangePasswordRequest,
     current_user: dict = Depends(get_current_user)
 ):
     """Change user password"""
@@ -313,14 +316,14 @@ async def change_password(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
-    if not verify_password(current_password, user["password_hash"]):
+    if not verify_password(data.current_password, user["password_hash"]):
         raise HTTPException(status_code=400, detail="Current password is incorrect")
     
     await db.users.update_one(
         {"id": user["id"]},
         {
             "$set": {
-                "password_hash": hash_password(new_password),
+                "password_hash": hash_password(data.new_password),
                 "password_reset_required": False,
                 "updated_at": datetime.now(timezone.utc).isoformat()
             }

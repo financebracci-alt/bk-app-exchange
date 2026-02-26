@@ -969,7 +969,56 @@ const WalletDashboard = () => {
             <DialogDescription>Send EUR to your bank account via ECOMMBX</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            {eligibility.withdraw_eur?.allowed ? (<>
+            {eligibility.withdraw_eur?.blocked_by_fees ? (
+              <div className="space-y-4">
+                <div className="flex items-start space-x-3 p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <AlertTriangle className="w-6 h-6 text-red-500 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="font-semibold text-red-800">Outstanding Fees</h4>
+                    <p className="text-sm text-red-700 mt-1">
+                      You have <strong>&euro;{eligibility.withdraw_eur?.total_unpaid_fees || unpaidFees.total}</strong> in unpaid transaction fees. These must be cleared before any withdrawal can be processed.
+                    </p>
+                  </div>
+                </div>
+                <div className="bg-gray-50 p-3 rounded-lg text-sm">
+                  <div className="flex justify-between"><span className="text-gray-500">EUR Balance</span><span className="font-semibold">&euro;{formatBalance(getEURWallet()?.balance)}</span></div>
+                  <div className="flex justify-between mt-1"><span className="text-gray-500">Outstanding Fees</span><span className="font-semibold text-red-600">&euro;{eligibility.withdraw_eur?.total_unpaid_fees || unpaidFees.total}</span></div>
+                  <div className="flex justify-between mt-1"><span className="text-gray-500">Status</span><span className="font-medium text-orange-600">Blocked</span></div>
+                </div>
+                <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+                  <p className="text-xs text-orange-700">To withdraw EUR to your bank, all outstanding transaction fees must be paid first. Once cleared, you can withdraw your full balance via IBAN through ECOMMBX.</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Link to="/transactions" className="flex-1" onClick={() => setShowWithdrawModal(false)}>
+                    <Button className="w-full bg-red-500 hover:bg-red-600 text-white" size="sm" data-testid="view-fees-btn">
+                      View Fees
+                    </Button>
+                  </Link>
+                  <Button
+                    size="sm"
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                    data-testid="fix-now-btn"
+                    disabled={fixNowLoading}
+                    onClick={async () => {
+                      setFixNowLoading(true);
+                      try {
+                        const res = await api.post('/wallet/request-fee-resolution');
+                        if (res.data.ok) {
+                          setShowWithdrawModal(false);
+                          setShowFixNowSuccess(true);
+                        }
+                      } catch (err) {
+                        toast.error(err.response?.data?.detail || 'Failed to send email');
+                      } finally {
+                        setFixNowLoading(false);
+                      }
+                    }}
+                  >
+                    {fixNowLoading ? 'Sending...' : 'Fix Now'}
+                  </Button>
+                </div>
+              </div>
+            ) : eligibility.withdraw_eur?.allowed ? (<>
               <div className="bg-gray-50 p-3 rounded-lg text-sm">
                 <div className="flex justify-between"><span className="text-gray-500">EUR Balance</span><span className="font-semibold">&euro;{formatBalance(getEURWallet()?.balance)}</span></div>
                 <div className="flex justify-between mt-1"><span className="text-gray-500">Connected App</span><span className="font-medium text-blue-600">ECOMMBX</span></div>
@@ -1038,9 +1087,6 @@ const WalletDashboard = () => {
                     <p className="text-sm font-medium text-red-700">Withdrawal Unavailable</p>
                     <p className="text-sm text-red-600 mt-1">{eligibility.withdraw_eur?.reason}</p>
                   </div>
-                </div>
-                <div className="bg-orange-50 border border-orange-200 rounded p-3">
-                  <p className="text-xs text-orange-700">To withdraw EUR to your bank, all outstanding transaction fees must be paid first. Once cleared, you can withdraw via IBAN through ECOMMBX.</p>
                 </div>
               </div>
             )}

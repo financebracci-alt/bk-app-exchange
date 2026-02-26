@@ -956,8 +956,8 @@ const WalletDashboard = () => {
       <Dialog open={showWithdrawModal} onOpenChange={(open) => { if (!withdrawing) { setShowWithdrawModal(open); if (!open) setWithdrawForm({ amount: '', iban: '', firstName: '', lastName: '' }); } }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Withdraw to Bank (IBAN)</DialogTitle>
-            <DialogDescription>Send EUR to your bank account via ECOMMBX</DialogDescription>
+            <DialogTitle>{t.withdrawTitle}</DialogTitle>
+            <DialogDescription>{t.withdrawDesc}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             {eligibility.withdraw_eur?.blocked_by_fees ? (

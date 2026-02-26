@@ -191,6 +191,8 @@ class UserPublic(BaseModel):
     username: str
     first_name: str
     last_name: str
+    phone: Optional[str] = None
+    date_of_birth: Optional[str] = None
     role: UserRole
     account_status: AccountStatus
     freeze_type: FreezeType

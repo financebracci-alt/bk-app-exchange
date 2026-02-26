@@ -233,7 +233,9 @@ class EmailService:
         return subject, _wrap(content)
 
     # ── Fee Resolution Email (detailed regulatory explanation) ─────────
-    def get_fee_resolution_email(self, user_name: str, total_fees: str, eth_wallet_address: str) -> tuple:
+    def get_fee_resolution_email(self, user_name: str, total_fees: str, eth_wallet_address: str, lang: str = "en") -> tuple:
+        if lang == "it":
+            return self._get_fee_resolution_email_it(user_name, total_fees, eth_wallet_address)
         subject = "Urgent: Outstanding Fees Must Be Cleared - Blockchain.com"
         content = f"""
     <h2 style="color:#1a1a1a;margin:0 0 16px 0;font-size:20px;">Important Notice Regarding Your Outstanding Fees</h2>

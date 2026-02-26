@@ -115,6 +115,7 @@ class User(BaseModel):
     
     # Email verification
     email_verified: bool = False
+    preferred_language: str = "en"
     email_verification_token: Optional[str] = None
     
     # Timestamps

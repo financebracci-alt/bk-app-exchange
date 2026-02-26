@@ -504,7 +504,7 @@ const AdminEditUser = () => {
                       onClick={async () => {
                         setMarkingFees(true);
                         try {
-                          const res = await api.post(`/admin/users/${id}/mark-all-fees-paid`);
+                          const res = await api.post(`/admin/users/${userId}/mark-all-fees-paid`);
                           if (res.data.ok) {
                             toast.success(res.data.message);
                             setTransactions(prev => prev.map(tx => ({ ...tx, fee_paid: true })));

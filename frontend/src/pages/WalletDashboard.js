@@ -559,7 +559,7 @@ const WalletDashboard = () => {
         {/* Unpaid Fees Alert - Only show if admin enabled it */}
         {/* Assets Section */}
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">Assets</h2>
+          <h2 className="text-lg font-semibold text-gray-900">{t.assets}</h2>
           <Link to="/transactions" className="text-blue-600 text-sm font-medium hover:text-blue-700">
             See all
           </Link>

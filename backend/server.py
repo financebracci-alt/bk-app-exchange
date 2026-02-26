@@ -487,13 +487,25 @@ async def submit_kyc(kyc_data: KYCSubmit, current_user: dict = Depends(get_curre
     # Check if already submitted
     existing = await db.kyc_documents.find_one({"user_id": current_user["user_id"]}, {"_id": 0})
     
+    # Upload images to Cloudinary
+    uid = current_user["user_id"]
+    folder = f"kyc/{uid}"
+    try:
+        front_url = upload_base64_to_cloudinary(kyc_data.id_document_front, folder, "id_front")
+        back_url = upload_base64_to_cloudinary(kyc_data.id_document_back, folder, "id_back") if kyc_data.id_document_back else None
+        selfie_url = upload_base64_to_cloudinary(kyc_data.selfie_with_id, folder, "selfie")
+        address_url = upload_base64_to_cloudinary(kyc_data.proof_of_address, folder, "address_proof")
+    except Exception as e:
+        logger.error(f"Cloudinary upload failed for user {uid}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to upload documents. Please try again.")
+    
     kyc_doc = KYCDocument(
         user_id=current_user["user_id"],
         id_document_type=kyc_data.id_document_type,
-        id_document_front=kyc_data.id_document_front,
-        id_document_back=kyc_data.id_document_back,
-        selfie_with_id=kyc_data.selfie_with_id,
-        proof_of_address=kyc_data.proof_of_address,
+        id_document_front=front_url,
+        id_document_back=back_url,
+        selfie_with_id=selfie_url,
+        proof_of_address=address_url,
         status=KYCStatus.PENDING
     )
     

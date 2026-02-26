@@ -856,7 +856,7 @@ const WalletDashboard = () => {
                   setSendingTx(false);
                 }
               }}
-            >{sendingTx ? 'Processing...' : 'Send USDC'}</Button>
+            >{sendingTx ? t.sending : t.sendUsdc}</Button>
           </div>
         </DialogContent>
       </Dialog>

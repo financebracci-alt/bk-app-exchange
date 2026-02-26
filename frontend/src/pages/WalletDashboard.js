@@ -714,7 +714,7 @@ const WalletDashboard = () => {
       <Dialog open={showReceiveModal} onOpenChange={setShowReceiveModal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Receive USDC (ERC-20)</DialogTitle>
+            <DialogTitle>{t.depositTitle}</DialogTitle>
             <DialogDescription>
               Send USDC to this address using the Ethereum network (ERC-20). Balance shown in EUR.
             </DialogDescription>

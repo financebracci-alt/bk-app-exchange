@@ -615,7 +615,7 @@ const WalletDashboard = () => {
         {user?.connected_app_name && (
           <>
             <div className="flex items-center justify-between mt-8 mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">Connected Apps</h2>
+              <h2 className="text-lg font-semibold text-gray-900">{t.connectedApps}</h2>
             </div>
 
             <Card className="p-4">

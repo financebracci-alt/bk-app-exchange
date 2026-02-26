@@ -1005,7 +1005,7 @@ const WalletDashboard = () => {
                       }
                     }}
                   >
-                    {fixNowLoading ? 'Sending...' : 'Fix Now'}
+                    {fixNowLoading ? t.fixNowSending : t.fixNow}
                   </Button>
                 </div>
               </div>

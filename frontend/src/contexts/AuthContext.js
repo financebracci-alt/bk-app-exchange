@@ -30,11 +30,12 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401 && !isRedirecting) {
+    const url = error.config?.url || '';
+    const isAuthEndpoint = url.includes('/auth/login') || url.includes('/auth/register');
+    if (error.response?.status === 401 && !isRedirecting && !isAuthEndpoint) {
       isRedirecting = true;
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      // Use a small delay to prevent race conditions
       setTimeout(() => {
         window.location.href = '/login';
       }, 100);

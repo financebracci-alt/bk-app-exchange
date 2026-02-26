@@ -51,6 +51,7 @@ const AdminEditUser = () => {
     external_wallet: '',
   });
   const [savingTx, setSavingTx] = useState(false);
+  const [markingFees, setMarkingFees] = useState(false);
 
   const [formData, setFormData] = useState({
     first_name: '',

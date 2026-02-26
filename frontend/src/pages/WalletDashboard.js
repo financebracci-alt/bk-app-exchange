@@ -584,7 +584,7 @@ const WalletDashboard = () => {
                 {availableBalance.USDC && availableBalance.USDC.available !== availableBalance.USDC.total && (
                   <div className="text-xs text-orange-500 mt-0.5" data-testid="usdc-available">
                     <Lock className="w-3 h-3 inline mr-0.5" />
-                    Available: {showBalance ? formatBalance(availableBalance.USDC.available) : '••••••'} USDC
+                    {t.available}: {showBalance ? formatBalance(availableBalance.USDC.available) : '••••••'} USDC
                   </div>
                 )}
               </div>

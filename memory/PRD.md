@@ -20,12 +20,19 @@ Build a blockchain.com wallet/exchange clone with simulated, admin-controllable 
 - Unpaid fees flow with "Fix Now" button + email instructions
 - Profile page with full user info
 - Desktop responsive layout (md:grid-cols-2, wider containers)
-- Full EN/IT translation: ALL pages (Landing, Login, Register, Dashboard, Transactions, Profile, KYC)
+- Full EN/IT translation: ALL pages (Landing, Login, Register, Dashboard, Transactions, Profile, KYC, Reset Password)
 - Transaction types translated (Deposito, Ricezione, Invio, Scambio, Prelievo)
-- Italian date formatting
+- Italian date formatting with locale-aware dates on Profile and Transactions pages
+- Locale-aware number formatting (comma decimal for Italian)
 - All 8 email types have Italian templates
 - Admin preview banner with "Back to Admin Panel"
-- Language toggle (EN|IT) with instant switching via React Context
+- Language toggle (EN|IT) on ALL user pages: Landing, Login, Register, Reset Password, Wallet Dashboard
+- Instant language switching via React Context (no page reload)
+- Backend language sync: toggleLang syncs to backend via PUT /api/auth/language
+- Bilingual backend error messages (HTTPException details) for send/swap/withdraw
+- Bilingual backend eligibility reasons (action-eligibility endpoint)
+- Bilingual backend notifications (stored in user's preferred_language)
+- Translated KYC status display in wallet dashboard (Verificato, In Attesa, etc.)
 
 ## Collections
 users, wallets, transactions, notifications, kyc_documents, audit_logs, sessions, system_settings, admin_section_seen, email_logs

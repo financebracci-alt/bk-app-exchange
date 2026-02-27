@@ -51,10 +51,12 @@ const LoginPage = () => {
         </Link>
         <button
           data-testid="login-language-toggle"
-          className="px-3 py-1 text-xs font-bold rounded border border-gray-300 hover:bg-gray-100 transition text-gray-700"
+          className="flex items-center space-x-1.5 px-2.5 py-1 text-xs font-bold rounded border border-gray-300 hover:bg-gray-100 transition text-gray-700"
           onClick={toggleLang}
         >
-          {getLang() === 'en' ? '🇬🇧 EN' : '🇮🇹 IT'}
+          <span className={lang === 'en' ? 'text-gray-900' : 'text-gray-400'}>EN</span>
+          <span className="text-gray-300">|</span>
+          <span className={lang === 'it' ? 'text-gray-900' : 'text-gray-400'}>IT</span>
         </button>
       </header>
       <div className="flex-1 flex items-center justify-center px-4 py-12">

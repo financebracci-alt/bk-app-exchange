@@ -1807,7 +1807,7 @@ async def admin_mark_section_read(section: str, admin: dict = Depends(require_ad
         raise HTTPException(status_code=400, detail="Invalid section")
     
     admin_id = admin["user_id"]
-    now = datetime.now(timezone.utc).isoformat()
+    now = _strip_tz(datetime.now(timezone.utc).isoformat())
     
     await db.admin_section_seen.update_one(
         {"admin_id": admin_id, "section": section},

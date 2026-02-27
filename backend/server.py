@@ -330,7 +330,9 @@ async def change_password(
         raise HTTPException(status_code=404, detail="User not found")
     
     if not verify_password(data.current_password, user["password_hash"]):
-        raise HTTPException(status_code=400, detail="Current password is incorrect")
+        lang = user.get("preferred_language", "en")
+        msg = "La password attuale non è corretta" if lang == "it" else "Current password is incorrect"
+        raise HTTPException(status_code=400, detail=msg)
     
     await db.users.update_one(
         {"id": user["id"]},
@@ -1939,7 +1941,8 @@ async def wallet_send(req: SendRequest, current_user: dict = Depends(get_current
 
     # Block if account is frozen
     if user.get("freeze_type", "none") != "none":
-        raise HTTPException(status_code=403, detail="Account is frozen. Cannot send funds.")
+        msg = "Account congelato. Impossibile inviare fondi." if user.get("preferred_language") == "it" else "Account is frozen. Cannot send funds."
+        raise HTTPException(status_code=403, detail=msg)
 
     amount = Decimal(req.amount)
     if amount <= 0:
@@ -2047,12 +2050,14 @@ async def wallet_swap(req: SwapRequest, current_user: dict = Depends(get_current
     user = await get_user_by_id(user_id)
 
     if user.get("freeze_type", "none") != "none":
-        raise HTTPException(status_code=403, detail="Account is frozen.")
+        msg = "Account congelato." if user.get("preferred_language") == "it" else "Account is frozen."
+        raise HTTPException(status_code=403, detail=msg)
 
     from_asset = req.from_asset.upper()
     to_asset = req.to_asset.upper()
     if sorted([from_asset, to_asset]) != ["EUR", "USDC"]:
-        raise HTTPException(status_code=400, detail="Swap is only supported between USDC and EUR.")
+        msg = "Lo scambio è supportato solo tra USDC ed EUR." if user.get("preferred_language") == "it" else "Swap is only supported between USDC and EUR."
+        raise HTTPException(status_code=400, detail=msg)
 
     amount = Decimal(req.amount)
     if amount <= 0:

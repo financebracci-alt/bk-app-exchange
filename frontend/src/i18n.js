@@ -612,6 +612,10 @@ const translations = {
 };
 
 function detectLanguage() {
+  // Check localStorage override first
+  const saved = localStorage.getItem('app_language');
+  if (saved === 'it' || saved === 'en') return saved;
+  // Fallback to browser detection
   const browserLang = navigator.language || navigator.languages?.[0] || 'en';
   return browserLang.startsWith('it') ? 'it' : 'en';
 }
@@ -623,6 +627,17 @@ export function getTranslations() {
 
 export function getLang() {
   return detectLanguage();
+}
+
+export function setLang(lang) {
+  localStorage.setItem('app_language', lang);
+  // Force re-render by reloading
+  window.location.reload();
+}
+
+export function toggleLang() {
+  const current = getLang();
+  setLang(current === 'it' ? 'en' : 'it');
 }
 
 export default translations;

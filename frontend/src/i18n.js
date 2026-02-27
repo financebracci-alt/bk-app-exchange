@@ -79,6 +79,8 @@ const translations = {
     cancel: 'Cancel', save: 'Save', close: 'Close', loading: 'Loading...', error: 'Error', success: 'Success', refresh: 'Refresh', back: 'Back', backToHome: 'Back to Home', backToAdmin: 'Back to Admin Panel', language: 'Language',
     adminPreviewMode: 'Admin Preview Mode',
     swapNotAvailable: 'Swap not available', sendNotAvailable: 'Send not available',
+    // Reset Password Page
+    resetPasswordTitle: 'Reset Password', resetPasswordDesc: 'Create a new password for your account', resetPasswordComplete: 'Password Reset Complete', resetPasswordCompleteDesc: 'Your password has been successfully reset.', resetPasswordBtn: 'Reset Password', resettingPassword: 'Resetting...', invalidResetLink: 'Invalid reset link', passwordResetSuccess: 'Password reset successfully', failedResetPassword: 'Failed to reset password',
   },
   it: {
     wallet: 'Portafoglio', home: 'Home', swap: 'Scambia', profile: 'Profilo',

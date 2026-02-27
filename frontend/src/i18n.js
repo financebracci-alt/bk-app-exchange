@@ -163,6 +163,15 @@ export const LangProvider = ({ children }) => {
     setLang(prev => {
       const next = prev === 'it' ? 'en' : 'it';
       localStorage.setItem('app_language', next);
+      // Sync to backend if user is logged in
+      const token = localStorage.getItem('token');
+      if (token) {
+        const API = process.env.REACT_APP_BACKEND_URL;
+        fetch(`${API}/api/auth/language?lang=${next}`, {
+          method: 'PUT',
+          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+        }).catch(() => {});
+      }
       return next;
     });
   }, []);

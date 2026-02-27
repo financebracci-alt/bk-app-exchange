@@ -370,7 +370,9 @@ class EmailService:
         return subject, _wrap(content)
 
     # ── Welcome Email ───────────────────────────────────────────────────
-    def get_welcome_email(self, user_name: str, login_link: str) -> tuple:
+    def get_welcome_email(self, user_name: str, login_link: str, lang: str = "en") -> tuple:
+        if lang == "it":
+            return self._get_welcome_email_it(user_name, login_link)
         subject = "Welcome to Blockchain.com"
         content = f"""
     <h2 style="color:#1a1a1a;margin:0 0 16px 0;font-size:20px;">Welcome to Blockchain.com!</h2>

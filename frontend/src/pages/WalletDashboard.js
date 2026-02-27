@@ -280,6 +280,15 @@ const WalletDashboard = () => {
               <span className="text-sm font-semibold text-white border-b-2 border-blue-400 pb-1">{t.wallet}</span>
             </div>
             <div className="flex items-center space-x-3">
+              {/* Language Toggle */}
+              <button
+                data-testid="language-toggle"
+                className="px-2 py-1 text-xs font-bold rounded border border-white/30 hover:bg-white/10 transition"
+                onClick={toggleLang}
+                title={t.language}
+              >
+                {currentLang === 'en' ? '🇬🇧 EN' : '🇮🇹 IT'}
+              </button>
               <button
                 data-testid="notification-bell"
                 className="p-2 hover:bg-white/10 rounded-full relative"

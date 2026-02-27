@@ -44,11 +44,18 @@ const LoginPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white flex flex-col">
-      <header className="p-4">
+      <header className="p-4 flex items-center justify-between">
         <Link to="/" className="inline-flex items-center text-gray-600 hover:text-gray-900">
           <ArrowLeft className="w-4 h-4 mr-2" />
           {t.back}
         </Link>
+        <button
+          data-testid="login-language-toggle"
+          className="px-3 py-1 text-xs font-bold rounded border border-gray-300 hover:bg-gray-100 transition text-gray-700"
+          onClick={toggleLang}
+        >
+          {getLang() === 'en' ? '🇬🇧 EN' : '🇮🇹 IT'}
+        </button>
       </header>
       <div className="flex-1 flex items-center justify-center px-4 py-12">
         <Card className="w-full max-w-md">

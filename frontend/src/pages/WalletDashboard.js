@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { useLang } from '@/i18n';
+import { useLang, dateFmt } from '@/i18n';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -339,7 +339,7 @@ const WalletDashboard = () => {
                       <div>
                         <p className="text-sm font-medium text-gray-900">{n.title}</p>
                         <p className="text-xs text-gray-500 mt-0.5">{n.message}</p>
-                        <p className="text-[10px] text-gray-400 mt-1">{new Date(n.created_at).toLocaleString()}</p>
+                        <p className="text-[10px] text-gray-400 mt-1">{new Date(n.created_at).toLocaleString(dateFmt(lang))}</p>
                       </div>
                     </div>
                   </div>
@@ -614,7 +614,14 @@ const WalletDashboard = () => {
                     user?.kyc_status === 'pending' ? 'text-yellow-600' :
                     'text-gray-600'
                   }`}>
-                    {user?.kyc_status?.charAt(0).toUpperCase() + user?.kyc_status?.slice(1)}
+                    {
+                      user?.kyc_status === 'approved' ? t.verified :
+                      user?.kyc_status === 'pending' ? t.pendingReview :
+                      user?.kyc_status === 'under_review' ? t.underReview :
+                      user?.kyc_status === 'rejected' ? t.rejected :
+                      user?.kyc_status === 'not_started' ? t.notVerified :
+                      user?.kyc_status
+                    }
                   </span>
                 </div>
               </div>

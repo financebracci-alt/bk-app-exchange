@@ -256,6 +256,21 @@ const WalletDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Admin Preview Banner */}
+      {isAdmin && (
+        <div className="bg-yellow-400 text-yellow-900 text-center py-2 px-4 text-sm font-medium flex items-center justify-center space-x-2" data-testid="admin-preview-banner">
+          <AlertTriangle className="w-4 h-4" />
+          <span>Admin Preview Mode</span>
+          <button
+            onClick={() => navigate('/admin')}
+            className="ml-3 px-3 py-0.5 bg-yellow-900 text-yellow-100 rounded text-xs font-semibold hover:bg-yellow-800 transition"
+            data-testid="back-to-admin-btn"
+          >
+            {t.backToAdmin}
+          </button>
+        </div>
+      )}
+
       {/* Header */}
       <header className="bg-gradient-to-r from-[#1a1f3c] to-[#121530] text-white">
         <div className="max-w-lg md:max-w-3xl lg:max-w-5xl xl:max-w-6xl mx-auto px-4 sm:px-6 pt-4 pb-6">

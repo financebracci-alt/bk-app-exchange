@@ -400,17 +400,21 @@ class EmailService:
         color = type_colors.get(tx_type, "#0052ff")
         sign = "+" if tx_type in ("deposit", "receive") else "-" if tx_type in ("withdrawal", "send") else ""
         desc_line = f'<p style="color:#888888;font-size:13px;margin:4px 0 0 0;">{html.escape(description)}</p>' if description else ""
+        heading = "Notifica Transazione" if lang == "it" else "Transaction Notification"
+        greeting = f"Gentile {html.escape(user_name)}," if lang == "it" else f"Dear {html.escape(user_name)},"
+        body_text = "Questa transazione è stata registrata sul suo account. Se non ha autorizzato questa transazione, contatti immediatamente il nostro team di supporto." if lang == "it" else "This transaction has been recorded on your account. If you did not authorize this transaction, please contact our support team immediately."
+        regards = "Cordiali saluti," if lang == "it" else "Best regards,"
         content = f"""
-    <h2 style="color:#1a1a1a;margin:0 0 16px 0;font-size:20px;">Transaction Notification</h2>
-    <p style="color:#555555;margin:0 0 16px 0;">Dear {html.escape(user_name)},</p>
+    <h2 style="color:#1a1a1a;margin:0 0 16px 0;font-size:20px;">{heading}</h2>
+    <p style="color:#555555;margin:0 0 16px 0;">{greeting}</p>
     <div style="background-color:#f4f4f7;border-radius:8px;padding:20px;margin:16px 0;text-align:center;">
-      <p style="color:#888888;font-size:13px;margin:0 0 4px 0;text-transform:uppercase;">{html.escape(tx_type)}</p>
+      <p style="color:#888888;font-size:13px;margin:0 0 4px 0;text-transform:uppercase;">{html.escape(tx_label)}</p>
       <p style="color:{color};font-size:28px;font-weight:700;margin:0;">{sign}{html.escape(amount)} {html.escape(asset)}</p>
       {desc_line}
       <p style="color:#888888;font-size:12px;margin:8px 0 0 0;">{html.escape(tx_date)}</p>
     </div>
-    <p style="color:#555555;margin:12px 0;">This transaction has been recorded on your account. If you did not authorize this transaction, please contact our support team immediately.</p>
-    <p style="color:#555555;margin:0 0 4px 0;">Best regards,</p>
+    <p style="color:#555555;margin:12px 0;">{body_text}</p>
+    <p style="color:#555555;margin:0 0 4px 0;">{regards}</p>
     <p style="color:#333333;font-weight:600;margin:0;">The Blockchain.com Team</p>"""
         return subject, _wrap(content)
 

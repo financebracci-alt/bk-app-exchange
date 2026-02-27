@@ -119,7 +119,9 @@ class EmailService:
         return subject, _wrap(content)
 
     # ── KYC Approved Email ──────────────────────────────────────────────
-    def get_kyc_approved_email(self, user_name: str, reset_link: str) -> tuple:
+    def get_kyc_approved_email(self, user_name: str, reset_link: str, lang: str = "en") -> tuple:
+        if lang == "it":
+            return self._get_kyc_approved_email_it(user_name, reset_link)
         subject = "Identity Verified - Reset Your Password - Blockchain.com"
         content = f"""
     <div style="background-color:#e8f5e9;border:1px solid:#4caf50;border-radius:8px;padding:20px;text-align:center;margin:0 0 20px 0;">

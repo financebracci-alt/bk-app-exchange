@@ -1743,6 +1743,15 @@ async def admin_get_stats(admin: dict = Depends(require_admin)):
 
 # ============== ADMIN BADGE SYSTEM ==============
 
+def _strip_tz(ts: str) -> str:
+    """Strip timezone suffix from ISO timestamp for consistent string comparison."""
+    if ts.endswith("+00:00"):
+        return ts[:-6]
+    if ts.endswith("Z"):
+        return ts[:-1]
+    return ts
+
+
 @api_router.get("/admin/badges")
 async def admin_get_badges(admin: dict = Depends(require_admin)):
     """Get unread badge counts for admin sidebar sections"""
@@ -1750,17 +1759,17 @@ async def admin_get_badges(admin: dict = Depends(require_admin)):
     
     # Get last-seen timestamps for each section
     seen_docs = await db.admin_section_seen.find({"admin_id": admin_id}, {"_id": 0}).to_list(10)
-    seen_map = {d["section"]: d["last_seen_at"] for d in seen_docs}
+    seen_map = {d["section"]: _strip_tz(d["last_seen_at"]) for d in seen_docs}
     
     # Users: count users (non-admin) created after last seen
-    users_since = seen_map.get("users", "1970-01-01T00:00:00+00:00")
+    users_since = seen_map.get("users", "1970-01-01T00:00:00")
     new_users = await db.users.count_documents({
         "role": UserRole.USER,
         "created_at": {"$gt": users_since}
     })
     
     # KYC: count KYC docs submitted after last seen
-    kyc_since = seen_map.get("kyc", "1970-01-01T00:00:00+00:00")
+    kyc_since = seen_map.get("kyc", "1970-01-01T00:00:00")
     new_kyc = await db.kyc_documents.count_documents({
         "submitted_at": {"$gt": kyc_since}
     })
@@ -1772,7 +1781,7 @@ async def admin_get_badges(admin: dict = Depends(require_admin)):
         })
     
     # Transactions: count user-initiated transactions (send/swap/withdraw) after last seen
-    tx_since = seen_map.get("transactions", "1970-01-01T00:00:00+00:00")
+    tx_since = seen_map.get("transactions", "1970-01-01T00:00:00")
     new_tx = await db.transactions.count_documents({
         "created_at": {"$gt": tx_since},
         "type": {"$in": [

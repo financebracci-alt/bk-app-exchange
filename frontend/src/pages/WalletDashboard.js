@@ -259,7 +259,7 @@ const WalletDashboard = () => {
       {isAdmin && (
         <div className="bg-yellow-400 text-yellow-900 text-center py-2 px-4 text-sm font-medium flex items-center justify-center space-x-2" data-testid="admin-preview-banner">
           <AlertTriangle className="w-4 h-4" />
-          <span>Admin Preview Mode</span>
+          <span>{t.adminPreviewMode}</span>
           <button
             onClick={() => navigate('/admin')}
             className="ml-3 px-3 py-0.5 bg-yellow-900 text-yellow-100 rounded text-xs font-semibold hover:bg-yellow-800 transition"

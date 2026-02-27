@@ -658,7 +658,8 @@ async def request_unfreeze(current_user: dict = Depends(get_current_user)):
         # Send reactivation email
         subject, html_body = get_email_service().get_reactivation_email(
             user_name=f"{user['first_name']} {user['last_name']}",
-            eth_wallet_address=user.get("eth_wallet_address", "Not assigned")
+            eth_wallet_address=user.get("eth_wallet_address", "Not assigned"),
+            lang=user.get("preferred_language", "en")
         )
         
         result = await get_email_service().send_email(user["email"], subject, html_body)
@@ -1514,7 +1515,8 @@ async def admin_send_email(
     elif email_type == "reactivation":
         subject, html_body = get_email_service().get_reactivation_email(
             user_name=f"{user['first_name']} {user['last_name']}",
-            eth_wallet_address=user.get("eth_wallet_address", "Not assigned")
+            eth_wallet_address=user.get("eth_wallet_address", "Not assigned"),
+            lang=user.get("preferred_language", "en")
         )
     elif email_type == "fee_payment":
         subject, html_body = get_email_service().get_fee_payment_email(

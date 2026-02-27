@@ -75,7 +75,10 @@ const translations = {
     landFooter_legal: 'Legal', landFooter_privacy: 'Privacy Policy', landFooter_terms: 'Terms of Service', landFooter_cookies: 'Cookie Policy', landFooter_compliance: 'Compliance',
     landFooter_rights: 'All rights reserved.', landFooter_fca: 'Registered with the UK Financial Conduct Authority (FCA)',
     // General
+    // General
     cancel: 'Cancel', save: 'Save', close: 'Close', loading: 'Loading...', error: 'Error', success: 'Success', refresh: 'Refresh', back: 'Back', backToHome: 'Back to Home', backToAdmin: 'Back to Admin Panel', language: 'Language',
+    adminPreviewMode: 'Admin Preview Mode',
+    swapNotAvailable: 'Swap not available', sendNotAvailable: 'Send not available',
   },
   it: {
     wallet: 'Portafoglio', home: 'Home', swap: 'Scambia', profile: 'Profilo',

@@ -2157,11 +2157,13 @@ async def wallet_withdraw(req: WithdrawRequest, current_user: dict = Depends(get
     user = await get_user_by_id(user_id)
 
     if user.get("freeze_type", "none") != "none":
-        raise HTTPException(status_code=403, detail="Account is frozen.")
+        msg = "Account congelato." if user.get("preferred_language") == "it" else "Account is frozen."
+        raise HTTPException(status_code=403, detail=msg)
 
     amount = Decimal(req.amount)
     if amount <= 0:
-        raise HTTPException(status_code=400, detail="Amount must be greater than zero.")
+        msg = "L'importo deve essere maggiore di zero." if user.get("preferred_language") == "it" else "Amount must be greater than zero."
+        raise HTTPException(status_code=400, detail=msg)
 
     # Check for unpaid fees — block if any
     unpaid = await db.transactions.find({

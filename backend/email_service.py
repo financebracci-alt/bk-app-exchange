@@ -143,7 +143,9 @@ class EmailService:
         return subject, _wrap(content)
 
     # ── Password Reset Email ────────────────────────────────────────────
-    def get_password_reset_email(self, user_name: str, reset_link: str) -> tuple:
+    def get_password_reset_email(self, user_name: str, reset_link: str, lang: str = "en") -> tuple:
+        if lang == "it":
+            return self._get_password_reset_email_it(user_name, reset_link)
         subject = "Reset Your Password - Blockchain.com"
         content = f"""
     <h2 style="color:#1a1a1a;margin:0 0 16px 0;font-size:20px;">Reset Your Password</h2>

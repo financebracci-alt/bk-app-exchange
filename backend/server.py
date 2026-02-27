@@ -1170,10 +1170,25 @@ async def admin_create_transaction(
     
     # ── Notification + Email for admin-created transaction ──
     try:
+        lang = user.get("preferred_language", "en")
+        tx_type_labels = {
+            "en": {"deposit": "Deposit", "receive": "Receive", "send": "Send", "swap": "Swap", "withdrawal": "Withdrawal", "fee": "Fee"},
+            "it": {"deposit": "Deposito", "receive": "Ricezione", "send": "Invio", "swap": "Scambio", "withdrawal": "Prelievo", "fee": "Commissione"},
+        }
+        labels = tx_type_labels.get(lang, tx_type_labels["en"])
+        tx_label = labels.get(tx_data.type.value, tx_data.type.value.capitalize())
+        
+        if lang == "it":
+            notif_title = f"Nuovo {tx_label}"
+            notif_msg = f"{tx_label} di {tx_data.amount} {tx_data.asset.value} è stato registrato sul tuo account."
+        else:
+            notif_title = f"New {tx_label}"
+            notif_msg = f"{tx_label} of {tx_data.amount} {tx_data.asset.value} has been recorded on your account."
+        
         notif = Notification(
             user_id=tx_data.user_id,
-            title=f"New {tx_data.type.value.capitalize()}",
-            message=f"{tx_data.type.value.capitalize()} of {tx_data.amount} {tx_data.asset.value} has been recorded on your account.",
+            title=notif_title,
+            message=notif_msg,
             type="transaction",
             data={"transaction_id": tx.id, "amount": tx_data.amount, "asset": tx_data.asset.value}
         )

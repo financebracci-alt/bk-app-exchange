@@ -1185,7 +1185,8 @@ async def admin_create_transaction(
         subj, body_html = get_email_service().get_transaction_notification_email(
             user_name=f"{user['first_name']} {user['last_name']}",
             tx_type=tx_data.type.value, amount=tx_data.amount, asset=tx_data.asset.value,
-            tx_date=tx_date_str, description=tx_data.description or ""
+            tx_date=tx_date_str, description=tx_data.description or "",
+            lang=user.get("preferred_language", "en")
         )
         email_res = await get_email_service().send_email(user["email"], subj, body_html)
         await db.email_logs.insert_one(EmailLog(

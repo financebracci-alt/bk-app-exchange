@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { useLang } from '@/i18n';
+import { useLang, dateFmt } from '@/i18n';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -34,7 +34,7 @@ import {
 const ProfilePage = () => {
   const navigate = useNavigate();
   const { user, logout, api, refreshUser } = useAuth();
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [passwordForm, setPasswordForm] = useState({ current: '', new: '', confirm: '' });
   const [changingPassword, setChangingPassword] = useState(false);
@@ -84,7 +84,7 @@ const ProfilePage = () => {
     }
   };
 
-  const memberSince = user?.created_at ? new Date(user.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : 'N/A';
+  const memberSince = user?.created_at ? new Date(user.created_at).toLocaleDateString(dateFmt(lang), { day: 'numeric', month: 'long', year: 'numeric' }) : 'N/A';
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -162,7 +162,7 @@ const ProfilePage = () => {
                 <div className="flex-1">
                   <p className="text-xs text-gray-500">{t.dateOfBirth}</p>
                   <p className="text-sm text-gray-900" data-testid="profile-dob">
-                    {user?.date_of_birth ? new Date(user.date_of_birth + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : t.notProvided}
+                    {user?.date_of_birth ? new Date(user.date_of_birth + 'T00:00:00').toLocaleDateString(dateFmt(lang), { day: 'numeric', month: 'long', year: 'numeric' }) : t.notProvided}
                   </p>
                 </div>
               </div>

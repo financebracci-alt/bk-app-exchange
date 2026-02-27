@@ -148,7 +148,7 @@ const TransactionsPage = () => {
                       ['deposit', 'receive'].includes(tx.type) ? 'text-green-600' : 'text-gray-900'
                     }`}>
                       {['deposit', 'receive'].includes(tx.type) ? '+' : '-'}
-                      &euro;{parseFloat(tx.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                      &euro;{parseFloat(tx.amount).toLocaleString(dateFmt(lang), { minimumFractionDigits: 2 })}
                     </div>
                     <div className="mt-1">{getStatusBadge(tx.status)}</div>
                   </div>

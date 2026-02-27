@@ -214,7 +214,7 @@ const WalletDashboard = () => {
 
   const formatBalance = (balance) => {
     if (!showBalance) return '••••••';
-    return parseFloat(balance || 0).toLocaleString('en-US', {
+    return parseFloat(balance || 0).toLocaleString(dateFmt(lang), {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     });

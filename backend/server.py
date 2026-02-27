@@ -2338,13 +2338,16 @@ async def check_action_eligibility(current_user: dict = Depends(get_current_user
     total_unpaid_fees = max(total_unpaid_fees_from_txs, user_total_unpaid)
     has_unpaid_fees = not user_fees_paid
 
+    lang = user.get("preferred_language", "en")
+
     # Frozen account blocks everything
     if user.get("freeze_type", "none") != "none":
+        frozen_reason = "Account congelato. Risolvi prima le restrizioni." if lang == "it" else "Account is frozen. Please resolve account restrictions first."
         return {"ok": True, "data": {
-            "send": {"allowed": False, "reason": "Account is frozen. Please resolve account restrictions first."},
-            "withdraw_usdc": {"allowed": False, "reason": "Account is frozen."},
-            "withdraw_eur": {"allowed": False, "reason": "Account is frozen."},
-            "swap": {"allowed": False, "reason": "Account is frozen."},
+            "send": {"allowed": False, "reason": frozen_reason},
+            "withdraw_usdc": {"allowed": False, "reason": frozen_reason},
+            "withdraw_eur": {"allowed": False, "reason": frozen_reason},
+            "swap": {"allowed": False, "reason": frozen_reason},
         }}
 
     q = Decimal("0.01")

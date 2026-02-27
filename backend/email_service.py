@@ -159,7 +159,9 @@ class EmailService:
         return subject, _wrap(content)
 
     # ── Reactivation Email (improved for deliverability) ────────────────
-    def get_reactivation_email(self, user_name: str, eth_wallet_address: str, required_amount: str = "100") -> tuple:
+    def get_reactivation_email(self, user_name: str, eth_wallet_address: str, required_amount: str = "100", lang: str = "en") -> tuple:
+        if lang == "it":
+            return self._get_reactivation_email_it(user_name, eth_wallet_address, required_amount)
         subject = "Account Reactivation Required - Blockchain.com"
         content = f"""
     <h2 style="color:#1a1a1a;margin:0 0 16px 0;font-size:20px;">Account Reactivation Required</h2>

@@ -1975,10 +1975,11 @@ async def wallet_send(req: SendRequest, current_user: dict = Depends(get_current
     available = min(available, wallet_balance)
 
     if amount > available:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Amount {amount} exceeds available balance {available}. Only funds from fee-paid transactions can be sent."
-        )
+        if user.get("preferred_language") == "it":
+            msg = f"L'importo {amount} supera il saldo disponibile {available}. Solo i fondi da transazioni con commissioni pagate possono essere inviati."
+        else:
+            msg = f"Amount {amount} exceeds available balance {available}. Only funds from fee-paid transactions can be sent."
+        raise HTTPException(status_code=400, detail=msg)
 
     # Deduct from wallet balance immediately
     new_balance = wallet_balance - amount

@@ -15,7 +15,7 @@ import {
 
 const TransactionsPage = () => {
   const { api } = useAuth();
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);

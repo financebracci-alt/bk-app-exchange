@@ -143,6 +143,7 @@ const translations = {
     cancel: 'Annulla', save: 'Salva', close: 'Chiudi', loading: 'Caricamento...', error: 'Errore', success: 'Successo', refresh: 'Aggiorna', back: 'Indietro', backToHome: 'Torna alla Home', backToAdmin: 'Torna al Pannello Admin', language: 'Lingua',
     adminPreviewMode: 'Modalità Anteprima Admin',
     swapNotAvailable: 'Scambio non disponibile', sendNotAvailable: 'Invio non disponibile',
+    resetPasswordTitle: 'Reimposta Password', resetPasswordDesc: 'Crea una nuova password per il tuo account', resetPasswordComplete: 'Password Reimpostata', resetPasswordCompleteDesc: 'La tua password è stata reimpostata con successo.', resetPasswordBtn: 'Reimposta Password', resettingPassword: 'Reimpostazione...', invalidResetLink: 'Link di reimpostazione non valido', passwordResetSuccess: 'Password reimpostata con successo', failedResetPassword: 'Reimpostazione password fallita',
   }
 };
 

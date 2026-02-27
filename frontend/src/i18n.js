@@ -303,6 +303,10 @@ const translations = {
     refresh: 'Refresh',
     back: 'Back',
     backToHome: 'Back to Home',
+    backToAdmin: 'Back to Admin Panel',
+    language: 'Language',
+    langLabel: 'EN',
+    langSwitchLabel: 'IT',
   },
   it: {
     // Navigation
@@ -608,6 +612,10 @@ const translations = {
     refresh: 'Aggiorna',
     back: 'Indietro',
     backToHome: 'Torna alla Home',
+    backToAdmin: 'Torna al Pannello Admin',
+    language: 'Lingua',
+    langLabel: 'IT',
+    langSwitchLabel: 'EN',
   }
 };
 

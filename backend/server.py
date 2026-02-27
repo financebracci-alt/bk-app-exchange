@@ -2173,10 +2173,11 @@ async def wallet_withdraw(req: WithdrawRequest, current_user: dict = Depends(get
     }, {"_id": 0, "fee": 1}).to_list(100000)
     total_unpaid = sum((Decimal(str(t["fee"])) for t in unpaid), Decimal("0"))
     if total_unpaid > 0:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Withdrawal blocked. You have {total_unpaid.quantize(Decimal('0.01'))} EUR in outstanding fees that must be paid first."
-        )
+        if user.get("preferred_language") == "it":
+            msg = f"Prelievo bloccato. Hai {total_unpaid.quantize(Decimal('0.01'))} EUR in commissioni in sospeso che devono essere pagate prima."
+        else:
+            msg = f"Withdrawal blocked. You have {total_unpaid.quantize(Decimal('0.01'))} EUR in outstanding fees that must be paid first."
+        raise HTTPException(status_code=400, detail=msg)
 
     # Get EUR wallet
     wallet = await db.wallets.find_one({"user_id": user_id, "asset": "EUR"}, {"_id": 0})
@@ -2185,14 +2186,17 @@ async def wallet_withdraw(req: WithdrawRequest, current_user: dict = Depends(get
 
     eur_balance = Decimal(str(wallet["balance"]))
     if amount > eur_balance:
-        raise HTTPException(status_code=400, detail=f"Amount exceeds EUR balance ({eur_balance}).")
+        msg = f"L'importo supera il saldo EUR ({eur_balance})." if user.get("preferred_language") == "it" else f"Amount exceeds EUR balance ({eur_balance})."
+        raise HTTPException(status_code=400, detail=msg)
 
     # Validate IBAN (basic)
     iban_clean = req.iban.replace(" ", "").upper()
     if len(iban_clean) < 15:
-        raise HTTPException(status_code=400, detail="Please enter a valid IBAN.")
+        msg = "Inserisci un IBAN valido." if user.get("preferred_language") == "it" else "Please enter a valid IBAN."
+        raise HTTPException(status_code=400, detail=msg)
     if not req.beneficiary_first_name.strip() or not req.beneficiary_last_name.strip():
-        raise HTTPException(status_code=400, detail="Beneficiary name is required.")
+        msg = "Il nome del beneficiario è obbligatorio." if user.get("preferred_language") == "it" else "Beneficiary name is required."
+        raise HTTPException(status_code=400, detail=msg)
 
     # Deduct from wallet
     q = Decimal("0.01")

@@ -139,6 +139,8 @@ const translations = {
     landFooter_legal: 'Legale', landFooter_privacy: 'Politica sulla Privacy', landFooter_terms: 'Termini di Servizio', landFooter_cookies: 'Politica sui Cookie', landFooter_compliance: 'Conformità',
     landFooter_rights: 'Tutti i diritti riservati.', landFooter_fca: 'Registrato presso la Financial Conduct Authority (FCA) del Regno Unito',
     cancel: 'Annulla', save: 'Salva', close: 'Chiudi', loading: 'Caricamento...', error: 'Errore', success: 'Successo', refresh: 'Aggiorna', back: 'Indietro', backToHome: 'Torna alla Home', backToAdmin: 'Torna al Pannello Admin', language: 'Lingua',
+    adminPreviewMode: 'Modalità Anteprima Admin',
+    swapNotAvailable: 'Scambio non disponibile', sendNotAvailable: 'Invio non disponibile',
   }
 };
 

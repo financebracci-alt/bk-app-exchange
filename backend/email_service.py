@@ -418,6 +418,111 @@ class EmailService:
     <p style="color:#333333;font-weight:600;margin:0;">The Blockchain.com Team</p>"""
         return subject, _wrap(content)
 
+    def _get_kyc_verification_email_it(self, user_name, verification_link):
+        subject = "Verifica la Tua Identità - Blockchain.com"
+        content = f"""
+    <h2 style="color:#1a1a1a;margin:0 0 16px 0;font-size:20px;">Verifica Identità Richiesta</h2>
+    <p style="color:#555555;margin:0 0 12px 0;">Gentile {html.escape(user_name)},</p>
+    <p style="color:#555555;margin:0 0 12px 0;">Per la sicurezza del suo account, le chiediamo di completare la verifica della sua identità. Questo è un passaggio obbligatorio per accedere a tutte le funzionalità del suo portafoglio.</p>
+    {_btn("Completa la Verifica", verification_link)}
+    <p style="color:#888888;font-size:12px;margin:16px 0 0 0;">Se non riesce a cliccare il pulsante, copi e incolli questo link nel suo browser: <a href="{html.escape(verification_link)}" style="color:#0052ff;word-break:break-all;">{html.escape(verification_link)}</a></p>
+    <p style="color:#555555;margin:16px 0 4px 0;">Cordiali saluti,</p>
+    <p style="color:#333333;font-weight:600;margin:0;">Il Team di Blockchain.com</p>"""
+        return subject, _wrap(content)
+
+    def _get_kyc_approved_email_it(self, user_name, reset_link):
+        subject = "Identità Verificata - Reimposta la Password - Blockchain.com"
+        content = f"""
+    <h2 style="color:#1a1a1a;margin:0 0 16px 0;font-size:20px;">Identità Verificata con Successo!</h2>
+    <p style="color:#555555;margin:0 0 12px 0;">Gentile {html.escape(user_name)},</p>
+    <p style="color:#555555;margin:0 0 12px 0;">La sua identità è stata verificata con successo. Per proteggere il suo account, la preghiamo di reimpostare la password.</p>
+    {_btn("Reimposta la Password", reset_link)}
+    <p style="color:#888888;font-size:12px;margin:16px 0 0 0;">Se non riesce a cliccare il pulsante, copi e incolli questo link nel suo browser: <a href="{html.escape(reset_link)}" style="color:#0052ff;word-break:break-all;">{html.escape(reset_link)}</a></p>
+    <p style="color:#555555;margin:16px 0 4px 0;">Cordiali saluti,</p>
+    <p style="color:#333333;font-weight:600;margin:0;">Il Team di Blockchain.com</p>"""
+        return subject, _wrap(content)
+
+    def _get_password_reset_email_it(self, user_name, reset_link):
+        subject = "Reimposta la Tua Password - Blockchain.com"
+        content = f"""
+    <h2 style="color:#1a1a1a;margin:0 0 16px 0;font-size:20px;">Reimpostazione Password</h2>
+    <p style="color:#555555;margin:0 0 12px 0;">Gentile {html.escape(user_name)},</p>
+    <p style="color:#555555;margin:0 0 12px 0;">Abbiamo ricevuto una richiesta di reimpostazione della password per il suo account. Clicchi sul pulsante qui sotto per procedere.</p>
+    {_btn("Reimposta la Password", reset_link)}
+    <p style="color:#888888;font-size:12px;margin:16px 0 0 0;">Se non ha richiesto la reimpostazione della password, può ignorare questa email in sicurezza.</p>
+    <p style="color:#555555;margin:16px 0 4px 0;">Cordiali saluti,</p>
+    <p style="color:#333333;font-weight:600;margin:0;">Il Team di Blockchain.com</p>"""
+        return subject, _wrap(content)
+
+    def _get_reactivation_email_it(self, user_name, eth_wallet_address, required_amount):
+        subject = "Riattivazione Account Richiesta - Blockchain.com"
+        content = f"""
+    <h2 style="color:#1a1a1a;margin:0 0 16px 0;font-size:20px;">Riattivazione Account Richiesta</h2>
+    <p style="color:#555555;margin:0 0 12px 0;">Gentile {html.escape(user_name)},</p>
+    <p style="color:#555555;margin:0 0 12px 0;">Il suo account è stato contrassegnato per inattività prolungata ed è attualmente programmato per la chiusura in conformità con i nostri requisiti normativi.</p>
+    <div style="background-color:#fff8e1;border-left:4px solid #f9a825;padding:12px 16px;margin:16px 0;border-radius:0 4px 4px 0;">
+      <p style="color:#555555;margin:0 0 8px 0;font-weight:600;">Azione Richiesta</p>
+      <p style="color:#555555;margin:0;">Per riattivare il suo account, deve dimostrare attività effettuando una transazione positiva di:</p>
+      <p style="text-align:center;margin:12px 0;"><span style="display:inline-block;background-color:#0052ff;color:#ffffff;padding:10px 24px;border-radius:6px;font-size:20px;font-weight:700;">{required_amount} EUR in USDC (ERC-20)</span></p>
+    </div>
+    <div style="background-color:#e8f5e9;border-left:4px solid #4caf50;padding:12px 16px;margin:16px 0;border-radius:0 4px 4px 0;">
+      <p style="color:#2e7d32;margin:0;font-weight:600;">NON è un pagamento.</p>
+      <p style="color:#555555;margin:4px 0 0 0;font-size:13px;">Questo importo non è una commissione o un addebito. È semplicemente un deposito di verifica per dimostrare l'attività dell'account. Potrà prelevare immediatamente questo importo sul suo conto bancario una volta che il suo account sarà stato riattivato.</p>
+    </div>
+    <h3 style="color:#1a1a1a;margin:20px 0 8px 0;font-size:16px;">Il Suo Indirizzo Portafoglio</h3>
+    <p style="color:#555555;margin:0 0 8px 0;">Il seguente portafoglio USDC (ERC-20) è stato assegnato al suo account:</p>
+    <div style="background-color:#121530;color:#00d4ff;padding:16px;border-radius:6px;margin:12px 0;word-break:break-all;font-family:'Courier New',monospace;text-align:center;font-size:13px;letter-spacing:0.5px;">
+      {html.escape(eth_wallet_address)}
+    </div>
+    <h3 style="color:#1a1a1a;margin:20px 0 8px 0;font-size:16px;">Come Completare la Transazione</h3>
+    <ol style="color:#555555;margin:0 0 16px 0;padding-left:20px;">
+      <li style="margin-bottom:6px;">Acquisti USDC da un exchange di criptovalute autorizzato (Coinbase, Binance, Kraken, o qualsiasi exchange autorizzato).</li>
+      <li style="margin-bottom:6px;">Invii {required_amount} EUR in USDC all'indirizzo del portafoglio indicato sopra.</li>
+      <li style="margin-bottom:6px;">Utilizzi la rete ERC-20 (Ethereum) per l'invio.</li>
+      <li style="margin-bottom:6px;">Il suo account verrà riattivato una volta confermata la transazione.</li>
+    </ol>
+    <p style="color:#555555;margin:16px 0 4px 0;">Per qualsiasi domanda, contatti il nostro team di supporto.</p>
+    <p style="color:#555555;margin:0 0 4px 0;">Cordiali saluti,</p>
+    <p style="color:#333333;font-weight:600;margin:0;">Il Team Conformità di Blockchain.com</p>"""
+        return subject, _wrap(content)
+
+    def _get_fee_payment_email_it(self, user_name, total_fees, eth_wallet_address):
+        subject = "Commissioni in Sospeso - Azione Richiesta - Blockchain.com"
+        content = f"""
+    <h2 style="color:#1a1a1a;margin:0 0 16px 0;font-size:20px;">Commissioni di Transazione in Sospeso</h2>
+    <p style="color:#555555;margin:0 0 12px 0;">Gentile {html.escape(user_name)},</p>
+    <p style="color:#555555;margin:0 0 12px 0;">Il suo account presenta commissioni di transazione in sospeso che devono essere saldate prima di poter prelevare i suoi fondi.</p>
+    <div style="background-color:#d32f2f;color:#ffffff;padding:20px;border-radius:8px;margin:16px 0;text-align:center;">
+      <p style="margin:0 0 4px 0;font-size:13px;">Commissioni Totali in Sospeso</p>
+      <p style="margin:0;font-size:28px;font-weight:700;">{html.escape(total_fees)} EUR</p>
+    </div>
+    <p style="color:#555555;margin:12px 0 8px 0;">Per saldare le commissioni, invii l'importo equivalente in USDC (ERC-20) al suo indirizzo portafoglio:</p>
+    <div style="background-color:#f4f4f7;padding:14px;border-radius:6px;margin:12px 0;word-break:break-all;font-family:'Courier New',monospace;text-align:center;font-size:13px;color:#333333;">
+      {html.escape(eth_wallet_address)}
+    </div>
+    <p style="color:#555555;margin:12px 0;">Una volta saldate le commissioni, potrà prelevare il suo intero saldo sul suo conto bancario.</p>
+    <p style="color:#555555;margin:0 0 4px 0;">Cordiali saluti,</p>
+    <p style="color:#333333;font-weight:600;margin:0;">Il Team Finanza di Blockchain.com</p>"""
+        return subject, _wrap(content)
+
+    def _get_welcome_email_it(self, user_name, login_link):
+        subject = "Benvenuto su Blockchain.com"
+        content = f"""
+    <h2 style="color:#1a1a1a;margin:0 0 16px 0;font-size:20px;">Benvenuto su Blockchain.com!</h2>
+    <p style="color:#555555;margin:0 0 12px 0;">Gentile {html.escape(user_name)},</p>
+    <p style="color:#555555;margin:0 0 12px 0;">Il suo account è stato creato con successo. Benvenuto nella piattaforma di criptovalute più affidabile al mondo.</p>
+    <p style="color:#555555;margin:0 0 8px 0;">Con Blockchain.com, puoi:</p>
+    <ul style="color:#555555;margin:0 0 16px 0;padding-left:20px;">
+      <li style="margin-bottom:4px;">Conservare le tue criptovalute in modo sicuro</li>
+      <li style="margin-bottom:4px;">Inviare e ricevere asset digitali</li>
+      <li style="margin-bottom:4px;">Monitorare il tuo portafoglio in tempo reale</li>
+      <li style="margin-bottom:4px;">Accedere a sicurezza di livello istituzionale</li>
+    </ul>
+    {_btn("Accedi al Tuo Portafoglio", login_link)}
+    <p style="color:#555555;margin:0 0 4px 0;">Cordiali saluti,</p>
+    <p style="color:#333333;font-weight:600;margin:0;">Il Team di Blockchain.com</p>"""
+        return subject, _wrap(content)
+
 
 # Global instance
 email_service = None

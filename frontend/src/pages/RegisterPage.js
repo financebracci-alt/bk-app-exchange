@@ -12,7 +12,7 @@ import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
 const RegisterPage = () => {
   const navigate = useNavigate();
   const { register } = useAuth();
-  const t = useMemo(() => getTranslations(), []);
+  const { t } = useLang();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({

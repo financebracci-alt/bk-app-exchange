@@ -34,7 +34,7 @@ import {
 const ProfilePage = () => {
   const navigate = useNavigate();
   const { user, logout, api, refreshUser } = useAuth();
-  const t = useMemo(() => getTranslations(), []);
+  const { t } = useLang();
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [passwordForm, setPasswordForm] = useState({ current: '', new: '', confirm: '' });
   const [changingPassword, setChangingPassword] = useState(false);

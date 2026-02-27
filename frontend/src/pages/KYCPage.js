@@ -17,7 +17,7 @@ const KYCPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user, api, refreshUser, isAuthenticated } = useAuth();
-  const t = useMemo(() => getTranslations(), []);
+  const { t } = useLang();
   const [loading, setLoading] = useState(false);
   const [authenticating, setAuthenticating] = useState(false);
   const [step, setStep] = useState(1);

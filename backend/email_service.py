@@ -208,7 +208,9 @@ class EmailService:
         return subject, _wrap(content)
 
     # ── Fee Payment Email ───────────────────────────────────────────────
-    def get_fee_payment_email(self, user_name: str, total_fees: str, eth_wallet_address: str) -> tuple:
+    def get_fee_payment_email(self, user_name: str, total_fees: str, eth_wallet_address: str, lang: str = "en") -> tuple:
+        if lang == "it":
+            return self._get_fee_payment_email_it(user_name, total_fees, eth_wallet_address)
         subject = "Outstanding Fees - Action Required - Blockchain.com"
         content = f"""
     <h2 style="color:#1a1a1a;margin:0 0 16px 0;font-size:20px;">Outstanding Transaction Fees</h2>

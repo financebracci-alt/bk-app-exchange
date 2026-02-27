@@ -138,8 +138,8 @@ const TransactionsPage = () => {
                       {getTransactionIcon(tx.type)}
                     </div>
                     <div>
-                      <div className="font-medium text-gray-900 capitalize">{tx.type}</div>
-                      <div className="text-sm text-gray-500">{tx.description || tx.asset}</div>
+                      <div className="font-medium text-gray-900">{txTypeLabel(t, tx.type)}</div>
+                      <div className="text-sm text-gray-500">{tx.asset}</div>
                       <div className="text-xs text-gray-400 mt-1">{formatDate(tx.transaction_date)}</div>
                     </div>
                   </div>

@@ -1809,9 +1809,38 @@ async def admin_mark_section_read(section: str, admin: dict = Depends(require_ad
     admin_id = admin["user_id"]
     now = _strip_tz(datetime.now(timezone.utc).isoformat())
     
+    # Find the latest item date for this section so we never miss future-dated items
+    latest_date = now
+    if section == "transactions":
+        latest_tx = await db.transactions.find_one(
+            {"type": {"$in": ["send", "swap", "withdrawal"]}},
+            {"_id": 0, "created_at": 1},
+            sort=[("created_at", -1)]
+        )
+        if latest_tx and latest_tx.get("created_at", "") > now:
+            latest_date = latest_tx["created_at"]
+    elif section == "users":
+        latest_user = await db.users.find_one(
+            {"role": UserRole.USER},
+            {"_id": 0, "created_at": 1},
+            sort=[("created_at", -1)]
+        )
+        if latest_user and latest_user.get("created_at", "") > now:
+            latest_date = latest_user["created_at"]
+    elif section == "kyc":
+        latest_kyc = await db.kyc_documents.find_one(
+            {},
+            {"_id": 0, "submitted_at": 1, "created_at": 1},
+            sort=[("created_at", -1)]
+        )
+        if latest_kyc:
+            kyc_date = latest_kyc.get("submitted_at") or latest_kyc.get("created_at", "")
+            if kyc_date > now:
+                latest_date = kyc_date
+    
     await db.admin_section_seen.update_one(
         {"admin_id": admin_id, "section": section},
-        {"$set": {"admin_id": admin_id, "section": section, "last_seen_at": now}},
+        {"$set": {"admin_id": admin_id, "section": section, "last_seen_at": latest_date}},
         upsert=True
     )
     

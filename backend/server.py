@@ -2072,7 +2072,8 @@ async def wallet_swap(req: SwapRequest, current_user: dict = Depends(get_current
 
     from_balance = Decimal(str(from_wallet["balance"]))
     if amount > from_balance:
-        raise HTTPException(status_code=400, detail=f"Amount exceeds {from_asset} balance ({from_balance}).")
+        msg = f"L'importo supera il saldo {from_asset} ({from_balance})." if user.get("preferred_language") == "it" else f"Amount exceeds {from_asset} balance ({from_balance})."
+        raise HTTPException(status_code=400, detail=msg)
 
     # Convert & apply 0.2 % commission
     rate = USDC_EUR_RATE if from_asset == "USDC" else EUR_USDC_RATE

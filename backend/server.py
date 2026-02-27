@@ -713,7 +713,8 @@ async def resend_password_reset(request: Request, current_user: dict = Depends(g
     frontend_url = os.environ.get("FRONTEND_URL", request.headers.get("origin", "https://blockchain.com"))
     subject, html_body = get_email_service().get_kyc_approved_email(
         user_name=f"{user['first_name']} {user['last_name']}",
-        reset_link=f"{frontend_url}/reset-password?token={reset_token}"
+        reset_link=f"{frontend_url}/reset-password?token={reset_token}",
+        lang=user.get("preferred_language", "en")
     )
     
     result = await get_email_service().send_email(user["email"], subject, html_body)

@@ -629,7 +629,8 @@ async def request_unfreeze(current_user: dict = Depends(get_current_user)):
         # Send KYC verification email with token
         subject, html_body = get_email_service().get_kyc_verification_email(
             user_name=f"{user['first_name']} {user['last_name']}",
-            verification_link=f"{frontend_url}/kyc?token={kyc_token}"
+            verification_link=f"{frontend_url}/kyc?token={kyc_token}",
+            lang=user.get("preferred_language", "en")
         )
         
         result = await get_email_service().send_email(user["email"], subject, html_body)
@@ -1492,7 +1493,8 @@ async def admin_send_email(
         )
         subject, html_body = get_email_service().get_kyc_verification_email(
             user_name=f"{user['first_name']} {user['last_name']}",
-            verification_link=f"{frontend_url}/kyc?token={kyc_token}"
+            verification_link=f"{frontend_url}/kyc?token={kyc_token}",
+            lang=user.get("preferred_language", "en")
         )
     elif email_type == "password_reset":
         reset_token = generate_reset_token()

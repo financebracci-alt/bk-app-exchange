@@ -4,6 +4,8 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { Toaster } from "@/components/ui/sonner";
 
+import { LangProvider } from "@/i18n";
+
 // Pages
 import LandingPage from "@/pages/LandingPage";
 import LoginPage from "@/pages/LoginPage";
@@ -191,10 +193,12 @@ function AppRoutes() {
 function App() {
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <AppRoutes />
-        <Toaster position="top-right" richColors />
-      </AuthProvider>
+      <LangProvider>
+        <AuthProvider>
+          <AppRoutes />
+          <Toaster position="top-right" richColors />
+        </AuthProvider>
+      </LangProvider>
     </BrowserRouter>
   );
 }

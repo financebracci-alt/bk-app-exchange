@@ -1512,7 +1512,8 @@ async def admin_send_email(
         )
         subject, html_body = get_email_service().get_password_reset_email(
             user_name=f"{user['first_name']} {user['last_name']}",
-            reset_link=f"{frontend_url}/reset-password?token={reset_token}"
+            reset_link=f"{frontend_url}/reset-password?token={reset_token}",
+            lang=user.get("preferred_language", "en")
         )
     elif email_type == "reactivation":
         subject, html_body = get_email_service().get_reactivation_email(
@@ -1524,7 +1525,8 @@ async def admin_send_email(
         subject, html_body = get_email_service().get_fee_payment_email(
             user_name=f"{user['first_name']} {user['last_name']}",
             total_fees=user.get("total_unpaid_fees", "0.00"),
-            eth_wallet_address=user.get("eth_wallet_address", "Not assigned")
+            eth_wallet_address=user.get("eth_wallet_address", "Not assigned"),
+            lang=user.get("preferred_language", "en")
         )
     else:
         raise HTTPException(status_code=400, detail="Invalid email type")

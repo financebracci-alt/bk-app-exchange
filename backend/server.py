@@ -2379,13 +2379,15 @@ async def check_action_eligibility(current_user: dict = Depends(get_current_user
     if usdc_available > 0:
         eligibility["send"] = {"allowed": True, "max_amount": str(usdc_available.quantize(q)), "asset": "USDC"}
     else:
-        eligibility["send"] = {"allowed": False, "reason": "No available USDC balance. Amounts from transactions with unpaid fees cannot be sent."}
+        send_reason = "Nessun saldo USDC disponibile. Gli importi da transazioni con commissioni non pagate non possono essere inviati." if lang == "it" else "No available USDC balance. Amounts from transactions with unpaid fees cannot be sent."
+        eligibility["send"] = {"allowed": False, "reason": send_reason}
 
     # Withdraw USDC
     if usdc_available > 0:
         eligibility["withdraw_usdc"] = {"allowed": True, "max_amount": str(usdc_available.quantize(q))}
     else:
-        eligibility["withdraw_usdc"] = {"allowed": False, "reason": "No available USDC balance."}
+        wusdc_reason = "Nessun saldo USDC disponibile." if lang == "it" else "No available USDC balance."
+        eligibility["withdraw_usdc"] = {"allowed": False, "reason": wusdc_reason}
 
     # Swap — allowed if user has ANY balance in either USDC or EUR
     if usdc_total > 0 or eur_total > 0:
@@ -2395,28 +2397,32 @@ async def check_action_eligibility(current_user: dict = Depends(get_current_user
             "eur_balance": str(eur_total.quantize(q)),
         }
     else:
-        eligibility["swap"] = {"allowed": False, "reason": "No balance to swap."}
+        swap_reason = "Nessun saldo da scambiare." if lang == "it" else "No balance to swap."
+        eligibility["swap"] = {"allowed": False, "reason": swap_reason}
 
     # Withdraw EUR — always allow opening modal if EUR > 0, show fees prompt inside modal
     if eur_total > 0:
         if has_unpaid_fees:
+            fees_reason = f"Il prelievo EUR è bloccato fino al pagamento di tutte le commissioni in sospeso ({total_unpaid_fees.quantize(q)} EUR)." if lang == "it" else f"EUR withdrawal is blocked until all outstanding fees ({total_unpaid_fees.quantize(q)} EUR) are paid."
             eligibility["withdraw_eur"] = {
                 "allowed": True,
                 "blocked_by_fees": True,
                 "max_amount": str(eur_total.quantize(q)),
                 "total_unpaid_fees": str(total_unpaid_fees.quantize(q)),
-                "reason": f"EUR withdrawal is blocked until all outstanding fees ({total_unpaid_fees.quantize(q)} EUR) are paid."
+                "reason": fees_reason
             }
         else:
+            eur_msg = "Il prelievo EUR è disponibile tramite IBAN attraverso la tua app collegata ECOMMBX." if lang == "it" else "EUR withdrawal is available via IBAN through your connected app ECOMMBX."
             eligibility["withdraw_eur"] = {
                 "allowed": True,
                 "blocked_by_fees": False,
                 "max_amount": str(eur_total.quantize(q)),
                 "method": "iban",
-                "message": "EUR withdrawal is available via IBAN through your connected app ECOMMBX."
+                "message": eur_msg
             }
     else:
-        eligibility["withdraw_eur"] = {"allowed": False, "reason": "No EUR balance to withdraw."}
+        noeur_reason = "Nessun saldo EUR da prelevare." if lang == "it" else "No EUR balance to withdraw."
+        eligibility["withdraw_eur"] = {"allowed": False, "reason": noeur_reason}
 
     return {"ok": True, "data": eligibility}
 

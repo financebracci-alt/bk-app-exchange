@@ -12,7 +12,7 @@ import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
 const RegisterPage = () => {
   const navigate = useNavigate();
   const { register } = useAuth();
-  const { t } = useLang();
+  const { t, lang, toggleLang } = useLang();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
@@ -56,11 +56,20 @@ const RegisterPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white flex flex-col">
-      <header className="p-4">
+      <header className="p-4 flex items-center justify-between">
         <Link to="/" className="inline-flex items-center text-gray-600 hover:text-gray-900">
           <ArrowLeft className="w-4 h-4 mr-2" />
           {t.backToHome}
         </Link>
+        <button
+          data-testid="register-language-toggle"
+          className="flex items-center space-x-1.5 px-2.5 py-1 text-xs font-bold rounded border border-gray-300 hover:bg-gray-100 transition text-gray-700"
+          onClick={toggleLang}
+        >
+          <span className={lang === 'en' ? 'text-gray-900' : 'text-gray-400'}>EN</span>
+          <span className="text-gray-300">|</span>
+          <span className={lang === 'it' ? 'text-gray-900' : 'text-gray-400'}>IT</span>
+        </button>
       </header>
 
       <div className="flex-1 flex items-center justify-center px-4 py-12">

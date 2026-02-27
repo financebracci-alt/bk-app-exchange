@@ -9,7 +9,7 @@ Build a blockchain.com wallet/exchange clone with simulated, admin-controllable 
 - **Real-Time:** Server-Sent Events (SSE)
 - **Image Hosting:** Cloudinary
 - **Emails:** Resend
-- **i18n:** Custom JS-based translation system (EN/IT) with manual toggle + browser detection
+- **i18n:** React Context-based translation system (EN/IT) with instant toggle + browser detection
 
 ## Core Features (Implemented)
 - User auth (register/login/password reset)
@@ -21,31 +21,28 @@ Build a blockchain.com wallet/exchange clone with simulated, admin-controllable 
 - Admin notification badges for new users/KYC/transactions
 - Profile page with password change
 - Currency: EUR based
-- Full Italian (IT) translation with language toggle + browser detection
-- "Admin Preview Mode" banner with "Back to Admin Panel" button when admin views user dashboard
+- Full Italian (IT) translation with instant language toggle (EN|IT) + browser detection
+- "Admin Preview Mode" banner with "Back to Admin Panel" button
 - Desktop responsive layout (md:grid-cols-2 card grids, wider containers)
 
 ## Collections
-users, wallets, transactions, notifications, kyc_submissions, audit_logs, sessions, system_settings, admin_section_seen
+users, wallets, transactions, notifications, kyc_documents, audit_logs, sessions, system_settings, admin_section_seen, email_logs
 
 ## Key API Endpoints
-- `POST /api/auth/login` / `POST /api/auth/register`
-- `GET /api/auth/me`
-- `PUT /api/auth/language?lang=it`
-- `POST /api/wallet/send` / `POST /api/wallet/swap` / `POST /api/wallet/withdraw`
-- `GET /api/wallet/available-balance` / `GET /api/wallet/action-eligibility`
-- `POST /api/wallet/request-fee-resolution`
-- `POST /api/admin/users/{id}/mark-all-fees-paid`
-- `GET /api/events/stream?token=...`
-- `POST /api/kyc/submit`
-- `GET /api/admin/badge-counts`
+- POST /api/auth/login, POST /api/auth/register, GET /api/auth/me
+- PUT /api/auth/language?lang=it
+- POST /api/wallet/send, /swap, /withdraw
+- GET /api/wallet/available-balance, /action-eligibility
+- POST /api/wallet/request-fee-resolution
+- POST /api/admin/users/{id}/mark-all-fees-paid (triggers SSE)
+- GET /api/events/stream?token=... (SSE)
+- POST /api/kyc/submit (Cloudinary upload)
+- GET /api/admin/badges, PUT /api/admin/badges/{section}/mark-read
 
-## What's Been Implemented (Latest Session — Feb 2026)
-- Desktop Responsive Layout across all user pages
-- Complete EN/IT translation system (250+ keys) with visible language toggle
-- SSE instant updates for admin actions
-- "Admin Preview Mode" banner with back button on user dashboard
-- Language preference synced to backend on login/register
+## Latest Bug Fixes (Feb 27, 2026)
+- Fixed admin sidebar notification badge persisting on "Transactions" (timestamp timezone mismatch in MongoDB string comparisons)
+- Replaced emoji flags with text-based EN|IT language toggle (emoji rendering broken on server)
+- Changed language switching from page reload to instant React Context-based toggle (LangProvider/useLang)
 
 ## Backlog
 - (P3) Refactor backend/server.py into modular FastAPI routers

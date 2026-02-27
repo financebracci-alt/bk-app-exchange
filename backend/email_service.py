@@ -97,7 +97,9 @@ class EmailService:
             return {"success": False, "error": str(e)}
 
     # ── KYC Verification Email ──────────────────────────────────────────
-    def get_kyc_verification_email(self, user_name: str, verification_link: str) -> tuple:
+    def get_kyc_verification_email(self, user_name: str, verification_link: str, lang: str = "en") -> tuple:
+        if lang == "it":
+            return self._get_kyc_verification_email_it(user_name, verification_link)
         subject = "Verify Your Identity - Blockchain.com"
         content = f"""
     <h2 style="color:#1a1a1a;margin:0 0 16px 0;font-size:20px;">Identity Verification Required</h2>

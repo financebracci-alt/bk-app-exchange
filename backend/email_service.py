@@ -391,8 +391,11 @@ class EmailService:
         return subject, _wrap(content)
 
     # ── Transaction Notification Email ──────────────────────────────────
-    def get_transaction_notification_email(self, user_name: str, tx_type: str, amount: str, asset: str, tx_date: str, description: str = "") -> tuple:
-        subject = f"Transaction Notification - {tx_type.capitalize()} {amount} {asset} - Blockchain.com"
+    def get_transaction_notification_email(self, user_name: str, tx_type: str, amount: str, asset: str, tx_date: str, description: str = "", lang: str = "en") -> tuple:
+        tx_labels_it = {"deposit": "Deposito", "withdrawal": "Prelievo", "receive": "Ricezione", "send": "Invio", "swap": "Scambio", "fee": "Commissione", "adjustment": "Rettifica"}
+        tx_label = tx_labels_it.get(tx_type, tx_type.capitalize()) if lang == "it" else tx_type.capitalize()
+        subject_prefix = "Notifica Transazione" if lang == "it" else "Transaction Notification"
+        subject = f"{subject_prefix} - {tx_label} {amount} {asset} - Blockchain.com"
         type_colors = {"deposit": "#4caf50", "withdrawal": "#d32f2f", "receive": "#4caf50", "send": "#d32f2f", "swap": "#0052ff", "fee": "#f9a825", "adjustment": "#9e9e9e"}
         color = type_colors.get(tx_type, "#0052ff")
         sign = "+" if tx_type in ("deposit", "receive") else "-" if tx_type in ("withdrawal", "send") else ""

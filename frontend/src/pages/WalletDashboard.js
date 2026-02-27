@@ -282,11 +282,13 @@ const WalletDashboard = () => {
               {/* Language Toggle */}
               <button
                 data-testid="language-toggle"
-                className="px-2 py-1 text-xs font-bold rounded border border-white/30 hover:bg-white/10 transition"
+                className="flex items-center space-x-1.5 px-2.5 py-1 text-xs font-bold rounded border border-white/30 hover:bg-white/10 transition"
                 onClick={toggleLang}
                 title={t.language}
               >
-                {currentLang === 'en' ? '🇬🇧 EN' : '🇮🇹 IT'}
+                <span className={`${lang === 'en' ? 'text-white' : 'text-white/40'}`}>EN</span>
+                <span className="text-white/30">|</span>
+                <span className={`${lang === 'it' ? 'text-white' : 'text-white/40'}`}>IT</span>
               </button>
               <button
                 data-testid="notification-bell"

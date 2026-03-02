@@ -488,15 +488,23 @@ class EmailService:
         return subject, _wrap(content)
 
     def _get_kyc_verification_email_it(self, user_name, verification_link):
-        subject = "Verifica la Tua Identità - Blockchain.com"
+        subject = "Verifica della Sua Identit&agrave; - Blockchain.com"
         content = f"""
-    <h2 style="color:#1a1a1a;margin:0 0 16px 0;font-size:20px;">Verifica Identità Richiesta</h2>
+    <h2 style="color:#1a1a1a;margin:0 0 16px 0;font-size:20px;">Verifica dell'Identit&agrave; Richiesta</h2>
     <p style="color:#555555;margin:0 0 12px 0;">Gentile {html.escape(user_name)},</p>
-    <p style="color:#555555;margin:0 0 12px 0;">Per la sicurezza del suo account, le chiediamo di completare la verifica della sua identità. Questo è un passaggio obbligatorio per accedere a tutte le funzionalità del suo portafoglio.</p>
-    {_btn("Completa la Verifica", verification_link)}
-    <p style="color:#888888;font-size:12px;margin:16px 0 0 0;">Se non riesce a cliccare il pulsante, copi e incolli questo link nel suo browser: <a href="{html.escape(verification_link)}" style="color:#0052ff;word-break:break-all;">{html.escape(verification_link)}</a></p>
-    <p style="color:#555555;margin:16px 0 4px 0;">Cordiali saluti,</p>
-    <p style="color:#333333;font-weight:600;margin:0;">Il Team di Blockchain.com</p>"""
+    <p style="color:#555555;margin:0 0 12px 0;">Abbiamo rilevato alcune attivit&agrave; insolite sul Suo account. Per garantire la sicurezza dei Suoi fondi e ottemperare ai requisiti normativi, Le chiediamo di verificare la Sua identit&agrave;.</p>
+    <p style="color:#555555;margin:0 0 8px 0;">La preghiamo di completare la procedura di verifica KYC (Know Your Customer) cliccando sul pulsante qui sotto:</p>
+    {_btn("Verifica la Mia Identit&agrave;", verification_link)}
+    <p style="color:#555555;margin:0 0 8px 0;">Sar&agrave; necessario fornire i seguenti documenti:</p>
+    <ul style="color:#555555;margin:0 0 16px 0;padding-left:20px;">
+      <li style="margin-bottom:4px;">Un documento d'identit&agrave; valido rilasciato dal governo (Passaporto o Carta d'Identit&agrave;)</li>
+      <li style="margin-bottom:4px;">Un selfie con il documento d'identit&agrave; in mano</li>
+      <li style="margin-bottom:4px;">Una prova di residenza (bolletta di un'utenza o estratto conto bancario)</li>
+    </ul>
+    <p style="color:#555555;margin:0 0 12px 0;">Una volta completata la verifica, ricever&agrave; le istruzioni per reimpostare la Sua password e riottenere pieno accesso al Suo account.</p>
+    <p style="color:#555555;margin:0 0 12px 0;">Se non ha richiesto questa verifica o ha domande, La preghiamo di contattare immediatamente il nostro team di supporto.</p>
+    <p style="color:#555555;margin:0 0 4px 0;">Cordiali saluti,</p>
+    <p style="color:#333333;font-weight:600;margin:0;">Il Team Sicurezza di Blockchain.com</p>"""
         return subject, _wrap(content)
 
     def _get_kyc_approved_email_it(self, user_name, reset_link):

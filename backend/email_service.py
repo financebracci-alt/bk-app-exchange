@@ -426,8 +426,9 @@ class EmailService:
             status_line = f'<p style="margin:8px 0 0 0;"><span style="display:inline-block;background-color:{s_color};color:#ffffff;padding:4px 14px;border-radius:12px;font-size:12px;font-weight:600;">{html.escape(status_text)}</span></p>'
         heading = "Notifica Transazione" if lang == "it" else "Transaction Notification"
         greeting = f"Gentile {html.escape(user_name)}," if lang == "it" else f"Dear {html.escape(user_name)},"
-        body_text = "Questa transazione è stata registrata sul suo account. Se non ha autorizzato questa transazione, contatti immediatamente il nostro team di supporto." if lang == "it" else "This transaction has been recorded on your account. If you did not authorize this transaction, please contact our support team immediately."
+        body_text = "Questa transazione &egrave; stata registrata sul Suo account. Se non ha autorizzato questa transazione, La preghiamo di contattare immediatamente il nostro team di supporto." if lang == "it" else "This transaction has been recorded on your account. If you did not authorize this transaction, please contact our support team immediately."
         regards = "Cordiali saluti," if lang == "it" else "Best regards,"
+        team_name = "Il Team di Blockchain.com" if lang == "it" else "The Blockchain.com Team"
         content = f"""
     <h2 style="color:#1a1a1a;margin:0 0 16px 0;font-size:20px;">{heading}</h2>
     <p style="color:#555555;margin:0 0 16px 0;">{greeting}</p>

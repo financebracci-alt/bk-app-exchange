@@ -20,19 +20,15 @@ Build a blockchain.com wallet/exchange clone with simulated, admin-controllable 
 - Unpaid fees flow with "Fix Now" button + email instructions
 - Profile page with full user info
 - Desktop responsive layout (md:grid-cols-2, wider containers)
-- Full EN/IT translation: ALL pages (Landing, Login, Register, Dashboard, Transactions, Profile, KYC, Reset Password)
-- Transaction types translated (Deposito, Ricezione, Invio, Scambio, Prelievo)
-- Italian date formatting with locale-aware dates on Profile and Transactions pages
-- Locale-aware number formatting (comma decimal for Italian)
-- All 8 email types have Italian templates
-- Admin preview banner with "Back to Admin Panel"
-- Language toggle (EN|IT) on ALL user pages: Landing, Login, Register, Reset Password, Wallet Dashboard
-- Instant language switching via React Context (no page reload)
-- Backend language sync: toggleLang syncs to backend via PUT /api/auth/language
-- Bilingual backend error messages (HTTPException details) for send/swap/withdraw
-- Bilingual backend eligibility reasons (action-eligibility endpoint)
-- Bilingual backend notifications (stored in user's preferred_language)
-- Translated KYC status display in wallet dashboard (Verificato, In Attesa, etc.)
+- Full EN/IT translation across all pages and backend
+- All 8+ email types have Italian templates
+- **Automatic transaction emails**: Swap, Send, Withdraw actions trigger email notifications to users with transaction details and status (Processing/Completed)
+- **Status badges in emails**: Color-coded (green=completed, yellow=processing, red=failed)
+- **Auto-complete emails**: When send/withdraw transactions auto-complete after 2 minutes, a second "Completed" email is sent
+- Language toggle (EN|IT) on ALL user pages including Register and Reset Password
+- Backend language sync on toggle
+- Bilingual backend error messages and eligibility reasons
+- KYC submission timestamps shown in admin panel
 
 ## Collections
 users, wallets, transactions, notifications, kyc_documents, audit_logs, sessions, system_settings, admin_section_seen, email_logs

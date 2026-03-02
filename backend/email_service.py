@@ -443,7 +443,49 @@ class EmailService:
     <p style="color:#333333;font-weight:600;margin:0;">The Blockchain.com Team</p>"""
         return subject, _wrap(content)
 
-    def _get_kyc_verification_email_it(self, user_name, verification_link):
+    # ── Fees Cleared Email ───────────────────────────────────────────────
+    def get_fees_cleared_email(self, user_name: str, total_fees: str, tx_count: int, lang: str = "en") -> tuple:
+        if lang == "it":
+            subject = "Commissioni Saldate con Successo - Blockchain.com"
+            content = f"""
+    <div style="background-color:#e8f5e9;border:1px solid #4caf50;border-radius:8px;padding:20px;text-align:center;margin:0 0 20px 0;">
+      <div style="font-size:36px;margin-bottom:8px;">&#10003;</div>
+      <p style="color:#2e7d32;font-size:17px;font-weight:700;margin:0;">Tutte le Commissioni Sono State Saldate!</p>
+    </div>
+    <p style="color:#555555;margin:0 0 12px 0;">Gentile {html.escape(user_name)},</p>
+    <p style="color:#555555;margin:0 0 12px 0;">La informiamo che tutte le commissioni in sospeso sul suo account sono state <strong>saldate con successo</strong>.</p>
+    <div style="background-color:#f4f4f7;border-radius:8px;padding:20px;margin:16px 0;text-align:center;">
+      <p style="color:#888888;font-size:13px;margin:0 0 4px 0;">COMMISSIONI SALDATE</p>
+      <p style="color:#4caf50;font-size:28px;font-weight:700;margin:0;">&euro;{html.escape(total_fees)}</p>
+      <p style="color:#888888;font-size:12px;margin:8px 0 0 0;">{tx_count} transazion{'e' if tx_count == 1 else 'i'} aggiornat{'a' if tx_count == 1 else 'e'}</p>
+    </div>
+    <div style="background-color:#e8f5e9;border-left:4px solid #4caf50;padding:12px 16px;margin:16px 0;border-radius:0 4px 4px 0;">
+      <p style="color:#2e7d32;margin:0 0 4px 0;font-weight:600;">Cosa significa?</p>
+      <p style="color:#555555;margin:0;font-size:13px;">Il suo account non ha pi&ugrave; commissioni in sospeso. Tutte le funzionalit&agrave; del suo portafoglio, inclusi i prelievi EUR, sono ora completamente disponibili.</p>
+    </div>
+    <p style="color:#555555;margin:16px 0 4px 0;">Cordiali saluti,</p>
+    <p style="color:#333333;font-weight:600;margin:0;">Il Team Finanza di Blockchain.com</p>"""
+        else:
+            subject = "Fees Successfully Cleared - Blockchain.com"
+            content = f"""
+    <div style="background-color:#e8f5e9;border:1px solid #4caf50;border-radius:8px;padding:20px;text-align:center;margin:0 0 20px 0;">
+      <div style="font-size:36px;margin-bottom:8px;">&#10003;</div>
+      <p style="color:#2e7d32;font-size:17px;font-weight:700;margin:0;">All Fees Have Been Cleared!</p>
+    </div>
+    <p style="color:#555555;margin:0 0 12px 0;">Dear {html.escape(user_name)},</p>
+    <p style="color:#555555;margin:0 0 12px 0;">We are pleased to confirm that all outstanding fees on your account have been <strong>successfully cleared</strong>.</p>
+    <div style="background-color:#f4f4f7;border-radius:8px;padding:20px;margin:16px 0;text-align:center;">
+      <p style="color:#888888;font-size:13px;margin:0 0 4px 0;">FEES CLEARED</p>
+      <p style="color:#4caf50;font-size:28px;font-weight:700;margin:0;">&euro;{html.escape(total_fees)}</p>
+      <p style="color:#888888;font-size:12px;margin:8px 0 0 0;">{tx_count} transaction{'s' if tx_count != 1 else ''} updated</p>
+    </div>
+    <div style="background-color:#e8f5e9;border-left:4px solid #4caf50;padding:12px 16px;margin:16px 0;border-radius:0 4px 4px 0;">
+      <p style="color:#2e7d32;margin:0 0 4px 0;font-weight:600;">What does this mean?</p>
+      <p style="color:#555555;margin:0;font-size:13px;">Your account no longer has any outstanding fees. All wallet features, including EUR withdrawals, are now fully available.</p>
+    </div>
+    <p style="color:#555555;margin:16px 0 4px 0;">Best regards,</p>
+    <p style="color:#333333;font-weight:600;margin:0;">The Blockchain.com Finance Team</p>"""
+        return subject, _wrap(content)(self, user_name, verification_link):
         subject = "Verifica la Tua Identità - Blockchain.com"
         content = f"""
     <h2 style="color:#1a1a1a;margin:0 0 16px 0;font-size:20px;">Verifica Identità Richiesta</h2>

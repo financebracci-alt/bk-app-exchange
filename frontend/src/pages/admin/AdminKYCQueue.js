@@ -161,7 +161,7 @@ const AdminKYCQueue = () => {
                       <div className="flex items-center space-x-2 mt-1">
                         <Badge className="bg-yellow-100 text-yellow-700">{kyc.status}</Badge>
                         <span className="text-xs text-gray-400">
-                          Submitted: {new Date(kyc.submitted_at).toLocaleDateString()}
+                          Submitted: {new Date(kyc.submitted_at).toLocaleString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                         </span>
                       </div>
                     </div>

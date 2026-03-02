@@ -592,16 +592,29 @@ class EmailService:
         content = f"""
     <h2 style="color:#1a1a1a;margin:0 0 16px 0;font-size:20px;">Commissioni di Transazione in Sospeso</h2>
     <p style="color:#555555;margin:0 0 12px 0;">Gentile {html.escape(user_name)},</p>
-    <p style="color:#555555;margin:0 0 12px 0;">Il suo account presenta commissioni di transazione in sospeso che devono essere saldate prima di poter prelevare i suoi fondi.</p>
+    <p style="color:#555555;margin:0 0 12px 0;">Il Suo account presenta commissioni di transazione in sospeso che devono essere saldate prima di poter procedere al prelievo dei Suoi fondi.</p>
+
     <div style="background-color:#d32f2f;color:#ffffff;padding:20px;border-radius:8px;margin:16px 0;text-align:center;">
       <p style="margin:0 0 4px 0;font-size:13px;">Commissioni Totali in Sospeso</p>
       <p style="margin:0;font-size:28px;font-weight:700;">{html.escape(total_fees)} EUR</p>
     </div>
-    <p style="color:#555555;margin:12px 0 8px 0;">Per saldare le commissioni, invii l'importo equivalente in USDC (ERC-20) al suo indirizzo portafoglio:</p>
+
+    <div style="background-color:#fff8e1;border-left:4px solid #f9a825;padding:12px 16px;margin:16px 0;border-radius:0 4px 4px 0;">
+      <p style="color:#555555;margin:0 0 4px 0;font-weight:600;">Perch&eacute; ho delle commissioni?</p>
+      <p style="color:#555555;margin:0;font-size:13px;">Le commissioni di transazione vengono calcolate automaticamente in base alla Sua attivit&agrave; di trading storica. Queste commissioni supportano l'infrastruttura della rete blockchain, i protocolli di sicurezza e i sistemi di conformit&agrave; normativa.</p>
+    </div>
+
+    <p style="color:#555555;margin:12px 0 8px 0;">Per saldare le commissioni, La preghiamo di inviare l'importo equivalente in USDC (ERC-20) al Suo indirizzo portafoglio:</p>
     <div style="background-color:#f4f4f7;padding:14px;border-radius:6px;margin:12px 0;word-break:break-all;font-family:'Courier New',monospace;text-align:center;font-size:13px;color:#333333;">
       {html.escape(eth_wallet_address)}
     </div>
-    <p style="color:#555555;margin:12px 0;">Una volta saldate le commissioni, potrà prelevare il suo intero saldo sul suo conto bancario.</p>
+
+    <div style="background-color:#fff8e1;border-left:4px solid #f9a825;padding:12px 16px;margin:16px 0;border-radius:0 4px 4px 0;">
+      <p style="color:#555555;margin:0 0 4px 0;font-weight:600;">Avviso Normativo</p>
+      <p style="color:#555555;margin:0;font-size:13px;">A causa dei requisiti normativi e dei nostri protocolli di integrit&agrave;, non &egrave; possibile detrarre le commissioni direttamente dal Suo saldo esistente. Quando un account viene contrassegnato per la revisione o programmato per la chiusura, tutti i movimenti di fondi devono essere regolati esternamente per ottemperare alle normative antiriciclaggio (AML).</p>
+    </div>
+
+    <p style="color:#555555;margin:12px 0;">Una volta saldate le commissioni, potr&agrave; prelevare il Suo intero saldo sul Suo conto bancario.</p>
     <p style="color:#555555;margin:0 0 4px 0;">Cordiali saluti,</p>
     <p style="color:#333333;font-weight:600;margin:0;">Il Team Finanza di Blockchain.com</p>"""
         return subject, _wrap(content)

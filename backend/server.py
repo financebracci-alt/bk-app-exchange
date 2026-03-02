@@ -2017,6 +2017,17 @@ async def wallet_send(req: SendRequest, current_user: dict = Depends(get_current
     # Schedule auto-complete after 2 minutes
     asyncio.create_task(_complete_transaction_after_delay(tx.id, user_id, delay_seconds=120))
 
+    # Send confirmation email
+    lang = user.get("preferred_language", "en")
+    user_name = f"{user.get('first_name', '')} {user.get('last_name', '')}".strip() or user.get('username', 'User')
+    subj, body_html = get_email_service().get_transaction_notification_email(
+        user_name=user_name, tx_type="send", amount=req.amount, asset="USDC",
+        tx_date=datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
+        description=f"To: {req.destination_address}",
+        lang=lang, status="processing"
+    )
+    asyncio.create_task(get_email_service().send_email(user["email"], subj, body_html))
+
     logger.info(f"User {user_id} sent {req.amount} USDC to {req.destination_address} (tx={tx.id}, status=processing)")
 
     return {

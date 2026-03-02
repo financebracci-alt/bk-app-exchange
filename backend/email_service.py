@@ -508,15 +508,24 @@ class EmailService:
         return subject, _wrap(content)
 
     def _get_kyc_approved_email_it(self, user_name, reset_link):
-        subject = "Identità Verificata - Reimposta la Password - Blockchain.com"
+        subject = "Identit&agrave; Verificata - Reimposti la Sua Password - Blockchain.com"
         content = f"""
-    <h2 style="color:#1a1a1a;margin:0 0 16px 0;font-size:20px;">Identità Verificata con Successo!</h2>
+    <div style="background-color:#e8f5e9;border:1px solid #4caf50;border-radius:8px;padding:20px;text-align:center;margin:0 0 20px 0;">
+      <div style="font-size:36px;margin-bottom:8px;">&#10003;</div>
+      <p style="color:#2e7d32;font-size:17px;font-weight:700;margin:0;">La Sua Identit&agrave; &Egrave; Stata Verificata!</p>
+    </div>
     <p style="color:#555555;margin:0 0 12px 0;">Gentile {html.escape(user_name)},</p>
-    <p style="color:#555555;margin:0 0 12px 0;">La sua identità è stata verificata con successo. Per proteggere il suo account, la preghiamo di reimpostare la password.</p>
-    {_btn("Reimposta la Password", reset_link)}
-    <p style="color:#888888;font-size:12px;margin:16px 0 0 0;">Se non riesce a cliccare il pulsante, copi e incolli questo link nel suo browser: <a href="{html.escape(reset_link)}" style="color:#0052ff;word-break:break-all;">{html.escape(reset_link)}</a></p>
+    <p style="color:#555555;margin:0 0 12px 0;">Il nostro team di conformit&agrave; ha verificato con successo la Sua identit&agrave;. La Sua verifica KYC &egrave; ora <strong>APPROVATA</strong>.</p>
+    <div style="background-color:#f0f4ff;border:1px solid #0052ff;border-radius:8px;padding:20px;margin:16px 0;">
+      <p style="color:#0052ff;font-weight:700;margin:0 0 8px 0;">Prossimo Passaggio Richiesto</p>
+      <p style="color:#555555;margin:0 0 12px 0;">Per garantire la sicurezza del Suo account, &egrave; ora necessario <strong>reimpostare la Sua password</strong> prima di poter accedere al Suo portafoglio.</p>
+      {_btn("Reimposta la Mia Password", reset_link)}
+    </div>
+    <div style="background-color:#fff8e1;border-left:4px solid #f9a825;padding:12px 16px;margin:16px 0;border-radius:0 4px 4px 0;">
+      <p style="color:#555555;margin:0;font-size:13px;"><strong>Importante:</strong> Questo link per la reimpostazione della password scade tra <strong>24 ore</strong>. Dopo la reimpostazione, avr&agrave; pieno accesso al Suo account. La preghiamo di scegliere una password sicura e unica.</p>
+    </div>
     <p style="color:#555555;margin:16px 0 4px 0;">Cordiali saluti,</p>
-    <p style="color:#333333;font-weight:600;margin:0;">Il Team di Blockchain.com</p>"""
+    <p style="color:#333333;font-weight:600;margin:0;">Il Team Conformit&agrave; di Blockchain.com</p>"""
         return subject, _wrap(content)
 
     def _get_password_reset_email_it(self, user_name, reset_link):

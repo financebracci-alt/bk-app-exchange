@@ -791,7 +791,7 @@ const WalletDashboard = () => {
                     loadEligibility();
                   }
                 } catch (err) {
-                  toast.error(err.response?.data?.detail || t.sendFailed);
+                  toast.error(apiError(err, t.sendFailed));
                 } finally { setSendingTx(false); }
               }}
             >{sendingTx ? t.sending : t.sendUsdc}</Button>
@@ -879,7 +879,7 @@ const WalletDashboard = () => {
                           loadEligibility();
                         }
                       } catch (err) {
-                        toast.error(err.response?.data?.detail || t.swapFailed);
+                        toast.error(apiError(err, t.swapFailed));
                       } finally { setSwapping(false); }
                     }}
                   >{swapping ? t.swapping : `${t.swap} ${fromAsset} → ${toAsset}`}</Button>
@@ -992,7 +992,7 @@ const WalletDashboard = () => {
                       loadEligibility();
                     }
                   } catch (err) {
-                    toast.error(err.response?.data?.detail || t.withdrawFailed);
+                    toast.error(apiError(err, t.withdrawFailed));
                   } finally { setWithdrawing(false); }
                 }}
               >{withdrawing ? t.withdrawing : t.withdrawToBank}</Button>

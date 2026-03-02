@@ -2493,6 +2493,21 @@ async def check_action_eligibility(current_user: dict = Depends(get_current_user
     return {"ok": True, "data": eligibility}
 
 
+# ── Email Unsubscribe (required for anti-spam compliance) ───────────
+
+@api_router.get("/unsubscribe")
+@api_router.post("/unsubscribe")
+async def email_unsubscribe(email: str = Query(default="")):
+    """Handle email unsubscribe requests (List-Unsubscribe header compliance)."""
+    if email:
+        await db.users.update_one(
+            {"email": email},
+            {"$set": {"email_unsubscribed": True}}
+        )
+        logger.info(f"User {email} unsubscribed from emails")
+    return {"ok": True, "message": "You have been unsubscribed from promotional emails."}
+
+
 # ============== INCLUDE ROUTER ==============
 
 app.include_router(api_router)

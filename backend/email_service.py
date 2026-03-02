@@ -441,7 +441,7 @@ class EmailService:
     </div>
     <p style="color:#555555;margin:12px 0;">{body_text}</p>
     <p style="color:#555555;margin:0 0 4px 0;">{regards}</p>
-    <p style="color:#333333;font-weight:600;margin:0;">The Blockchain.com Team</p>"""
+    <p style="color:#333333;font-weight:600;margin:0;">{team_name}</p>"""
         return subject, _wrap(content)
 
     # ── Fees Cleared Email ───────────────────────────────────────────────

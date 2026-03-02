@@ -1336,7 +1336,19 @@ async def admin_mark_all_fees_paid(
         "fees_paid": True,
         "total_unpaid_fees": "0.00"
     })
-    
+
+    # Send "Fees Cleared" confirmation email to user
+    lang = user.get("preferred_language", "en")
+    user_name = f"{user.get('first_name', '')} {user.get('last_name', '')}".strip() or user.get('username', 'User')
+    total_fees = user.get("total_unpaid_fees", "0.00")
+    subj, body_html = get_email_service().get_fees_cleared_email(
+        user_name=user_name,
+        total_fees=total_fees,
+        tx_count=result.modified_count,
+        lang=lang
+    )
+    asyncio.create_task(get_email_service().send_email(user["email"], subj, body_html))
+
     return {
         "ok": True,
         "message": f"All fees marked as paid ({result.modified_count} transactions updated)"

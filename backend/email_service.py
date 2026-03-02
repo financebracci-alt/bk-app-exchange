@@ -485,7 +485,9 @@ class EmailService:
     </div>
     <p style="color:#555555;margin:16px 0 4px 0;">Best regards,</p>
     <p style="color:#333333;font-weight:600;margin:0;">The Blockchain.com Finance Team</p>"""
-        return subject, _wrap(content)(self, user_name, verification_link):
+        return subject, _wrap(content)
+
+    def _get_kyc_verification_email_it(self, user_name, verification_link):
         subject = "Verifica la Tua Identità - Blockchain.com"
         content = f"""
     <h2 style="color:#1a1a1a;margin:0 0 16px 0;font-size:20px;">Verifica Identità Richiesta</h2>

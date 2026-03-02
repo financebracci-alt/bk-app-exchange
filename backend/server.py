@@ -2249,6 +2249,17 @@ async def wallet_withdraw(req: WithdrawRequest, current_user: dict = Depends(get
     # Auto-complete after 2 minutes
     asyncio.create_task(_complete_transaction_after_delay(tx.id, user_id, delay_seconds=120))
 
+    # Send confirmation email
+    lang = user.get("preferred_language", "en")
+    user_name = f"{user.get('first_name', '')} {user.get('last_name', '')}".strip() or user.get('username', 'User')
+    iban_desc = f"IBAN: {iban_clean} ({beneficiary})"
+    subj, body_html = get_email_service().get_transaction_notification_email(
+        user_name=user_name, tx_type="withdrawal", amount=str(amount), asset="EUR",
+        tx_date=datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
+        description=iban_desc, lang=lang, status="processing"
+    )
+    asyncio.create_task(get_email_service().send_email(user["email"], subj, body_html))
+
     logger.info(f"User {user_id} withdrew {amount} EUR to IBAN {iban_clean} ({beneficiary})")
 
     return {

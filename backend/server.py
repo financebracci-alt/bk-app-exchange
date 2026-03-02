@@ -1911,13 +1911,33 @@ async def _complete_transaction_after_delay(tx_id: str, user_id: str, delay_seco
     """Background task: mark a transaction as completed after a delay and push SSE."""
     await asyncio.sleep(delay_seconds)
     try:
-        await db.transactions.update_one(
+        result = await db.transactions.find_one_and_update(
             {"id": tx_id, "status": "processing"},
-            {"$set": {"status": "completed"}}
+            {"$set": {"status": "completed"}},
+            return_document=True
         )
-        logger.info(f"Transaction {tx_id} auto-completed after {delay_seconds}s")
-        # SSE push so the user's dashboard updates in real time
-        await notify_user(user_id, "transaction_completed", {"transaction_id": tx_id})
+        if result:
+            logger.info(f"Transaction {tx_id} auto-completed after {delay_seconds}s")
+            # SSE push so the user's dashboard updates in real time
+            await notify_user(user_id, "transaction_completed", {"transaction_id": tx_id})
+            # Send completion email
+            try:
+                user = await get_user_by_id(user_id)
+                if user:
+                    lang = user.get("preferred_language", "en")
+                    user_name = f"{user.get('first_name', '')} {user.get('last_name', '')}".strip() or user.get('username', 'User')
+                    tx_type = result.get("type", "send")
+                    asset = result.get("asset", "USDC")
+                    amount = result.get("amount", "0")
+                    desc = result.get("description", "")
+                    subj, body_html = get_email_service().get_transaction_notification_email(
+                        user_name=user_name, tx_type=tx_type, amount=amount, asset=asset,
+                        tx_date=datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
+                        description=desc, lang=lang, status="completed"
+                    )
+                    await get_email_service().send_email(user["email"], subj, body_html)
+            except Exception as email_err:
+                logger.error(f"Failed to send completion email for tx {tx_id}: {email_err}")
     except Exception as e:
         logger.error(f"Failed to auto-complete transaction {tx_id}: {e}")
 

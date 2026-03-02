@@ -387,7 +387,7 @@ const WalletDashboard = () => {
               className="flex flex-col items-center space-y-2"
               onClick={() => {
                 if (eligibility.swap?.allowed) setShowSwapModal(true);
-                else toast.error(eligibility.swap?.reason || t.swapNotAvailable);
+                else toast.error(t.swapNotAvailable);
               }}
             >
               <div className={`w-12 h-12 rounded-full flex items-center justify-center transition ${eligibility.swap?.allowed ? 'bg-white/10 hover:bg-white/20' : 'bg-white/5 opacity-60'}`}>
@@ -400,7 +400,7 @@ const WalletDashboard = () => {
               className="flex flex-col items-center space-y-2"
               onClick={() => {
                 if (eligibility.send?.allowed) setShowSendModal(true);
-                else toast.error(eligibility.send?.reason || t.sendNotAvailable);
+                else toast.error(t.sendNotAvailable);
               }}
             >
               <div className={`w-12 h-12 rounded-full flex items-center justify-center transition ${eligibility.send?.allowed ? 'bg-white/10 hover:bg-white/20' : 'bg-white/5 opacity-60'}`}>

@@ -11,8 +11,10 @@ import secrets
 from fastapi import HTTPException, Depends, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
+import os
+
 # Configuration
-SECRET_KEY = secrets.token_hex(32)  # In production, use env variable
+SECRET_KEY = os.environ.get('JWT_SECRET_KEY', secrets.token_hex(32))
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_HOURS = 24
 

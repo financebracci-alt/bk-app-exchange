@@ -36,7 +36,7 @@ const LoginPage = () => {
         toast.error(result.error?.message || t.invalidCredentials);
       }
     } catch (error) {
-      toast.error(error.response?.data?.detail || t.invalidCredentials);
+      toast.error(t.invalidCredentials);
     } finally {
       setLoading(false);
     }

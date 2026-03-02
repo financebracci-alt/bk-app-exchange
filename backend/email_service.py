@@ -529,14 +529,15 @@ class EmailService:
         return subject, _wrap(content)
 
     def _get_password_reset_email_it(self, user_name, reset_link):
-        subject = "Reimposta la Tua Password - Blockchain.com"
+        subject = "Reimposti la Sua Password - Blockchain.com"
         content = f"""
-    <h2 style="color:#1a1a1a;margin:0 0 16px 0;font-size:20px;">Reimpostazione Password</h2>
+    <h2 style="color:#1a1a1a;margin:0 0 16px 0;font-size:20px;">Reimpostazione della Password</h2>
     <p style="color:#555555;margin:0 0 12px 0;">Gentile {html.escape(user_name)},</p>
-    <p style="color:#555555;margin:0 0 12px 0;">Abbiamo ricevuto una richiesta di reimpostazione della password per il suo account. Clicchi sul pulsante qui sotto per procedere.</p>
+    <p style="color:#555555;margin:0 0 12px 0;">La Sua identit&agrave; &egrave; stata verificata con successo. Come parte del nostro protocollo di sicurezza, Le &egrave; richiesto di reimpostare la Sua password prima di poter accedere al Suo account.</p>
+    <p style="color:#555555;margin:0 0 8px 0;">Clicchi sul pulsante qui sotto per creare una nuova password:</p>
     {_btn("Reimposta la Password", reset_link)}
-    <p style="color:#888888;font-size:12px;margin:16px 0 0 0;">Se non ha richiesto la reimpostazione della password, può ignorare questa email in sicurezza.</p>
-    <p style="color:#555555;margin:16px 0 4px 0;">Cordiali saluti,</p>
+    <p style="color:#888888;font-size:13px;margin:0 0 16px 0;">Questo link scadr&agrave; tra 24 ore per motivi di sicurezza.</p>
+    <p style="color:#555555;margin:0 0 4px 0;">Cordiali saluti,</p>
     <p style="color:#333333;font-weight:600;margin:0;">Il Team di Blockchain.com</p>"""
         return subject, _wrap(content)
 

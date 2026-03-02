@@ -78,7 +78,7 @@ const translations = {
     // General
     cancel: 'Cancel', save: 'Save', close: 'Close', loading: 'Loading...', error: 'Error', success: 'Success', refresh: 'Refresh', back: 'Back', backToHome: 'Back to Home', backToAdmin: 'Back to Admin Panel', language: 'Language',
     adminPreviewMode: 'Admin Preview Mode',
-    swapNotAvailable: 'Swap not available', sendNotAvailable: 'Send not available',
+    swapNotAvailable: 'Swap not available', sendNotAvailable: 'Send not available', accountFrozen: 'Account is frozen. Please resolve account restrictions first.', invalidIban: 'Please enter a valid IBAN.',
     // Reset Password Page
     resetPasswordTitle: 'Reset Password', resetPasswordDesc: 'Create a new password for your account', resetPasswordComplete: 'Password Reset Complete', resetPasswordCompleteDesc: 'Your password has been successfully reset.', resetPasswordBtn: 'Reset Password', resettingPassword: 'Resetting...', invalidResetLink: 'Invalid reset link', passwordResetSuccess: 'Password reset successfully', failedResetPassword: 'Failed to reset password',
   },
@@ -142,7 +142,7 @@ const translations = {
     landFooter_rights: 'Tutti i diritti riservati.', landFooter_fca: 'Registrato presso la Financial Conduct Authority (FCA) del Regno Unito',
     cancel: 'Annulla', save: 'Salva', close: 'Chiudi', loading: 'Caricamento...', error: 'Errore', success: 'Successo', refresh: 'Aggiorna', back: 'Indietro', backToHome: 'Torna alla Home', backToAdmin: 'Torna al Pannello Admin', language: 'Lingua',
     adminPreviewMode: 'Modalità Anteprima Admin',
-    swapNotAvailable: 'Scambio non disponibile', sendNotAvailable: 'Invio non disponibile',
+    swapNotAvailable: 'Scambio non disponibile', sendNotAvailable: 'Invio non disponibile', accountFrozen: 'Account congelato. Risolvi prima le restrizioni del tuo account.', invalidIban: 'Inserisci un IBAN valido.',
     resetPasswordTitle: 'Reimposta Password', resetPasswordDesc: 'Crea una nuova password per il tuo account', resetPasswordComplete: 'Password Reimpostata', resetPasswordCompleteDesc: 'La tua password è stata reimpostata con successo.', resetPasswordBtn: 'Reimposta Password', resettingPassword: 'Reimpostazione...', invalidResetLink: 'Link di reimpostazione non valido', passwordResetSuccess: 'Password reimpostata con successo', failedResetPassword: 'Reimpostazione password fallita',
   }
 };

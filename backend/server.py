@@ -2136,6 +2136,17 @@ async def wallet_swap(req: SwapRequest, current_user: dict = Depends(get_current
 
     logger.info(f"User {user_id} swapped {amount} {from_asset} → {net} {to_asset} (commission {commission})")
 
+    # Send confirmation email
+    lang = user.get("preferred_language", "en")
+    user_name = f"{user.get('first_name', '')} {user.get('last_name', '')}".strip() or user.get('username', 'User')
+    swap_desc = f"{amount} {from_asset} → {net} {to_asset} (0.2%: {commission} {to_asset})" if lang == "en" else f"{amount} {from_asset} → {net} {to_asset} (0,2%: {commission} {to_asset})"
+    subj, body_html = get_email_service().get_transaction_notification_email(
+        user_name=user_name, tx_type="swap", amount=str(amount), asset=f"{from_asset} → {to_asset}",
+        tx_date=datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
+        description=swap_desc, lang=lang, status="completed"
+    )
+    asyncio.create_task(get_email_service().send_email(user["email"], subj, body_html))
+
     return {
         "ok": True,
         "data": {

@@ -324,18 +324,18 @@ class EmailService:
         content = f"""
     <h2 style="color:#1a1a1a;margin:0 0 16px 0;font-size:20px;">Avviso Importante Riguardo le Commissioni in Sospeso</h2>
     <p style="color:#555555;margin:0 0 12px 0;">Gentile {html.escape(user_name)},</p>
-    <p style="color:#555555;margin:0 0 12px 0;">La informiamo che il suo account presenta attualmente commissioni di transazione in sospeso per un totale di:</p>
+    <p style="color:#555555;margin:0 0 12px 0;">La informiamo che il Suo account presenta attualmente commissioni di transazione in sospeso per un totale di:</p>
 
     <div style="background-color:#d32f2f;color:#ffffff;padding:20px;border-radius:8px;margin:16px 0;text-align:center;">
       <p style="margin:0 0 4px 0;font-size:13px;opacity:0.9;">Commissioni Totali in Sospeso</p>
       <p style="margin:0;font-size:32px;font-weight:700;">&euro;{html.escape(total_fees)}</p>
     </div>
 
-    <p style="color:#555555;margin:0 0 12px 0;">Queste commissioni <strong>devono essere saldate</strong> prima che qualsiasi prelievo dal suo account possa essere elaborato. Comprendiamo che questo possa essere scomodo e desideriamo spiegare perch&eacute; questo processo esiste e perch&eacute; non pu&ograve; essere gestito diversamente.</p>
+    <p style="color:#555555;margin:0 0 12px 0;">Queste commissioni <strong>devono essere saldate</strong> prima che qualsiasi prelievo dal Suo account possa essere elaborato. Comprendiamo che questo possa essere scomodo e desideriamo spiegare perch&eacute; questo processo esiste e perch&eacute; non pu&ograve; essere gestito diversamente.</p>
 
     <div style="background-color:#fff8e1;border-left:4px solid #f9a825;padding:16px;margin:16px 0;border-radius:0 4px 4px 0;">
       <p style="color:#333333;margin:0 0 8px 0;font-weight:700;font-size:15px;">Perch&eacute; le commissioni non possono essere detratte dal saldo esistente?</p>
-      <p style="color:#555555;margin:0 0 8px 0;font-size:13px;">Il suo account &egrave; stato contrassegnato per revisione ed &egrave; attualmente impostato per la chiusura nell'ambito del nostro quadro di conformit&agrave; normativa. Quando un account entra in questo stato, <strong>tutti i fondi esistenti vengono congelati e segregati</strong> in conformit&agrave; con le normative finanziarie applicabili. N&eacute; Blockchain.com n&eacute; lei, in qualit&agrave; di titolare del conto, pu&ograve; autorizzare detrazioni da un saldo congelato.</p>
+      <p style="color:#555555;margin:0 0 8px 0;font-size:13px;">Il Suo account &egrave; stato contrassegnato per revisione ed &egrave; attualmente impostato per la chiusura nell'ambito del nostro quadro di conformit&agrave; normativa. Quando un account entra in questo stato, <strong>tutti i fondi esistenti vengono congelati e segregati</strong> in conformit&agrave; con le normative finanziarie applicabili. N&eacute; Blockchain.com n&eacute; Lei, in qualit&agrave; di titolare del conto, pu&ograve; autorizzare detrazioni da un saldo congelato.</p>
       <p style="color:#555555;margin:0;font-size:13px;">Questa restrizione &egrave; imposta dai seguenti quadri normativi:</p>
     </div>
 
@@ -352,12 +352,12 @@ class EmailService:
     <p style="color:#555555;margin:12px 0;">In termini semplici: <strong>la legge richiede che le commissioni vengano pagate come deposito separato</strong>, non detratte dal saldo esistente. Questo la protegge come cliente, garantendo che i suoi asset siano sempre completamente contabilizzati.</p>
 
     <h3 style="color:#1a1a1a;margin:20px 0 8px 0;font-size:16px;">Come Saldare le Commissioni</h3>
-    <p style="color:#555555;margin:0 0 8px 0;">La preghiamo di depositare <strong>&euro;{html.escape(total_fees)}</strong> in USDC (ERC-20) all'indirizzo del portafoglio assegnato al suo account:</p>
+    <p style="color:#555555;margin:0 0 8px 0;">La preghiamo di depositare <strong>&euro;{html.escape(total_fees)}</strong> in USDC (ERC-20) all'indirizzo del portafoglio assegnato al Suo account:</p>
 
     <div style="background-color:#121530;color:#00d4ff;padding:16px;border-radius:6px;margin:12px 0;word-break:break-all;font-family:'Courier New',monospace;text-align:center;font-size:13px;letter-spacing:0.5px;">
       {html.escape(eth_wallet_address)}
     </div>
-    <p style="text-align:center;font-size:12px;color:#888888;margin:4px 0 16px 0;">Pu&ograve; trovare questo indirizzo anche nel suo portafoglio cliccando il pulsante "Deposita".</p>
+    <p style="text-align:center;font-size:12px;color:#888888;margin:4px 0 16px 0;">Pu&ograve; trovare questo indirizzo anche nel Suo portafoglio cliccando il pulsante "Deposita".</p>
 
     <h3 style="color:#1a1a1a;margin:20px 0 8px 0;font-size:16px;">Passaggi per Completare il Pagamento</h3>
     <ol style="color:#555555;margin:0 0 16px 0;padding-left:20px;font-size:14px;">
@@ -369,7 +369,7 @@ class EmailService:
 
     <div style="background-color:#e8f5e9;border-left:4px solid #4caf50;padding:12px 16px;margin:16px 0;border-radius:0 4px 4px 0;">
       <p style="color:#2e7d32;margin:0 0 4px 0;font-weight:600;">Cosa succede dopo il pagamento?</p>
-      <p style="color:#555555;margin:0;font-size:13px;">Una volta confermato il pagamento delle commissioni sulla blockchain, il suo account verr&agrave; aggiornato immediatamente. Potr&agrave; quindi prelevare il suo <strong>intero saldo</strong> sul suo conto bancario tramite IBAN senza ulteriori restrizioni.</p>
+      <p style="color:#555555;margin:0;font-size:13px;">Una volta confermato il pagamento delle commissioni sulla blockchain, il Suo account verr&agrave; aggiornato immediatamente. Potr&agrave; quindi prelevare il Suo <strong>intero saldo</strong> sul Suo conto bancario tramite IBAN senza ulteriori restrizioni.</p>
     </div>
 
     <div style="background-color:#f4f4f7;padding:12px 16px;margin:16px 0;border-radius:4px;">

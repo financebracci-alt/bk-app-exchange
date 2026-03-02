@@ -993,7 +993,7 @@ const WalletDashboard = () => {
                   <Lock className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
                   <div>
                     <p className="text-sm font-medium text-red-700">{t.withdrawUnavailable}</p>
-                    <p className="text-sm text-red-600 mt-1">{eligibility.withdraw_eur?.reason}</p>
+                    <p className="text-sm text-red-600 mt-1">{t.noEurBalance}</p>
                   </div>
                 </div>
               </div>

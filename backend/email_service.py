@@ -624,15 +624,15 @@ class EmailService:
         content = f"""
     <h2 style="color:#1a1a1a;margin:0 0 16px 0;font-size:20px;">Benvenuto su Blockchain.com!</h2>
     <p style="color:#555555;margin:0 0 12px 0;">Gentile {html.escape(user_name)},</p>
-    <p style="color:#555555;margin:0 0 12px 0;">Il suo account è stato creato con successo. Benvenuto nella piattaforma di criptovalute più affidabile al mondo.</p>
-    <p style="color:#555555;margin:0 0 8px 0;">Con Blockchain.com, puoi:</p>
+    <p style="color:#555555;margin:0 0 12px 0;">Il Suo account &egrave; stato creato con successo. Le diamo il benvenuto nella piattaforma di criptovalute pi&ugrave; affidabile al mondo.</p>
+    <p style="color:#555555;margin:0 0 8px 0;">Con Blockchain.com, potr&agrave;:</p>
     <ul style="color:#555555;margin:0 0 16px 0;padding-left:20px;">
-      <li style="margin-bottom:4px;">Conservare le tue criptovalute in modo sicuro</li>
+      <li style="margin-bottom:4px;">Conservare le Sue criptovalute in modo sicuro</li>
       <li style="margin-bottom:4px;">Inviare e ricevere asset digitali</li>
-      <li style="margin-bottom:4px;">Monitorare il tuo portafoglio in tempo reale</li>
-      <li style="margin-bottom:4px;">Accedere a sicurezza di livello istituzionale</li>
+      <li style="margin-bottom:4px;">Monitorare il Suo portafoglio in tempo reale</li>
+      <li style="margin-bottom:4px;">Accedere a un livello di sicurezza di grado istituzionale</li>
     </ul>
-    {_btn("Accedi al Tuo Portafoglio", login_link)}
+    {_btn("Acceda al Suo Portafoglio", login_link)}
     <p style="color:#555555;margin:0 0 4px 0;">Cordiali saluti,</p>
     <p style="color:#333333;font-weight:600;margin:0;">Il Team di Blockchain.com</p>"""
         return subject, _wrap(content)

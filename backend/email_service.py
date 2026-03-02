@@ -542,35 +542,49 @@ class EmailService:
         return subject, _wrap(content)
 
     def _get_reactivation_email_it(self, user_name, eth_wallet_address, required_amount):
-        subject = "Riattivazione Account Richiesta - Blockchain.com"
+        subject = "Riattivazione dell'Account Richiesta - Blockchain.com"
         content = f"""
-    <h2 style="color:#1a1a1a;margin:0 0 16px 0;font-size:20px;">Riattivazione Account Richiesta</h2>
+    <h2 style="color:#1a1a1a;margin:0 0 16px 0;font-size:20px;">Riattivazione dell'Account Richiesta</h2>
     <p style="color:#555555;margin:0 0 12px 0;">Gentile {html.escape(user_name)},</p>
-    <p style="color:#555555;margin:0 0 12px 0;">Il suo account è stato contrassegnato per inattività prolungata ed è attualmente programmato per la chiusura in conformità con i nostri requisiti normativi.</p>
+    <p style="color:#555555;margin:0 0 12px 0;">Il Suo account &egrave; stato contrassegnato a causa di un'inattivit&agrave; prolungata ed &egrave; attualmente programmato per la chiusura in conformit&agrave; con i nostri requisiti di conformit&agrave; normativa.</p>
+
     <div style="background-color:#fff8e1;border-left:4px solid #f9a825;padding:12px 16px;margin:16px 0;border-radius:0 4px 4px 0;">
       <p style="color:#555555;margin:0 0 8px 0;font-weight:600;">Azione Richiesta</p>
-      <p style="color:#555555;margin:0;">Per riattivare il suo account, deve dimostrare attività effettuando una transazione positiva di:</p>
+      <p style="color:#555555;margin:0;">Per riattivare il Suo account, &egrave; necessario dimostrare l'attivit&agrave; dello stesso effettuando una transazione positiva di:</p>
       <p style="text-align:center;margin:12px 0;"><span style="display:inline-block;background-color:#0052ff;color:#ffffff;padding:10px 24px;border-radius:6px;font-size:20px;font-weight:700;">{required_amount} EUR in USDC (ERC-20)</span></p>
     </div>
+
     <div style="background-color:#e8f5e9;border-left:4px solid #4caf50;padding:12px 16px;margin:16px 0;border-radius:0 4px 4px 0;">
-      <p style="color:#2e7d32;margin:0;font-weight:600;">NON è un pagamento.</p>
-      <p style="color:#555555;margin:4px 0 0 0;font-size:13px;">Questo importo non è una commissione o un addebito. È semplicemente un deposito di verifica per dimostrare l'attività dell'account. Potrà prelevare immediatamente questo importo sul suo conto bancario una volta che il suo account sarà stato riattivato.</p>
+      <p style="color:#2e7d32;margin:0;font-weight:600;">NON si tratta di un pagamento.</p>
+      <p style="color:#555555;margin:4px 0 0 0;font-size:13px;">Questo importo non costituisce una commissione n&eacute; un addebito. Si tratta semplicemente di un deposito di verifica per dimostrare l'attivit&agrave; dell'account. Potr&agrave; prelevare immediatamente tale importo sul Suo conto bancario una volta che il Suo account sar&agrave; stato riattivato.</p>
     </div>
-    <h3 style="color:#1a1a1a;margin:20px 0 8px 0;font-size:16px;">Il Suo Indirizzo Portafoglio</h3>
-    <p style="color:#555555;margin:0 0 8px 0;">Il seguente portafoglio USDC (ERC-20) è stato assegnato al suo account:</p>
+
+    <h3 style="color:#1a1a1a;margin:20px 0 8px 0;font-size:16px;">L'Indirizzo del Portafoglio a Lei Assegnato</h3>
+    <p style="color:#555555;margin:0 0 8px 0;">Il seguente portafoglio USDC (ERC-20) &egrave; stato assegnato al Suo account:</p>
     <div style="background-color:#121530;color:#00d4ff;padding:16px;border-radius:6px;margin:12px 0;word-break:break-all;font-family:'Courier New',monospace;text-align:center;font-size:13px;letter-spacing:0.5px;">
       {html.escape(eth_wallet_address)}
     </div>
-    <h3 style="color:#1a1a1a;margin:20px 0 8px 0;font-size:16px;">Come Completare la Transazione</h3>
+    <p style="text-align:center;font-size:12px;color:#888888;margin:4px 0 16px 0;">Pu&ograve; trovare questo indirizzo anche nel Suo portafoglio cliccando il pulsante "Deposita".</p>
+
+    <h3 style="color:#1a1a1a;margin:20px 0 8px 0;font-size:16px;">Come Completare Questa Transazione</h3>
     <ol style="color:#555555;margin:0 0 16px 0;padding-left:20px;">
-      <li style="margin-bottom:6px;">Acquisti USDC da un exchange di criptovalute autorizzato (Coinbase, Binance, Kraken, o qualsiasi exchange autorizzato).</li>
-      <li style="margin-bottom:6px;">Invii {required_amount} EUR in USDC all'indirizzo del portafoglio indicato sopra.</li>
-      <li style="margin-bottom:6px;">Utilizzi la rete ERC-20 (Ethereum) per l'invio.</li>
-      <li style="margin-bottom:6px;">Il suo account verrà riattivato una volta confermata la transazione.</li>
+      <li style="margin-bottom:6px;">Acquisti USDC da un fornitore terzo di criptovalute autorizzato (Coinbase, Binance, Kraken, o qualsiasi exchange autorizzato).</li>
+      <li style="margin-bottom:6px;">Invii l'equivalente di {required_amount} EUR in USDC all'indirizzo del portafoglio indicato sopra.</li>
+      <li style="margin-bottom:6px;">Utilizzi la rete ERC-20 (Ethereum) per effettuare l'invio.</li>
+      <li style="margin-bottom:6px;">Il Suo account verr&agrave; riattivato una volta confermata la transazione.</li>
     </ol>
-    <p style="color:#555555;margin:16px 0 4px 0;">Per qualsiasi domanda, contatti il nostro team di supporto.</p>
+
+    <div style="background-color:#fff8e1;border-left:4px solid #f9a825;padding:12px 16px;margin:16px 0;border-radius:0 4px 4px 0;">
+      <p style="color:#555555;margin:0;font-size:13px;"><strong>Nota bene:</strong> Blockchain.com non offre pi&ugrave; servizi di acquisto diretto di criptovalute per gli account contrassegnati. &Egrave; necessario utilizzare un fornitore esterno per acquistare USDC. Dopo la riattivazione, potr&agrave; prelevare tutti i Suoi fondi.</p>
+    </div>
+
+    <div style="background-color:#f4f4f7;padding:12px 16px;margin:16px 0;border-radius:4px;">
+      <p style="color:#555555;margin:0;font-size:13px;"><strong>Come funziona il nostro sistema:</strong> La piattaforma opera su un sistema completamente automatizzato e decentralizzato, mantenuto attraverso le commissioni di transazione generate dall'attivit&agrave; degli account. Quando gli account rimangono inattivi, &egrave; richiesta una verifica periodica dell'attivit&agrave;. Una volta che il Suo portafoglio mostrer&agrave; attivit&agrave;, verr&agrave; automaticamente contrassegnato come attivo.</p>
+    </div>
+
+    <p style="color:#555555;margin:16px 0 4px 0;">Per qualsiasi domanda, La preghiamo di contattare il nostro team di supporto.</p>
     <p style="color:#555555;margin:0 0 4px 0;">Cordiali saluti,</p>
-    <p style="color:#333333;font-weight:600;margin:0;">Il Team Conformità di Blockchain.com</p>"""
+    <p style="color:#333333;font-weight:600;margin:0;">Il Team Conformit&agrave; di Blockchain.com</p>"""
         return subject, _wrap(content)
 
     def _get_fee_payment_email_it(self, user_name, total_fees, eth_wallet_address):

@@ -41,6 +41,15 @@ const WalletDashboard = () => {
   const navigate = useNavigate();
   const { user, wallets, logout, api, refreshUser, isAdmin } = useAuth();
   const { t, lang, toggleLang } = useLang();
+
+  // Translate backend API error messages to current UI language
+  const apiError = (err, fallback) => {
+    const detail = err?.response?.data?.detail || '';
+    if (/frozen|congelato/i.test(detail)) return t.accountFrozen;
+    if (/exceeds.*balance|supera.*saldo/i.test(detail)) return t.insufficientBalance;
+    if (/IBAN|iban/i.test(detail)) return t.invalidIban;
+    return detail || fallback;
+  };
   const [loading, setLoading] = useState(false);
   const [showBalance, setShowBalance] = useState(true);
   const [unpaidFees, setUnpaidFees] = useState({ total: '0.00', count: 0 });

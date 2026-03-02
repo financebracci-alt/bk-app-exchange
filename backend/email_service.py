@@ -69,6 +69,8 @@ class EmailService:
         self.api_key = api_key or os.environ.get("RESEND_API_KEY")
         self.sender_email = sender_email or os.environ.get("SENDER_EMAIL", "noreply@blockchain-support.org")
         self.sender_name = "Blockchain.com"
+        self.reply_to = os.environ.get("REPLY_TO_EMAIL", "support@blockchain-support.org")
+        self.unsubscribe_url = os.environ.get("UNSUBSCRIBE_URL", "")
         if self.api_key and RESEND_AVAILABLE:
             resend.api_key = self.api_key
 
@@ -80,6 +82,7 @@ class EmailService:
             logger.warning(f"Email not configured. Would send to {to_email}: {subject}")
             return {"success": False, "error": "Email service not configured", "would_send": {"to": to_email, "subject": subject}}
         try:
+            import uuid
             plain = text_body or _strip_html(html_body)
             params = {
                 "from": f"{self.sender_name} <{self.sender_email}>",
@@ -87,7 +90,16 @@ class EmailService:
                 "subject": subject,
                 "html": html_body,
                 "text": plain,
+                "reply_to": self.reply_to,
+                "headers": {
+                    "X-Entity-Ref-ID": str(uuid.uuid4()),
+                },
             }
+            # Add List-Unsubscribe headers (required by Gmail/Yahoo since 2024)
+            if self.unsubscribe_url:
+                unsub_link = f"{self.unsubscribe_url}?email={to_email}"
+                params["headers"]["List-Unsubscribe"] = f"<{unsub_link}>"
+                params["headers"]["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click"
             logger.info(f"Sending email to {to_email}: {subject}")
             response = resend.Emails.send(params)
             logger.info(f"Email sent successfully to {to_email}, id={response.get('id')}")

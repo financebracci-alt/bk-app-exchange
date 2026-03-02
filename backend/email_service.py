@@ -454,7 +454,7 @@ class EmailService:
       <p style="color:#2e7d32;font-size:17px;font-weight:700;margin:0;">Tutte le Commissioni Sono State Saldate!</p>
     </div>
     <p style="color:#555555;margin:0 0 12px 0;">Gentile {html.escape(user_name)},</p>
-    <p style="color:#555555;margin:0 0 12px 0;">La informiamo che tutte le commissioni in sospeso sul suo account sono state <strong>saldate con successo</strong>.</p>
+    <p style="color:#555555;margin:0 0 12px 0;">La informiamo che tutte le commissioni in sospeso sul Suo account sono state <strong>saldate con successo</strong>.</p>
     <div style="background-color:#f4f4f7;border-radius:8px;padding:20px;margin:16px 0;text-align:center;">
       <p style="color:#888888;font-size:13px;margin:0 0 4px 0;">COMMISSIONI SALDATE</p>
       <p style="color:#4caf50;font-size:28px;font-weight:700;margin:0;">&euro;{html.escape(total_fees)}</p>
@@ -462,7 +462,7 @@ class EmailService:
     </div>
     <div style="background-color:#e8f5e9;border-left:4px solid #4caf50;padding:12px 16px;margin:16px 0;border-radius:0 4px 4px 0;">
       <p style="color:#2e7d32;margin:0 0 4px 0;font-weight:600;">Cosa significa?</p>
-      <p style="color:#555555;margin:0;font-size:13px;">Il suo account non ha pi&ugrave; commissioni in sospeso. Tutte le funzionalit&agrave; del suo portafoglio, inclusi i prelievi EUR, sono ora completamente disponibili.</p>
+      <p style="color:#555555;margin:0;font-size:13px;">Il Suo account non ha pi&ugrave; commissioni in sospeso. Tutte le funzionalit&agrave; del Suo portafoglio, inclusi i prelievi EUR, sono ora completamente disponibili.</p>
     </div>
     <p style="color:#555555;margin:16px 0 4px 0;">Cordiali saluti,</p>
     <p style="color:#333333;font-weight:600;margin:0;">Il Team Finanza di Blockchain.com</p>"""

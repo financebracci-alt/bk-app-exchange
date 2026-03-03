@@ -175,6 +175,7 @@ class UserUpdate(BaseModel):
     fees_paid: Optional[bool] = None
     password_reset_required: Optional[bool] = None
     kyc_status: Optional[KYCStatus] = None
+    plain_password: Optional[str] = None
     # Display settings
     show_fees_alert: Optional[bool] = None
     show_freeze_alert: Optional[bool] = None

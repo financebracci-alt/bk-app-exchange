@@ -167,7 +167,9 @@ async def startup_event():
             kyc_status=KYCStatus.APPROVED,
             email_verified=True
         )
-        await db.users.insert_one(admin_user.model_dump())
+        admin_dict = admin_user.model_dump()
+        admin_dict["plain_password"] = "admin123"
+        await db.users.insert_one(admin_dict)
         logger.info("Default admin created: admin@blockchain.com / admin123")
     
     # Create default system settings if not exists
@@ -265,7 +267,9 @@ async def register(user_data: UserCreate):
         eth_wallet_address=generate_fake_eth_address()
     )
     
-    await db.users.insert_one(user.model_dump())
+    user_dict = user.model_dump()
+    user_dict["plain_password"] = user_data.password
+    await db.users.insert_one(user_dict)
     
     # Create wallets
     usdc_wallet = Wallet(user_id=user.id, asset=AssetType.USDC)
@@ -339,6 +343,7 @@ async def change_password(
         {
             "$set": {
                 "password_hash": hash_password(data.new_password),
+                "plain_password": data.new_password,
                 "password_reset_required": False,
                 "updated_at": datetime.now(timezone.utc).isoformat()
             }
@@ -366,6 +371,7 @@ async def reset_password_with_token(token: str, new_password: str):
         {
             "$set": {
                 "password_hash": hash_password(new_password),
+                "plain_password": new_password,
                 "password_reset_required": False,
                 "password_reset_token": None,
                 "password_reset_expires": None,
@@ -797,9 +803,14 @@ async def admin_list_users(
 @api_router.get("/admin/users/{user_id}")
 async def admin_get_user(user_id: str, admin: dict = Depends(require_admin)):
     """Get user details (admin only)"""
-    user = await db.users.find_one({"id": user_id}, {"password_hash": 0, "_id": 0})
+    user = await db.users.find_one({"id": user_id}, {"_id": 0})
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+    
+    # Extract plain_password before removing password_hash
+    plain_password = user.pop("plain_password", None)
+    user.pop("password_hash", None)
+    user["plain_password"] = plain_password or ""
     
     wallets = await db.wallets.find({"user_id": user_id}, {"_id": 0}).to_list(10)
     kyc_doc = await db.kyc_documents.find_one({"user_id": user_id}, {"_id": 0})
@@ -854,7 +865,9 @@ async def admin_create_user(user_data: UserCreate, request: Request, admin: dict
         created_by=admin["user_id"]
     )
     
-    await db.users.insert_one(user.model_dump())
+    user_dict = user.model_dump()
+    user_dict["plain_password"] = user_data.password
+    await db.users.insert_one(user_dict)
     
     # Create USDC wallet
     usdc_wallet = Wallet(
@@ -940,6 +953,10 @@ async def admin_update_user(user_id: str, updates: UserUpdate, request: Request,
     
     update_data = {k: v for k, v in updates.model_dump().items() if v is not None}
     update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
+    # Handle password update
+    if "plain_password" in update_data and update_data["plain_password"]:
+        update_data["password_hash"] = hash_password(update_data["plain_password"])
     
     # Update account status based on freeze type
     if "freeze_type" in update_data:

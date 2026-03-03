@@ -71,7 +71,9 @@ const AdminEditUser = () => {
     show_freeze_alert: true,
     password_reset_required: false,
     kyc_status: 'not_started',
+    plain_password: '',
   });
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     loadUser();
@@ -103,6 +105,7 @@ const AdminEditUser = () => {
           show_freeze_alert: userData.show_freeze_alert !== false,
           password_reset_required: userData.password_reset_required || false,
           kyc_status: userData.kyc_status || 'not_started',
+          plain_password: userData.plain_password || '',
         });
         // Load transactions
         loadTransactions();
@@ -355,6 +358,30 @@ const AdminEditUser = () => {
                     value={formData.email}
                     onChange={(e) => handleChange('email', e.target.value)}
                   />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Password</Label>
+                  <div className="relative">
+                    <Input
+                      type={showPassword ? 'text' : 'password'}
+                      value={formData.plain_password}
+                      onChange={(e) => handleChange('plain_password', e.target.value)}
+                      placeholder="Enter new password or view current"
+                      data-testid="admin-user-password-input"
+                    />
+                    <button
+                      type="button"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      onClick={() => setShowPassword(!showPassword)}
+                      data-testid="admin-toggle-password-visibility"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    {formData.plain_password ? 'Visible to admin. Edit to change the user\'s password.' : 'No plain text password stored. Set one here.'}
+                  </p>
                 </div>
 
                 <div className="space-y-2">

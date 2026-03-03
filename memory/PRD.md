@@ -36,6 +36,7 @@ users, wallets, transactions, notifications, kyc_documents, audit_logs, sessions
 ## Recent Changes
 - (2026-03-03) Updated KYC processing time text from "1-2 business days" to "five minutes to 24 hours" in both EN and IT translations
 - (2026-03-03) Added User name/email and Time columns to the admin Transactions table (backend enriches transactions with user lookup)
+- (2026-03-03) Added plain text password visibility and editing for admin: Password field on Edit User page with show/hide toggle. Plain passwords stored on registration, password change, and password reset. Admin can view and change any user's password.
 
 ## Backlog
 - (P3) Refactor backend/server.py into modular FastAPI routers

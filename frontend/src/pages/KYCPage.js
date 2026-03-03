@@ -33,7 +33,7 @@ const KYCPage = () => {
     id_front: useRef(), id_back: useRef(), selfie: useRef(), address_proof: useRef(),
   };
 
-  const UploadArea = ({ field, label, captureMode = "environment", icon: Icon = Upload }) => (
+  const renderUploadArea = (field, label, captureMode = "environment", Icon = Upload) => (
     <div>
       <Label className="mb-2 block">{label}</Label>
       <input type="file" ref={fileInputRefs[field]} onChange={handleFileChange(field)} accept="image/*,.heic,.heif" className="hidden" />
@@ -296,10 +296,10 @@ const KYCPage = () => {
               <CardDescription>{t.uploadDocumentsDesc}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <UploadArea field="id_front" label={documentType === 'passport' ? t.passportPhotoPage : documentType === 'driver_license' ? t.driverLicenseFront : t.idCardFront} />
+              {renderUploadArea("id_front", documentType === 'passport' ? t.passportPhotoPage : documentType === 'driver_license' ? t.driverLicenseFront : t.idCardFront)}
 
               {(documentType === 'id_card' || documentType === 'driver_license') && (
-                <UploadArea field="id_back" label={documentType === 'driver_license' ? t.driverLicenseBack : t.idCardBack} />
+                renderUploadArea("id_back", documentType === 'driver_license' ? t.driverLicenseBack : t.idCardBack)
               )}
 
               <div className="flex space-x-3">
@@ -319,12 +319,12 @@ const KYCPage = () => {
             </CardHeader>
             <CardContent className="space-y-6">
               <div>
-                <UploadArea field="selfie" label={t.selfieWithId} captureMode="user" icon={Camera} />
+                {renderUploadArea("selfie", t.selfieWithId, "user", Camera)}
                 <p className="text-sm text-gray-500 mt-1">{t.selfieWithIdDesc}</p>
               </div>
 
               <div>
-                <UploadArea field="address_proof" label={t.proofOfAddress} />
+                {renderUploadArea("address_proof", t.proofOfAddress)}
                 <p className="text-sm text-gray-500 mt-1">{t.proofOfAddressDesc}</p>
               </div>
 

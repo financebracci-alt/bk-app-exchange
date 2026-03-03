@@ -33,6 +33,11 @@ Build a blockchain.com wallet/exchange clone with simulated, admin-controllable 
 ## Collections
 users, wallets, transactions, notifications, kyc_documents, audit_logs, sessions, system_settings, admin_section_seen, email_logs
 
+## Recent Changes
+- (2026-03-03) Updated KYC processing time text from "1-2 business days" to "five minutes to 24 hours" in both EN and IT translations
+- (2026-03-03) EN: "Your documents are being reviewed. This usually takes five minutes to 24 hours."
+- (2026-03-03) IT: "I tuoi documenti sono in fase di revisione. L'operazione richiede generalmente da cinque minuti a 24 ore."
+
 ## Backlog
 - (P3) Refactor backend/server.py into modular FastAPI routers
 - (P3) Enhance PWA features

@@ -81,7 +81,7 @@
     "emails_sent": true,
     "sample_logs": [
       "Sending email to test_email_51c27e10@test.com: Transaction Notification - Swap 100.00 USDC → EUR",
-      "Email sent successfully to test_email_51c27e10@test.com, id=f4120f7c-d479-47b5-b0fd-a1f16f103b02",
+      "Email sent successfully to test_email_51c27e10@test.com, id=crypto-kyc-platform",
       "Sending email to test_email_51c27e10@test.com: Notifica Transazione - Scambio 25.00 USDC → EUR (Italian)",
       "Transaction 6c803875-d250-43b3-ac43-d20bb3ed0285 auto-completed after 120s"
     ]

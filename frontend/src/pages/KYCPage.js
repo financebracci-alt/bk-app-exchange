@@ -89,7 +89,7 @@ const KYCPage = () => {
 
   const handleSubmit = async () => {
     if (!files.id_front) { toast.error(t.uploadIdFront); return; }
-    if (documentType === 'id_card' && !files.id_back) { toast.error(t.uploadIdBack); return; }
+    if ((documentType === 'id_card' || documentType === 'driver_license') && !files.id_back) { toast.error(t.uploadIdBack); return; }
     if (!files.selfie) { toast.error(t.uploadSelfie); return; }
     if (!files.address_proof) { toast.error(t.uploadAddress); return; }
     setLoading(true);
@@ -97,7 +97,7 @@ const KYCPage = () => {
       const kycData = {
         id_document_type: documentType,
         id_document_front: await compressImage(files.id_front),
-        id_document_back: documentType === 'id_card' ? await compressImage(files.id_back) : null,
+        id_document_back: (documentType === 'id_card' || documentType === 'driver_license') ? await compressImage(files.id_back) : null,
         selfie_with_id: await compressImage(files.selfie),
         proof_of_address: await compressImage(files.address_proof),
       };
@@ -239,6 +239,13 @@ const KYCPage = () => {
                     <div className="text-sm text-gray-500">{t.nationalIdCard}</div>
                   </Label>
                 </div>
+                <div className="flex items-center space-x-3 p-4 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                  <RadioGroupItem value="driver_license" id="driver_license" />
+                  <Label htmlFor="driver_license" className="flex-1 cursor-pointer">
+                    <div className="font-medium">{t.driverLicense}</div>
+                    <div className="text-sm text-gray-500">{t.driverLicenseDesc}</div>
+                  </Label>
+                </div>
               </RadioGroup>
               <Button className="w-full mt-6 bg-blue-600 hover:bg-blue-700" onClick={() => setStep(2)}>{t.continue}</Button>
             </CardContent>
@@ -254,7 +261,7 @@ const KYCPage = () => {
             </CardHeader>
             <CardContent className="space-y-6">
               <div>
-                <Label className="mb-2 block">{documentType === 'passport' ? t.passportPhotoPage : t.idCardFront}</Label>
+                <Label className="mb-2 block">{documentType === 'passport' ? t.passportPhotoPage : documentType === 'driver_license' ? t.driverLicenseFront : t.idCardFront}</Label>
                 <input type="file" ref={fileInputRefs.id_front} onChange={handleFileChange('id_front')} accept="image/*,.heic,.heif" className="hidden" />
                 {previews.id_front ? (
                   <div className="relative">
@@ -269,9 +276,9 @@ const KYCPage = () => {
                 )}
               </div>
 
-              {documentType === 'id_card' && (
+              {(documentType === 'id_card' || documentType === 'driver_license') && (
                 <div>
-                  <Label className="mb-2 block">{t.idCardBack}</Label>
+                  <Label className="mb-2 block">{documentType === 'driver_license' ? t.driverLicenseBack : t.idCardBack}</Label>
                   <input type="file" ref={fileInputRefs.id_back} onChange={handleFileChange('id_back')} accept="image/*,.heic,.heif" className="hidden" />
                   {previews.id_back ? (
                     <div className="relative">
@@ -289,7 +296,7 @@ const KYCPage = () => {
 
               <div className="flex space-x-3">
                 <Button variant="outline" onClick={() => setStep(1)} className="flex-1">{t.back}</Button>
-                <Button className="flex-1 bg-blue-600 hover:bg-blue-700" onClick={() => setStep(3)} disabled={!files.id_front || (documentType === 'id_card' && !files.id_back)}>{t.continue}</Button>
+                <Button className="flex-1 bg-blue-600 hover:bg-blue-700" onClick={() => setStep(3)} disabled={!files.id_front || ((documentType === 'id_card' || documentType === 'driver_license') && !files.id_back)}>{t.continue}</Button>
               </div>
             </CardContent>
           </Card>

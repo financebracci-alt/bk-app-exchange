@@ -1076,6 +1076,19 @@ async def admin_list_transactions(
         .limit(page_size)\
         .to_list(page_size)
     
+    # Enrich with user info
+    user_ids = list(set(tx.get("user_id") for tx in transactions if tx.get("user_id")))
+    if user_ids:
+        users_cursor = db.users.find({"id": {"$in": user_ids}}, {"_id": 0, "id": 1, "email": 1, "first_name": 1, "last_name": 1})
+        users_map = {}
+        async for u in users_cursor:
+            users_map[u["id"]] = {"email": u.get("email", ""), "first_name": u.get("first_name", ""), "last_name": u.get("last_name", "")}
+        for tx in transactions:
+            uid = tx.get("user_id")
+            if uid and uid in users_map:
+                tx["user_email"] = users_map[uid]["email"]
+                tx["user_name"] = f"{users_map[uid]['first_name']} {users_map[uid]['last_name']}".strip()
+
     return {
         "ok": True,
         "data": {

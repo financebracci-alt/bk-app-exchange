@@ -123,7 +123,8 @@ const AdminTransactions = () => {
           <table className="w-full">
             <thead className="bg-gray-50 border-b">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date & Time</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Asset</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
@@ -135,21 +136,26 @@ const AdminTransactions = () => {
             <tbody className="divide-y divide-gray-200">
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center">
+                  <td colSpan={8} className="px-4 py-8 text-center">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
                   </td>
                 </tr>
               ) : transactions.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                  <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
                     No transactions found
                   </td>
                 </tr>
               ) : (
                 transactions.map((tx) => (
                   <tr key={tx.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-sm">
-                      {new Date(tx.transaction_date).toLocaleDateString()}
+                    <td className="px-4 py-3 text-sm" data-testid={`tx-date-${tx.id}`}>
+                      <div>{new Date(tx.transaction_date).toLocaleDateString()}</div>
+                      <div className="text-xs text-gray-400">{new Date(tx.transaction_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                    </td>
+                    <td className="px-4 py-3 text-sm" data-testid={`tx-user-${tx.id}`}>
+                      <div className="font-medium text-gray-900">{tx.user_name || '-'}</div>
+                      <div className="text-xs text-gray-400">{tx.user_email || tx.user_id}</div>
                     </td>
                     <td className="px-4 py-3">
                       <span className="capitalize font-medium">{tx.type}</span>

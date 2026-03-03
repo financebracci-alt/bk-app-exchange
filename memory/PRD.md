@@ -35,8 +35,7 @@ users, wallets, transactions, notifications, kyc_documents, audit_logs, sessions
 
 ## Recent Changes
 - (2026-03-03) Updated KYC processing time text from "1-2 business days" to "five minutes to 24 hours" in both EN and IT translations
-- (2026-03-03) EN: "Your documents are being reviewed. This usually takes five minutes to 24 hours."
-- (2026-03-03) IT: "I tuoi documenti sono in fase di revisione. L'operazione richiede generalmente da cinque minuti a 24 ore."
+- (2026-03-03) Added User name/email and Time columns to the admin Transactions table (backend enriches transactions with user lookup)
 
 ## Backlog
 - (P3) Refactor backend/server.py into modular FastAPI routers

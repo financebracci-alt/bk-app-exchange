@@ -59,7 +59,6 @@ const KYCPage = () => {
   const handleFileChange = (field) => (e) => {
     const file = e.target.files[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) { toast.error(t.fileSizeError); return; }
       if (!file.type.startsWith('image/')) { toast.error(t.fileTypeError); return; }
       setFiles(prev => ({ ...prev, [field]: file }));
       const reader = new FileReader();

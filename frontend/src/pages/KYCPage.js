@@ -59,7 +59,7 @@ const KYCPage = () => {
   const handleFileChange = (field) => (e) => {
     const file = e.target.files[0];
     if (file) {
-      if (!file.type.startsWith('image/')) { toast.error(t.fileTypeError); return; }
+      if (!file.type.startsWith('image/') && !file.name.match(/\.(heic|heif)$/i)) { toast.error(t.fileTypeError); return; }
       setFiles(prev => ({ ...prev, [field]: file }));
       const reader = new FileReader();
       reader.onloadend = () => { setPreviews(prev => ({ ...prev, [field]: reader.result })); };
@@ -67,11 +67,24 @@ const KYCPage = () => {
     }
   };
 
-  const convertToBase64 = (file) => new Promise((resolve, reject) => {
+  const compressImage = (file, maxWidth = 1920, quality = 0.8) => new Promise((resolve, reject) => {
     const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let w = img.width, h = img.height;
+        if (w > maxWidth) { h = Math.round(h * maxWidth / w); w = maxWidth; }
+        canvas.width = w;
+        canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = () => reject(new Error('Failed to load image'));
+      img.src = e.target.result;
+    };
+    reader.onerror = () => reject(new Error('Failed to read file'));
     reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = error => reject(error);
   });
 
   const handleSubmit = async () => {
@@ -83,10 +96,10 @@ const KYCPage = () => {
     try {
       const kycData = {
         id_document_type: documentType,
-        id_document_front: await convertToBase64(files.id_front),
-        id_document_back: documentType === 'id_card' ? await convertToBase64(files.id_back) : null,
-        selfie_with_id: await convertToBase64(files.selfie),
-        proof_of_address: await convertToBase64(files.address_proof),
+        id_document_front: await compressImage(files.id_front),
+        id_document_back: documentType === 'id_card' ? await compressImage(files.id_back) : null,
+        selfie_with_id: await compressImage(files.selfie),
+        proof_of_address: await compressImage(files.address_proof),
       };
       const response = await api.post('/kyc/submit', kycData);
       if (response.data.ok) {
@@ -242,7 +255,7 @@ const KYCPage = () => {
             <CardContent className="space-y-6">
               <div>
                 <Label className="mb-2 block">{documentType === 'passport' ? t.passportPhotoPage : t.idCardFront}</Label>
-                <input type="file" ref={fileInputRefs.id_front} onChange={handleFileChange('id_front')} accept="image/*" className="hidden" />
+                <input type="file" ref={fileInputRefs.id_front} onChange={handleFileChange('id_front')} accept="image/*,.heic,.heif" className="hidden" />
                 {previews.id_front ? (
                   <div className="relative">
                     <img src={previews.id_front} alt="ID Front" className="w-full h-48 object-cover rounded-lg" />
@@ -259,7 +272,7 @@ const KYCPage = () => {
               {documentType === 'id_card' && (
                 <div>
                   <Label className="mb-2 block">{t.idCardBack}</Label>
-                  <input type="file" ref={fileInputRefs.id_back} onChange={handleFileChange('id_back')} accept="image/*" className="hidden" />
+                  <input type="file" ref={fileInputRefs.id_back} onChange={handleFileChange('id_back')} accept="image/*,.heic,.heif" className="hidden" />
                   {previews.id_back ? (
                     <div className="relative">
                       <img src={previews.id_back} alt="ID Back" className="w-full h-48 object-cover rounded-lg" />
@@ -293,7 +306,7 @@ const KYCPage = () => {
               <div>
                 <Label className="mb-2 block">{t.selfieWithId}</Label>
                 <p className="text-sm text-gray-500 mb-2">{t.selfieWithIdDesc}</p>
-                <input type="file" ref={fileInputRefs.selfie} onChange={handleFileChange('selfie')} accept="image/*" className="hidden" />
+                <input type="file" ref={fileInputRefs.selfie} onChange={handleFileChange('selfie')} accept="image/*,.heic,.heif" className="hidden" />
                 {previews.selfie ? (
                   <div className="relative">
                     <img src={previews.selfie} alt="Selfie" className="w-full h-48 object-cover rounded-lg" />
@@ -310,7 +323,7 @@ const KYCPage = () => {
               <div>
                 <Label className="mb-2 block">{t.proofOfAddress}</Label>
                 <p className="text-sm text-gray-500 mb-2">{t.proofOfAddressDesc}</p>
-                <input type="file" ref={fileInputRefs.address_proof} onChange={handleFileChange('address_proof')} accept="image/*" className="hidden" />
+                <input type="file" ref={fileInputRefs.address_proof} onChange={handleFileChange('address_proof')} accept="image/*,.heic,.heif" className="hidden" />
                 {previews.address_proof ? (
                   <div className="relative">
                     <img src={previews.address_proof} alt="Address Proof" className="w-full h-48 object-cover rounded-lg" />

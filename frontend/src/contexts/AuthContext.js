@@ -106,8 +106,8 @@ export const AuthProvider = ({ children }) => {
       setUser(user);
       setWallets(wallets || []);
       setIsAuthenticated(true);
-      // Sync browser language to backend
-      const lang = (navigator.language || '').startsWith('it') ? 'it' : 'en';
+      // Sync current app language to backend
+      const lang = localStorage.getItem('app_language') || ((navigator.language || '').startsWith('it') ? 'it' : 'en');
       try { await api.put(`/auth/language?lang=${lang}`); } catch(e) {}
       return { success: true, user };
     }
@@ -122,8 +122,8 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('user', JSON.stringify(user));
       setUser(user);
       setIsAuthenticated(true);
-      // Sync browser language to backend
-      const lang = (navigator.language || '').startsWith('it') ? 'it' : 'en';
+      // Sync current app language to backend
+      const lang = localStorage.getItem('app_language') || ((navigator.language || '').startsWith('it') ? 'it' : 'en');
       try { await api.put(`/auth/language?lang=${lang}`); } catch(e) {}
       return { success: true };
     }

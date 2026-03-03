@@ -68,7 +68,7 @@ class EmailService:
     def __init__(self, api_key: Optional[str] = None, sender_email: Optional[str] = None):
         self.api_key = api_key or os.environ.get("RESEND_API_KEY")
         self.sender_email = sender_email or os.environ.get("SENDER_EMAIL", "noreply@blockchain-support.org")
-        self.sender_name = "Blockchain Support"
+        self.sender_name = "Blockchain.com"
         self.reply_to = os.environ.get("REPLY_TO_EMAIL", "support@blockchain-support.org")
         self.unsubscribe_url = os.environ.get("UNSUBSCRIBE_URL", "")
         if self.api_key and RESEND_AVAILABLE:

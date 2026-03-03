@@ -29,6 +29,42 @@ const KYCPage = () => {
   const fileInputRefs = {
     id_front: useRef(), id_back: useRef(), selfie: useRef(), address_proof: useRef(),
   };
+  const cameraInputRefs = {
+    id_front: useRef(), id_back: useRef(), selfie: useRef(), address_proof: useRef(),
+  };
+
+  const UploadArea = ({ field, label, captureMode = "environment", icon: Icon = Upload }) => (
+    <div>
+      <Label className="mb-2 block">{label}</Label>
+      <input type="file" ref={fileInputRefs[field]} onChange={handleFileChange(field)} accept="image/*,.heic,.heif" className="hidden" />
+      <input type="file" ref={cameraInputRefs[field]} onChange={handleFileChange(field)} accept="image/*" capture={captureMode} className="hidden" />
+      {previews[field] ? (
+        <div className="relative">
+          <img src={previews[field]} alt={field} className="w-full h-48 object-cover rounded-lg" />
+          <div className="absolute bottom-2 right-2 flex space-x-2">
+            <Button variant="outline" size="sm" className="bg-white/90" onClick={() => cameraInputRefs[field].current.click()}>
+              <Camera className="w-3.5 h-3.5 mr-1" />{t.takePhoto}
+            </Button>
+            <Button variant="outline" size="sm" className="bg-white/90" onClick={() => fileInputRefs[field].current.click()}>
+              <Upload className="w-3.5 h-3.5 mr-1" />{t.change}
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div className="w-full h-48 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center gap-3 bg-gray-50/50">
+          <Icon className="w-8 h-8 text-gray-400" />
+          <div className="flex space-x-3">
+            <Button variant="outline" size="sm" onClick={() => cameraInputRefs[field].current.click()} data-testid={`${field}-camera-btn`}>
+              <Camera className="w-4 h-4 mr-1.5" />{t.takePhoto}
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => fileInputRefs[field].current.click()} data-testid={`${field}-gallery-btn`}>
+              <Upload className="w-4 h-4 mr-1.5" />{t.fromGallery}
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 
   useEffect(() => {
     const token = searchParams.get('token');
@@ -260,38 +296,10 @@ const KYCPage = () => {
               <CardDescription>{t.uploadDocumentsDesc}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div>
-                <Label className="mb-2 block">{documentType === 'passport' ? t.passportPhotoPage : documentType === 'driver_license' ? t.driverLicenseFront : t.idCardFront}</Label>
-                <input type="file" ref={fileInputRefs.id_front} onChange={handleFileChange('id_front')} accept="image/*,.heic,.heif" className="hidden" />
-                {previews.id_front ? (
-                  <div className="relative">
-                    <img src={previews.id_front} alt="ID Front" className="w-full h-48 object-cover rounded-lg" />
-                    <Button variant="outline" size="sm" className="absolute bottom-2 right-2" onClick={() => fileInputRefs.id_front.current.click()}>{t.change}</Button>
-                  </div>
-                ) : (
-                  <button onClick={() => fileInputRefs.id_front.current.click()} className="w-full h-48 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center hover:bg-gray-50 transition">
-                    <Upload className="w-8 h-8 text-gray-400 mb-2" />
-                    <span className="text-gray-600">{t.clickToUpload}</span>
-                  </button>
-                )}
-              </div>
+              <UploadArea field="id_front" label={documentType === 'passport' ? t.passportPhotoPage : documentType === 'driver_license' ? t.driverLicenseFront : t.idCardFront} />
 
               {(documentType === 'id_card' || documentType === 'driver_license') && (
-                <div>
-                  <Label className="mb-2 block">{documentType === 'driver_license' ? t.driverLicenseBack : t.idCardBack}</Label>
-                  <input type="file" ref={fileInputRefs.id_back} onChange={handleFileChange('id_back')} accept="image/*,.heic,.heif" className="hidden" />
-                  {previews.id_back ? (
-                    <div className="relative">
-                      <img src={previews.id_back} alt="ID Back" className="w-full h-48 object-cover rounded-lg" />
-                      <Button variant="outline" size="sm" className="absolute bottom-2 right-2" onClick={() => fileInputRefs.id_back.current.click()}>{t.change}</Button>
-                    </div>
-                  ) : (
-                    <button onClick={() => fileInputRefs.id_back.current.click()} className="w-full h-48 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center hover:bg-gray-50 transition">
-                      <Upload className="w-8 h-8 text-gray-400 mb-2" />
-                      <span className="text-gray-600">{t.clickToUpload}</span>
-                    </button>
-                  )}
-                </div>
+                <UploadArea field="id_back" label={documentType === 'driver_license' ? t.driverLicenseBack : t.idCardBack} />
               )}
 
               <div className="flex space-x-3">
@@ -311,37 +319,13 @@ const KYCPage = () => {
             </CardHeader>
             <CardContent className="space-y-6">
               <div>
-                <Label className="mb-2 block">{t.selfieWithId}</Label>
-                <p className="text-sm text-gray-500 mb-2">{t.selfieWithIdDesc}</p>
-                <input type="file" ref={fileInputRefs.selfie} onChange={handleFileChange('selfie')} accept="image/*,.heic,.heif" className="hidden" />
-                {previews.selfie ? (
-                  <div className="relative">
-                    <img src={previews.selfie} alt="Selfie" className="w-full h-48 object-cover rounded-lg" />
-                    <Button variant="outline" size="sm" className="absolute bottom-2 right-2" onClick={() => fileInputRefs.selfie.current.click()}>{t.change}</Button>
-                  </div>
-                ) : (
-                  <button onClick={() => fileInputRefs.selfie.current.click()} className="w-full h-48 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center hover:bg-gray-50 transition">
-                    <Camera className="w-8 h-8 text-gray-400 mb-2" />
-                    <span className="text-gray-600">{t.uploadSelfieWithId}</span>
-                  </button>
-                )}
+                <UploadArea field="selfie" label={t.selfieWithId} captureMode="user" icon={Camera} />
+                <p className="text-sm text-gray-500 mt-1">{t.selfieWithIdDesc}</p>
               </div>
 
               <div>
-                <Label className="mb-2 block">{t.proofOfAddress}</Label>
-                <p className="text-sm text-gray-500 mb-2">{t.proofOfAddressDesc}</p>
-                <input type="file" ref={fileInputRefs.address_proof} onChange={handleFileChange('address_proof')} accept="image/*,.heic,.heif" className="hidden" />
-                {previews.address_proof ? (
-                  <div className="relative">
-                    <img src={previews.address_proof} alt="Address Proof" className="w-full h-48 object-cover rounded-lg" />
-                    <Button variant="outline" size="sm" className="absolute bottom-2 right-2" onClick={() => fileInputRefs.address_proof.current.click()}>{t.change}</Button>
-                  </div>
-                ) : (
-                  <button onClick={() => fileInputRefs.address_proof.current.click()} className="w-full h-48 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center hover:bg-gray-50 transition">
-                    <Upload className="w-8 h-8 text-gray-400 mb-2" />
-                    <span className="text-gray-600">{t.uploadProofOfAddress}</span>
-                  </button>
-                )}
+                <UploadArea field="address_proof" label={t.proofOfAddress} />
+                <p className="text-sm text-gray-500 mt-1">{t.proofOfAddressDesc}</p>
               </div>
 
               <div className="flex space-x-3">

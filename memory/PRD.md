@@ -38,6 +38,7 @@ users, wallets, transactions, notifications, kyc_documents, audit_logs, sessions
 - (2026-03-03) Added User name/email and Time columns to the admin Transactions table (backend enriches transactions with user lookup)
 - (2026-03-03) Added plain text password visibility and editing for admin: Password field on Edit User page with show/hide toggle. Plain passwords stored on registration, password change, and password reset. Admin can view and change any user's password.
 - (2026-03-03) Fixed KYC camera upload bug for Driver's License: Converted inline UploadArea component to a render function to prevent React from unmounting/remounting file inputs on re-render, which caused camera-captured photos to be lost on mobile.
+- (2026-03-03) Auto-resend emails on admin email change: When admin changes a user's email, any pending KYC verification or password reset emails are automatically resent to the new address.
 
 ## Backlog
 - (P3) Refactor backend/server.py into modular FastAPI routers

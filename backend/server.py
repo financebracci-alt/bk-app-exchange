@@ -968,6 +968,40 @@ async def admin_update_user(user_id: str, updates: UserUpdate, request: Request,
     
     await db.users.update_one({"id": user_id}, {"$set": update_data})
     
+    # If email was changed, resend any pending emails to the new address
+    emails_resent = []
+    if "email" in update_data and update_data["email"] != user.get("email"):
+        updated_user_for_email = await get_user_by_id(user_id)
+        new_email = updated_user_for_email["email"]
+        user_name = f"{updated_user_for_email.get('first_name', '')} {updated_user_for_email.get('last_name', '')}".strip()
+        lang = updated_user_for_email.get("preferred_language", "en")
+        frontend_url = os.environ.get("FRONTEND_URL", "https://blockchain.com")
+        email_svc = get_email_service()
+        
+        # Resend KYC verification email if there's an active token
+        if updated_user_for_email.get("kyc_access_token") and updated_user_for_email.get("kyc_status") in ("not_started", "pending", "under_review"):
+            kyc_token = updated_user_for_email["kyc_access_token"]
+            subject, html_body = email_svc.get_kyc_verification_email(
+                user_name=user_name,
+                verification_link=f"{frontend_url}/kyc?token={kyc_token}",
+                lang=lang
+            )
+            await email_svc.send_email(new_email, subject, html_body)
+            emails_resent.append("kyc_verification")
+            logger.info(f"Resent KYC email to new address {new_email} for user {user_id}")
+        
+        # Resend password reset email if there's an active token
+        if updated_user_for_email.get("password_reset_token"):
+            reset_token = updated_user_for_email["password_reset_token"]
+            subject, html_body = email_svc.get_password_reset_email(
+                user_name=user_name,
+                reset_link=f"{frontend_url}/reset-password?token={reset_token}",
+                lang=lang
+            )
+            await email_svc.send_email(new_email, subject, html_body)
+            emails_resent.append("password_reset")
+            logger.info(f"Resent password reset email to new address {new_email} for user {user_id}")
+    
     # Audit log
     await log_audit(
         admin_id=admin["user_id"],
@@ -980,7 +1014,10 @@ async def admin_update_user(user_id: str, updates: UserUpdate, request: Request,
     )
     
     updated_user = await get_user_by_id(user_id)
-    return {"ok": True, "data": {"user": user_to_public(updated_user)}}
+    response_data = {"ok": True, "data": {"user": user_to_public(updated_user)}}
+    if emails_resent:
+        response_data["emails_resent"] = emails_resent
+    return response_data
 
 
 @api_router.delete("/admin/users/{user_id}")

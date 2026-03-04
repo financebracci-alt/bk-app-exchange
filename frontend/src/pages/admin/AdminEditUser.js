@@ -141,6 +141,10 @@ const AdminEditUser = () => {
       const response = await api.put(`/admin/users/${userId}`, formData);
       if (response.data.ok) {
         toast.success('User updated successfully');
+        if (response.data.emails_resent?.length > 0) {
+          const types = response.data.emails_resent.map(t => t.replace('_', ' ')).join(', ');
+          toast.info(`Email changed — automatically resent: ${types}`);
+        }
         loadUser();
       }
     } catch (error) {

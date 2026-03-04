@@ -199,6 +199,7 @@ const AdminUsers = () => {
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Registered</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">KYC</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Freeze</th>
@@ -209,13 +210,13 @@ const AdminUsers = () => {
             <tbody className="divide-y divide-gray-200">
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center">
+                  <td colSpan={8} className="px-4 py-8 text-center">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
                   </td>
                 </tr>
               ) : users.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                  <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
                     No users found
                   </td>
                 </tr>
@@ -231,6 +232,16 @@ const AdminUsers = () => {
                       </div>
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-600">{user.email}</td>
+                    <td className="px-4 py-3 text-sm" data-testid={`user-registered-${user.id}`}>
+                      {user.created_at ? (
+                        <>
+                          <div>{new Date(user.created_at).toLocaleDateString()}</div>
+                          <div className="text-xs text-gray-400">{new Date(user.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                        </>
+                      ) : (
+                        <span className="text-gray-400">-</span>
+                      )}
+                    </td>
                     <td className="px-4 py-3">{getStatusBadge(user.account_status)}</td>
                     <td className="px-4 py-3">{getKYCBadge(user.kyc_status)}</td>
                     <td className="px-4 py-3">

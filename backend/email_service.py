@@ -50,8 +50,12 @@ def _wrap(content: str) -> str:
 
 
 def _btn(text: str, href: str) -> str:
-    """Generate an email-safe CTA button with inline styles."""
-    return f'<div style="text-align:center;margin:24px 0;"><a href="{href}" style="display:inline-block;background-color:#0052ff;color:#ffffff;padding:14px 36px;text-decoration:none;border-radius:6px;font-weight:600;font-size:15px;mso-padding-alt:14px 36px;">{text}</a></div>'
+    """Generate an email-safe CTA button using table layout for maximum compatibility."""
+    return f'''<div style="text-align:center;margin:24px 0;">
+<table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:0 auto;">
+<tr><td style="background-color:#0052ff;border-radius:6px;">
+<a href="{href}" target="_blank" style="display:block;background-color:#0052ff;color:#ffffff;padding:14px 36px;text-decoration:none;border-radius:6px;font-weight:600;font-size:15px;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Roboto,Helvetica,Arial,sans-serif;mso-padding-alt:14px 36px;">{text}</a>
+</td></tr></table></div>'''
 
 
 def _strip_html(html_body: str) -> str:
@@ -140,7 +144,7 @@ class EmailService:
             return self._get_kyc_approved_email_it(user_name, reset_link)
         subject = "Identity Verified - Reset Your Password - Blockchain.com"
         content = f"""
-    <div style="background-color:#e8f5e9;border:1px solid:#4caf50;border-radius:8px;padding:20px;text-align:center;margin:0 0 20px 0;">
+    <div style="background-color:#e8f5e9;border:1px solid #4caf50;border-radius:8px;padding:20px;text-align:center;margin:0 0 20px 0;">
       <div style="font-size:36px;margin-bottom:8px;">&#10003;</div>
       <p style="color:#2e7d32;font-size:17px;font-weight:700;margin:0;">Your Identity Has Been Verified!</p>
     </div>

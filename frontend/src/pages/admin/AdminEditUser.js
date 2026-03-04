@@ -59,6 +59,7 @@ const AdminEditUser = () => {
     email: '',
     username: '',
     phone: '',
+    date_of_birth: '',
     eth_wallet_address: '',
     freeze_type: 'none',
     account_status: 'active',
@@ -93,6 +94,7 @@ const AdminEditUser = () => {
           email: userData.email || '',
           username: userData.username || '',
           phone: userData.phone || '',
+          date_of_birth: userData.date_of_birth || '',
           eth_wallet_address: userData.eth_wallet_address || '',
           freeze_type: userData.freeze_type || 'none',
           account_status: userData.account_status || 'active',
@@ -401,6 +403,16 @@ const AdminEditUser = () => {
                   <Input
                     value={formData.phone}
                     onChange={(e) => handleChange('phone', e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Date of Birth</Label>
+                  <Input
+                    type="date"
+                    value={formData.date_of_birth}
+                    onChange={(e) => handleChange('date_of_birth', e.target.value)}
+                    data-testid="admin-user-dob-input"
                   />
                 </div>
 

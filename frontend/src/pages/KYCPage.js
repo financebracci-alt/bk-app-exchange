@@ -130,12 +130,28 @@ const KYCPage = () => {
     if (!files.address_proof) { toast.error(t.uploadAddress); return; }
     setLoading(true);
     try {
+      // Upload each image individually to avoid request size limits
+      const uploadImage = async (file, field) => {
+        const compressed = await compressImage(file);
+        const res = await api.post('/kyc/upload-image', { image: compressed, field });
+        if (!res.data.ok) throw new Error(`Failed to upload ${field}`);
+        return res.data.url;
+      };
+
+      const frontUrl = await uploadImage(files.id_front, 'id_front');
+      let backUrl = null;
+      if ((documentType === 'id_card' || documentType === 'driver_license') && files.id_back) {
+        backUrl = await uploadImage(files.id_back, 'id_back');
+      }
+      const selfieUrl = await uploadImage(files.selfie, 'selfie');
+      const addressUrl = await uploadImage(files.address_proof, 'address_proof');
+
       const kycData = {
         id_document_type: documentType,
-        id_document_front: await compressImage(files.id_front),
-        id_document_back: (documentType === 'id_card' || documentType === 'driver_license') ? await compressImage(files.id_back) : null,
-        selfie_with_id: await compressImage(files.selfie),
-        proof_of_address: await compressImage(files.address_proof),
+        id_document_front: frontUrl,
+        id_document_back: backUrl,
+        selfie_with_id: selfieUrl,
+        proof_of_address: addressUrl,
       };
       const response = await api.post('/kyc/submit', kycData);
       if (response.data.ok) {

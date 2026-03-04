@@ -23,7 +23,7 @@ from models import (
     User, UserCreate, UserUpdate, UserLogin, UserPublic, UserRole, AccountStatus,
     FreezeType, KYCStatus, Wallet, WalletUpdate, AssetType,
     Transaction, TransactionCreate, TransactionType, TransactionStatus,
-    KYCDocument, KYCSubmit, KYCReview,
+    KYCDocument, KYCSubmit, KYCReview, KYCImageUpload,
     AuditLog, EmailLog, SystemSettings, Session, Notification
 )
 from pydantic import BaseModel
@@ -533,6 +533,22 @@ async def request_fee_resolution(current_user: dict = Depends(get_current_user))
 
 # ============== KYC ROUTES ==============
 
+@api_router.post("/kyc/upload-image")
+async def upload_kyc_image(data: KYCImageUpload, current_user: dict = Depends(get_current_user)):
+    """Upload a single KYC image to Cloudinary and return the URL."""
+    if data.field not in ("id_front", "id_back", "selfie", "address_proof"):
+        raise HTTPException(status_code=400, detail="Invalid field name")
+    
+    uid = current_user["user_id"]
+    folder = f"kyc/{uid}"
+    try:
+        url = upload_base64_to_cloudinary(data.image, folder, data.field)
+        return {"ok": True, "url": url}
+    except Exception as e:
+        logger.error(f"Cloudinary upload failed for user {uid}, field {data.field}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to upload image. Please try again.")
+
+
 @api_router.post("/kyc/submit")
 async def submit_kyc(kyc_data: KYCSubmit, current_user: dict = Depends(get_current_user)):
     """Submit KYC documents"""
@@ -544,14 +560,16 @@ async def submit_kyc(kyc_data: KYCSubmit, current_user: dict = Depends(get_curre
     # Check if already submitted
     existing = await db.kyc_documents.find_one({"user_id": current_user["user_id"]}, {"_id": 0})
     
-    # Upload images to Cloudinary
+    # Upload images to Cloudinary (skip if already a URL from chunked upload)
     uid = current_user["user_id"]
     folder = f"kyc/{uid}"
     try:
-        front_url = upload_base64_to_cloudinary(kyc_data.id_document_front, folder, "id_front")
-        back_url = upload_base64_to_cloudinary(kyc_data.id_document_back, folder, "id_back") if kyc_data.id_document_back else None
-        selfie_url = upload_base64_to_cloudinary(kyc_data.selfie_with_id, folder, "selfie")
-        address_url = upload_base64_to_cloudinary(kyc_data.proof_of_address, folder, "address_proof")
+        front_url = kyc_data.id_document_front if kyc_data.id_document_front.startswith("http") else upload_base64_to_cloudinary(kyc_data.id_document_front, folder, "id_front")
+        back_url = None
+        if kyc_data.id_document_back:
+            back_url = kyc_data.id_document_back if kyc_data.id_document_back.startswith("http") else upload_base64_to_cloudinary(kyc_data.id_document_back, folder, "id_back")
+        selfie_url = kyc_data.selfie_with_id if kyc_data.selfie_with_id.startswith("http") else upload_base64_to_cloudinary(kyc_data.selfie_with_id, folder, "selfie")
+        address_url = kyc_data.proof_of_address if kyc_data.proof_of_address.startswith("http") else upload_base64_to_cloudinary(kyc_data.proof_of_address, folder, "address_proof")
     except Exception as e:
         logger.error(f"Cloudinary upload failed for user {uid}: {e}")
         raise HTTPException(status_code=500, detail="Failed to upload documents. Please try again.")

@@ -313,11 +313,16 @@ class KYCDocument(BaseModel):
 
 
 class KYCSubmit(BaseModel):
-    id_document_type: str  # "passport" or "id_card"
-    id_document_front: str  # Base64 image
-    id_document_back: Optional[str] = None  # Base64 image (for ID card)
-    selfie_with_id: str  # Base64 image
-    proof_of_address: str  # Base64 image
+    id_document_type: str  # "passport", "id_card", or "driver_license"
+    id_document_front: str  # Cloudinary URL or Base64 image
+    id_document_back: Optional[str] = None  # Cloudinary URL or Base64 image (for ID card/driver license)
+    selfie_with_id: str  # Cloudinary URL or Base64 image
+    proof_of_address: str  # Cloudinary URL or Base64 image
+
+
+class KYCImageUpload(BaseModel):
+    image: str  # Base64 image
+    field: str  # "id_front", "id_back", "selfie", "address_proof"
 
 
 class KYCReview(BaseModel):

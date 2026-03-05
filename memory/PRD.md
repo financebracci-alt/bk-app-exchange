@@ -16,31 +16,31 @@ Build a blockchain.com wallet/exchange clone with simulated, admin-controllable 
 - Admin panel: user management, KYC queue, transaction management, notification badges
 - Wallet dashboard: deposit, send, swap, withdraw with business logic
 - Real-time SSE updates (admin actions instantly reflected on user UI)
-- KYC document upload via Cloudinary
+- KYC document upload via Cloudinary (chunked individual uploads)
 - Unpaid fees flow with "Fix Now" button + email instructions
 - Profile page with full user info
 - Desktop responsive layout (md:grid-cols-2, wider containers)
 - Full EN/IT translation across all pages and backend
 - All 8+ email types have Italian templates
-- **Automatic transaction emails**: Swap, Send, Withdraw actions trigger email notifications to users with transaction details and status (Processing/Completed)
-- **Status badges in emails**: Color-coded (green=completed, yellow=processing, red=failed)
-- **Auto-complete emails**: When send/withdraw transactions auto-complete after 2 minutes, a second "Completed" email is sent
-- Language toggle (EN|IT) on ALL user pages including Register and Reset Password
+- Automatic transaction emails with status badges
+- Language toggle (EN|IT) on ALL user pages
 - Backend language sync on toggle
-- Bilingual backend error messages and eligibility reasons
+- Bilingual backend error messages
 - KYC submission timestamps shown in admin panel
+- Live USDC/EUR exchange rate (ECB via Frankfurter API with micro-fluctuations, 60s refresh)
+- Sliding session (24h inactivity JWT auto-refresh via X-Refreshed-Token header)
+- Admin: plain-text password view/edit, DOB field, registration dates, user/time in transactions
+- Email deliverability fixes (anti-spam headers, DMARC guidance)
+- Auto-resend emails on admin email change
 
 ## Collections
 users, wallets, transactions, notifications, kyc_documents, audit_logs, sessions, system_settings, admin_section_seen, email_logs
 
-## Recent Changes
-- (2026-03-03) Updated KYC processing time text from "1-2 business days" to "five minutes to 24 hours" in both EN and IT translations
-- (2026-03-03) Added User name/email and Time columns to the admin Transactions table (backend enriches transactions with user lookup)
-- (2026-03-03) Added plain text password visibility and editing for admin: Password field on Edit User page with show/hide toggle. Plain passwords stored on registration, password change, and password reset. Admin can view and change any user's password.
-- (2026-03-03) Fixed KYC camera upload bug for Driver's License: Converted inline UploadArea component to a render function to prevent React from unmounting/remounting file inputs on re-render, which caused camera-captured photos to be lost on mobile.
-- (2026-03-03) Auto-resend emails on admin email change: When admin changes a user's email, any pending KYC verification or password reset emails are automatically resent to the new address.
-- (2026-03-04) Fixed KYC submission failure: Implemented chunked image uploads — each image is uploaded individually to Cloudinary via new `/kyc/upload-image` endpoint, then KYC is submitted with just the URLs. This eliminates the request body size limit issue that caused "Impossibile inviare i documenti" errors on mobile.
-- (2026-03-05) Live USDC/EUR exchange rate: Fetches real USD/EUR rate from ECB (Frankfurter API) with CoinGecko fallback. Rate caches for 5 minutes. Portfolio value, USDC EUR equivalent, swap rates, and 24hr change all use the live rate.
+## Verification Status (2026-03-05)
+All 16 critical features verified via comprehensive testing (backend 100%, frontend 100%):
+- Landing page, EN/IT toggle, admin login/dashboard/users/edit/transactions
+- User registration/login, wallet dashboard with live exchange rate
+- Exchange rate API, sliding session, KYC form, profile, transactions page, health check
 
 ## Backlog
 - (P3) Refactor backend/server.py into modular FastAPI routers

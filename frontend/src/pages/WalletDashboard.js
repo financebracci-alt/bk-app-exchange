@@ -216,14 +216,23 @@ const WalletDashboard = () => {
   const getEURWallet = () => wallets.find(w => w.asset === 'EUR');
 
   // Live exchange rate
-  const [exchangeRate, setExchangeRate] = useState({ usdc_eur: 0.92, eur_usdc: 1.087, change_24h_pct: 0.0 });
+  const [exchangeRate, setExchangeRate] = useState(() => {
+    try {
+      const cached = localStorage.getItem('exchange_rate');
+      if (cached) return JSON.parse(cached);
+    } catch (e) { /* ignore */ }
+    return { usdc_eur: 0.92, eur_usdc: 1.087, change_24h_pct: 0.0 };
+  });
 
   useEffect(() => {
     const fetchRate = async () => {
       try {
         const res = await api.get('/exchange-rate');
-        if (res.data.ok) setExchangeRate(res.data.data);
-      } catch (e) { /* use default */ }
+        if (res.data.ok) {
+          setExchangeRate(res.data.data);
+          localStorage.setItem('exchange_rate', JSON.stringify(res.data.data));
+        }
+      } catch (e) { /* use cached */ }
     };
     fetchRate();
     const interval = setInterval(fetchRate, 5 * 60 * 1000); // refresh every 5 min

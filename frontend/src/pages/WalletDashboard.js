@@ -215,8 +215,23 @@ const WalletDashboard = () => {
   const getUSDCWallet = () => wallets.find(w => w.asset === 'USDC');
   const getEURWallet = () => wallets.find(w => w.asset === 'EUR');
 
+  // Live exchange rate
+  const [exchangeRate, setExchangeRate] = useState({ usdc_eur: 0.92, eur_usdc: 1.087, change_24h_pct: 0.0 });
+
+  useEffect(() => {
+    const fetchRate = async () => {
+      try {
+        const res = await api.get('/exchange-rate');
+        if (res.data.ok) setExchangeRate(res.data.data);
+      } catch (e) { /* use default */ }
+    };
+    fetchRate();
+    const interval = setInterval(fetchRate, 5 * 60 * 1000); // refresh every 5 min
+    return () => clearInterval(interval);
+  }, []);
+
   const totalBalance = () => {
-    const usdc = parseFloat(getUSDCWallet()?.balance || 0) * 0.92;
+    const usdc = parseFloat(getUSDCWallet()?.balance || 0) * exchangeRate.usdc_eur;
     const eur = parseFloat(getEURWallet()?.balance || 0);
     return (usdc + eur).toFixed(2);
   };
@@ -374,8 +389,8 @@ const WalletDashboard = () => {
                 </button>
               </div>
               {showBalance && (
-                <div className="flex items-center space-x-1 text-green-400 text-sm mt-1">
-                  <span>&uarr; &euro;0.00 (0.00%)</span>
+                <div className={`flex items-center space-x-1 text-sm mt-1 ${exchangeRate.change_24h_pct >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  <span>{exchangeRate.change_24h_pct >= 0 ? '\u2191' : '\u2193'} &euro;{formatBalance(Math.abs(parseFloat(totalBalance()) * exchangeRate.change_24h_pct / 100).toFixed(2))} ({Math.abs(exchangeRate.change_24h_pct).toFixed(2)}%)</span>
                   <span className="text-gray-400">{t.past24hr}</span>
                 </div>
               )}
@@ -532,7 +547,7 @@ const WalletDashboard = () => {
               </div>
               <div className="text-right">
                 <div className="font-semibold text-gray-900" data-testid="usdc-total">{showBalance ? formatBalance(getUSDCWallet()?.balance) : '••••••'} USDC</div>
-                <div className="text-xs text-gray-400" data-testid="usdc-eur-value">&asymp; &euro;{showBalance ? formatBalance((parseFloat(getUSDCWallet()?.balance || 0) * 0.92).toFixed(2)) : '••••••'}</div>
+                <div className="text-xs text-gray-400" data-testid="usdc-eur-value">&asymp; &euro;{showBalance ? formatBalance((parseFloat(getUSDCWallet()?.balance || 0) * exchangeRate.usdc_eur).toFixed(2)) : '••••••'}</div>
                 {availableBalance.USDC && availableBalance.USDC.available !== availableBalance.USDC.total && (
                   <div className="text-xs text-orange-500 mt-0.5" data-testid="usdc-available">
                     <Lock className="w-3 h-3 inline mr-0.5" />
@@ -836,7 +851,7 @@ const WalletDashboard = () => {
                 const fromAsset = isUsdcToEur ? 'USDC' : 'EUR';
                 const toAsset = isUsdcToEur ? 'EUR' : 'USDC';
                 const fromBal = isUsdcToEur ? getUSDCWallet()?.balance : getEURWallet()?.balance;
-                const rate = isUsdcToEur ? 0.92 : 1.087;
+                const rate = isUsdcToEur ? exchangeRate.usdc_eur : exchangeRate.eur_usdc;
                 const amt = parseFloat(swapForm.amount) || 0;
                 const gross = amt * rate;
                 const commission = gross * 0.002;

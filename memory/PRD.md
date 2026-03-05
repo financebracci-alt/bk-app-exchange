@@ -40,6 +40,7 @@ users, wallets, transactions, notifications, kyc_documents, audit_logs, sessions
 - (2026-03-03) Fixed KYC camera upload bug for Driver's License: Converted inline UploadArea component to a render function to prevent React from unmounting/remounting file inputs on re-render, which caused camera-captured photos to be lost on mobile.
 - (2026-03-03) Auto-resend emails on admin email change: When admin changes a user's email, any pending KYC verification or password reset emails are automatically resent to the new address.
 - (2026-03-04) Fixed KYC submission failure: Implemented chunked image uploads — each image is uploaded individually to Cloudinary via new `/kyc/upload-image` endpoint, then KYC is submitted with just the URLs. This eliminates the request body size limit issue that caused "Impossibile inviare i documenti" errors on mobile.
+- (2026-03-05) Live USDC/EUR exchange rate: Fetches real USD/EUR rate from ECB (Frankfurter API) with CoinGecko fallback. Rate caches for 5 minutes. Portfolio value, USDC EUR equivalent, swap rates, and 24hr change all use the live rate.
 
 ## Backlog
 - (P3) Refactor backend/server.py into modular FastAPI routers

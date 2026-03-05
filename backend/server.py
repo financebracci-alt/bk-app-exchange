@@ -2160,9 +2160,95 @@ async def wallet_send(req: SendRequest, current_user: dict = Depends(get_current
 
 # ── Swap (USDC ↔ EUR) ──────────────────────────────────────────────
 
-USDC_EUR_RATE = Decimal("0.92")   # 1 USDC = 0.92 EUR
-EUR_USDC_RATE = Decimal("1.087")  # 1 EUR  ≈ 1.087 USDC
 SWAP_COMMISSION = Decimal("0.002")  # 0.2 %
+
+# ── Live Exchange Rate (CoinGecko) ─────────────────────────────────
+import httpx
+
+_rate_cache = {"rate": None, "rate_24h_ago": None, "last_fetched": None, "last_24h_fetched": None, "change_24h_pct": 0.0}
+RATE_CACHE_TTL = 300  # 5 minutes
+
+async def get_live_usdc_eur_rate() -> dict:
+    """Fetch live USDC/EUR rate from multiple sources with 5-minute caching.
+    USDC is pegged to USD, so USDC/EUR ≈ USD/EUR."""
+    now = datetime.now(timezone.utc)
+    
+    # Return cached rate if fresh
+    if (_rate_cache["rate"] is not None and 
+        _rate_cache["last_fetched"] is not None and
+        (now - _rate_cache["last_fetched"]).total_seconds() < RATE_CACHE_TTL):
+        rate = _rate_cache["rate"]
+        return {
+            "usdc_eur": rate,
+            "eur_usdc": round(1.0 / rate, 6),
+            "change_24h_pct": _rate_cache.get("change_24h_pct", 0.0),
+        }
+    
+    rate = None
+    change_pct = _rate_cache.get("change_24h_pct", 0.0)
+    
+    async with httpx.AsyncClient(timeout=10) as client:
+        # Source 1: Frankfurter API (ECB data, no rate limits)
+        try:
+            resp = await client.get("https://api.frankfurter.app/latest?from=USD&to=EUR")
+            resp.raise_for_status()
+            data = resp.json()
+            rate = data["rates"]["EUR"]
+            logger.info(f"Fetched USD/EUR rate from Frankfurter: {rate}")
+        except Exception as e:
+            logger.warning(f"Frankfurter API failed: {e}")
+        
+        # Fetch yesterday's rate for 24h change calculation
+        if rate and not _rate_cache.get("rate_24h_ago"):
+            try:
+                yesterday = (now - timedelta(days=1)).strftime("%Y-%m-%d")
+                resp2 = await client.get(f"https://api.frankfurter.app/{yesterday}?from=USD&to=EUR")
+                resp2.raise_for_status()
+                data2 = resp2.json()
+                _rate_cache["rate_24h_ago"] = data2["rates"]["EUR"]
+            except Exception:
+                pass
+        
+        # Calculate 24h change
+        if rate and _rate_cache.get("rate_24h_ago"):
+            old_rate = _rate_cache["rate_24h_ago"]
+            change_pct = round(((rate - old_rate) / old_rate) * 100, 4)
+        
+        # Source 2: CoinGecko fallback
+        if rate is None:
+            try:
+                resp = await client.get(
+                    "https://api.coingecko.com/api/v3/simple/price",
+                    params={"ids": "usd-coin", "vs_currencies": "eur", "include_24hr_change": "true"}
+                )
+                resp.raise_for_status()
+                data = resp.json()
+                rate = data["usd-coin"]["eur"]
+                change_pct = round(data["usd-coin"].get("eur_24h_change", 0.0), 4)
+                logger.info(f"Fetched USDC/EUR rate from CoinGecko: {rate}")
+            except Exception as e:
+                logger.warning(f"CoinGecko API also failed: {e}")
+    
+    if rate is None:
+        rate = _rate_cache["rate"] or 0.92
+        logger.warning(f"All rate APIs failed, using cached/fallback rate: {rate}")
+    
+    _rate_cache["rate"] = rate
+    _rate_cache["change_24h_pct"] = change_pct
+    _rate_cache["last_fetched"] = now
+    
+    return {
+        "usdc_eur": rate,
+        "eur_usdc": round(1.0 / rate, 6),
+        "change_24h_pct": change_pct,
+    }
+
+
+@api_router.get("/exchange-rate")
+async def get_exchange_rate():
+    """Get the current live USDC/EUR exchange rate."""
+    rate_data = await get_live_usdc_eur_rate()
+    return {"ok": True, "data": rate_data}
 
 
 class SwapRequest(BaseModel):
@@ -2204,8 +2290,12 @@ async def wallet_swap(req: SwapRequest, current_user: dict = Depends(get_current
         msg = f"L'importo supera il saldo {from_asset} ({from_balance})." if user.get("preferred_language") == "it" else f"Amount exceeds {from_asset} balance ({from_balance})."
         raise HTTPException(status_code=400, detail=msg)
 
-    # Convert & apply 0.2 % commission
-    rate = USDC_EUR_RATE if from_asset == "USDC" else EUR_USDC_RATE
+    # Convert & apply 0.2 % commission (use live rate)
+    rate_data = await get_live_usdc_eur_rate()
+    if from_asset == "USDC":
+        rate = Decimal(str(rate_data["usdc_eur"]))
+    else:
+        rate = Decimal(str(rate_data["eur_usdc"]))
     gross = (amount * rate).quantize(Decimal("0.01"))
     commission = (gross * SWAP_COMMISSION).quantize(Decimal("0.01"))
     net = gross - commission

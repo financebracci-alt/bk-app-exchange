@@ -2170,26 +2170,29 @@ RATE_CACHE_TTL = 3600  # Fetch base rate from ECB every hour
 
 def _market_fluctuation(base_rate: float) -> float:
     """Add realistic market micro-fluctuation to the base ECB rate.
-    Uses time-based deterministic noise so all users see the same rate."""
+    Uses time-based deterministic noise so all users see the same rate.
+    Updates every 60 seconds for smooth, realistic movement."""
     import math
     now = datetime.now(timezone.utc)
-    # Create a seed from current 5-minute window
-    seed = int(now.timestamp()) // 300
+    # Create a seed from current 1-minute window
+    seed = int(now.timestamp()) // 60
     # Multiple sine waves at different frequencies for natural-looking fluctuation
-    t = seed * 0.1
-    noise = (math.sin(t * 2.1) * 0.0008 + 
-             math.sin(t * 5.7) * 0.0004 + 
-             math.sin(t * 0.3) * 0.0012)
+    t = seed * 0.07
+    noise = (math.sin(t * 2.1) * 0.0005 + 
+             math.sin(t * 5.7) * 0.0003 + 
+             math.sin(t * 0.3) * 0.0008 +
+             math.sin(t * 13.3) * 0.0002 +
+             math.sin(t * 0.7) * 0.0004)
     # Clamp fluctuation to ±0.25% of base rate
     max_delta = base_rate * 0.0025
     noise = max(-max_delta, min(max_delta, noise))
     return round(base_rate + noise, 6)
 
 async def get_live_usdc_eur_rate() -> dict:
-    """Fetch USDC/EUR rate: real ECB base rate + realistic market fluctuations."""
+    """Fetch USDC/EUR rate: real ECB base rate + realistic market fluctuations every minute."""
     now = datetime.now(timezone.utc)
     
-    # Fetch fresh base rate from ECB if cache expired
+    # Fetch fresh base rate from ECB if cache expired (every hour)
     if (_rate_cache["base_rate"] is None or 
         _rate_cache["last_fetched"] is None or
         (now - _rate_cache["last_fetched"]).total_seconds() >= RATE_CACHE_TTL):

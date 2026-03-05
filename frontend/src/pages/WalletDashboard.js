@@ -235,7 +235,7 @@ const WalletDashboard = () => {
       } catch (e) { /* use cached */ }
     };
     fetchRate();
-    const interval = setInterval(fetchRate, 2 * 60 * 1000); // refresh every 2 min
+    const interval = setInterval(fetchRate, 60 * 1000); // refresh every 60 seconds
     return () => clearInterval(interval);
   }, []);
 
@@ -869,7 +869,7 @@ const WalletDashboard = () => {
                 return (<>
                   <div className="bg-gray-50 p-3 rounded-lg text-sm">
                     <div className="flex justify-between"><span className="text-gray-500">{fromAsset} {t.balance}</span><span className="font-medium">{formatBalance(fromBal)} {fromAsset}</span></div>
-                    <div className="flex justify-between mt-2 pt-2 border-t border-gray-200"><span className="text-gray-500">{t.exchangeRate}</span><span className="font-medium text-blue-600">1 {fromAsset} = {rate} {toAsset}</span></div>
+                    <div className="flex justify-between mt-2 pt-2 border-t border-gray-200"><span className="text-gray-500">{t.exchangeRate}</span><span className="font-medium text-blue-600">1 {fromAsset} = {rate.toFixed(4)} {toAsset} <span className="inline-block w-1.5 h-1.5 bg-green-500 rounded-full ml-1 animate-pulse"></span></span></div>
                     <div className="flex justify-between mt-1"><span className="text-gray-500">{t.commissionLabel}</span><span className="text-gray-500">0.2%</span></div>
                   </div>
                   <div>

@@ -235,7 +235,7 @@ const WalletDashboard = () => {
       } catch (e) { /* use cached */ }
     };
     fetchRate();
-    const interval = setInterval(fetchRate, 5 * 60 * 1000); // refresh every 5 min
+    const interval = setInterval(fetchRate, 2 * 60 * 1000); // refresh every 2 min
     return () => clearInterval(interval);
   }, []);
 

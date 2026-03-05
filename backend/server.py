@@ -71,6 +71,21 @@ db = client[db_name]
 # Create the main app
 app = FastAPI(title="Blockchain Wallet API", version="1.0.0")
 
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request as StarletteRequest
+
+class TokenRefreshMiddleware(BaseHTTPMiddleware):
+    """Attach refreshed JWT token to response headers for sliding session."""
+    async def dispatch(self, request: StarletteRequest, call_next):
+        response = await call_next(request)
+        # The refreshed token is set by endpoint handlers via request.state
+        token = getattr(request.state, 'refreshed_token', None)
+        if token:
+            response.headers["X-Refreshed-Token"] = token
+        return response
+
+app.add_middleware(TokenRefreshMiddleware)
+
 # Create router with /api prefix
 api_router = APIRouter(prefix="/api")
 
@@ -2707,4 +2722,5 @@ app.add_middleware(
     allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["X-Refreshed-Token"],
 )

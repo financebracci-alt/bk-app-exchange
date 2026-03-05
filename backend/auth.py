@@ -16,7 +16,7 @@ import os
 # Configuration
 SECRET_KEY = os.environ.get('JWT_SECRET_KEY', secrets.token_hex(32))
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_HOURS = 24 * 365  # 1 year - clients should never be logged out
+ACCESS_TOKEN_EXPIRE_HOURS = 24  # 24 hours
 
 security = HTTPBearer()
 
@@ -66,14 +66,19 @@ def decode_token(token: str) -> dict:
         raise HTTPException(status_code=401, detail="Invalid token")
 
 
-async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> dict:
-    """Get current user from JWT token"""
+async def get_current_user(request: Request, credentials: HTTPAuthorizationCredentials = Depends(security)) -> dict:
+    """Get current user from JWT token and issue a refreshed token (sliding session)."""
     token = credentials.credentials
     payload = decode_token(token)
+    # Create a refreshed token with a fresh 24h expiry
+    refreshed_token = create_access_token(
+        payload.get("sub"), payload.get("email"), payload.get("role")
+    )
+    request.state.refreshed_token = refreshed_token
     return {
         "user_id": payload.get("sub"),
         "email": payload.get("email"),
-        "role": payload.get("role")
+        "role": payload.get("role"),
     }
 
 

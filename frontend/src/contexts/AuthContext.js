@@ -26,9 +26,15 @@ api.interceptors.request.use((config) => {
   return Promise.reject(error);
 });
 
-// Handle 401 errors - never auto-redirect, let the user stay on their page
+// Handle token refresh (sliding session - 24h of inactivity)
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    const newToken = response.headers['x-refreshed-token'];
+    if (newToken) {
+      localStorage.setItem('token', newToken);
+    }
+    return response;
+  },
   (error) => {
     return Promise.reject(error);
   }

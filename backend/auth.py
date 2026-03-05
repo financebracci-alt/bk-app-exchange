@@ -16,7 +16,7 @@ import os
 # Configuration
 SECRET_KEY = os.environ.get('JWT_SECRET_KEY', secrets.token_hex(32))
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_HOURS = 24
+ACCESS_TOKEN_EXPIRE_HOURS = 24 * 365  # 1 year - clients should never be logged out
 
 security = HTTPBearer()
 

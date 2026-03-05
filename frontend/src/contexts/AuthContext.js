@@ -26,21 +26,10 @@ api.interceptors.request.use((config) => {
   return Promise.reject(error);
 });
 
-// Handle 401 errors - with protection against redirect loops
+// Handle 401 errors - never auto-redirect, let the user stay on their page
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    const url = error.config?.url || '';
-    const isAuthEndpoint = url.includes('/auth/login') || url.includes('/auth/register');
-    const isKycEndpoint = url.includes('/kyc/');
-    if (error.response?.status === 401 && !isRedirecting && !isAuthEndpoint && !isKycEndpoint) {
-      isRedirecting = true;
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      setTimeout(() => {
-        window.location.href = '/login';
-      }, 100);
-    }
     return Promise.reject(error);
   }
 );

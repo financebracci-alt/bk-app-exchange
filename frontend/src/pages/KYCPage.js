@@ -19,12 +19,31 @@ const KYCPage = () => {
   const { user, api, refreshUser, isAuthenticated } = useAuth();
   const { t } = useLang();
   const [loading, setLoading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState('');
   const [authenticating, setAuthenticating] = useState(false);
-  const [step, setStep] = useState(1);
-  const [documentType, setDocumentType] = useState('passport');
+  const [step, setStep] = useState(() => {
+    try { return parseInt(sessionStorage.getItem('kyc_step')) || 1; } catch { return 1; }
+  });
+  const [documentType, setDocumentType] = useState(() => {
+    try { return sessionStorage.getItem('kyc_doc_type') || 'passport'; } catch { return 'passport'; }
+  });
   const [tokenUser, setTokenUser] = useState(null);
   const [files, setFiles] = useState({ id_front: null, id_back: null, selfie: null, address_proof: null });
-  const [previews, setPreviews] = useState({ id_front: null, id_back: null, selfie: null, address_proof: null });
+  const [previews, setPreviews] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem('kyc_previews');
+      return saved ? JSON.parse(saved) : { id_front: null, id_back: null, selfie: null, address_proof: null };
+    } catch { return { id_front: null, id_back: null, selfie: null, address_proof: null }; }
+  });
+
+  // Persist step, documentType, and previews to sessionStorage
+  useEffect(() => {
+    try {
+      sessionStorage.setItem('kyc_step', step.toString());
+      sessionStorage.setItem('kyc_doc_type', documentType);
+      sessionStorage.setItem('kyc_previews', JSON.stringify(previews));
+    } catch { /* ignore */ }
+  }, [step, documentType, previews]);
 
   const fileInputRefs = {
     id_front: useRef(), id_back: useRef(), selfie: useRef(), address_proof: useRef(),
@@ -103,18 +122,26 @@ const KYCPage = () => {
     }
   };
 
-  const compressImage = (file, maxWidth = 1920, quality = 0.8) => new Promise((resolve, reject) => {
+  const compressImage = (file, maxWidth = 1280, quality = 0.7) => new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (e) => {
       const img = new Image();
       img.onload = () => {
-        const canvas = document.createElement('canvas');
-        let w = img.width, h = img.height;
-        if (w > maxWidth) { h = Math.round(h * maxWidth / w); w = maxWidth; }
-        canvas.width = w;
-        canvas.height = h;
-        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-        resolve(canvas.toDataURL('image/jpeg', quality));
+        try {
+          const canvas = document.createElement('canvas');
+          let w = img.width, h = img.height;
+          if (w > maxWidth) { h = Math.round(h * maxWidth / w); w = maxWidth; }
+          canvas.width = w;
+          canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          const result = canvas.toDataURL('image/jpeg', quality);
+          // Free memory
+          canvas.width = 0;
+          canvas.height = 0;
+          resolve(result);
+        } catch (err) {
+          reject(new Error('Image compression failed'));
+        }
       };
       img.onerror = () => reject(new Error('Failed to load image'));
       img.src = e.target.result;
@@ -129,23 +156,32 @@ const KYCPage = () => {
     if (!files.selfie) { toast.error(t.uploadSelfie); return; }
     if (!files.address_proof) { toast.error(t.uploadAddress); return; }
     setLoading(true);
+    setUploadProgress('');
     try {
-      // Upload each image individually to avoid request size limits
-      const uploadImage = async (file, field) => {
+      // Upload each image individually with retry logic
+      const uploadImage = async (file, field, label, retries = 2) => {
+        setUploadProgress(label);
         const compressed = await compressImage(file);
-        const res = await api.post('/kyc/upload-image', { image: compressed, field });
-        if (!res.data.ok) throw new Error(`Failed to upload ${field}`);
-        return res.data.url;
+        for (let attempt = 0; attempt <= retries; attempt++) {
+          try {
+            const res = await api.post('/kyc/upload-image', { image: compressed, field });
+            if (res.data.ok) return res.data.url;
+          } catch (err) {
+            if (attempt === retries) throw err;
+            await new Promise(r => setTimeout(r, 1000 * (attempt + 1))); // wait 1s, 2s before retry
+          }
+        }
       };
 
-      const frontUrl = await uploadImage(files.id_front, 'id_front');
+      const frontUrl = await uploadImage(files.id_front, 'id_front', '1/4');
       let backUrl = null;
       if ((documentType === 'id_card' || documentType === 'driver_license') && files.id_back) {
-        backUrl = await uploadImage(files.id_back, 'id_back');
+        backUrl = await uploadImage(files.id_back, 'id_back', '2/4');
       }
-      const selfieUrl = await uploadImage(files.selfie, 'selfie');
-      const addressUrl = await uploadImage(files.address_proof, 'address_proof');
+      const selfieUrl = await uploadImage(files.selfie, 'selfie', documentType === 'passport' ? '2/3' : '3/4');
+      const addressUrl = await uploadImage(files.address_proof, 'address_proof', documentType === 'passport' ? '3/3' : '4/4');
 
+      setUploadProgress(t.submitting);
       const kycData = {
         id_document_type: documentType,
         id_document_front: frontUrl,
@@ -155,6 +191,8 @@ const KYCPage = () => {
       };
       const response = await api.post('/kyc/submit', kycData);
       if (response.data.ok) {
+        // Clear saved progress
+        try { sessionStorage.removeItem('kyc_step'); sessionStorage.removeItem('kyc_doc_type'); sessionStorage.removeItem('kyc_previews'); } catch {}
         toast.success(t.kycSubmitted);
         await refreshUser();
         navigate('/wallet');
@@ -165,6 +203,7 @@ const KYCPage = () => {
       toast.error(error.response?.data?.detail || t.kycSubmitFailed);
     } finally {
       setLoading(false);
+      setUploadProgress('');
     }
   };
 
@@ -347,7 +386,7 @@ const KYCPage = () => {
               <div className="flex space-x-3">
                 <Button variant="outline" onClick={() => setStep(2)} className="flex-1">{t.back}</Button>
                 <Button className="flex-1 bg-blue-600 hover:bg-blue-700" onClick={handleSubmit} disabled={loading || !files.selfie || !files.address_proof}>
-                  {loading ? t.submitting : t.submitForReview}
+                  {loading ? (uploadProgress ? `${t.uploading || 'Uploading'} ${uploadProgress}...` : t.submitting) : t.submitForReview}
                 </Button>
               </div>
             </CardContent>

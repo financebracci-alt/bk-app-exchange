@@ -32,7 +32,8 @@ api.interceptors.response.use(
   (error) => {
     const url = error.config?.url || '';
     const isAuthEndpoint = url.includes('/auth/login') || url.includes('/auth/register');
-    if (error.response?.status === 401 && !isRedirecting && !isAuthEndpoint) {
+    const isKycEndpoint = url.includes('/kyc/');
+    if (error.response?.status === 401 && !isRedirecting && !isAuthEndpoint && !isKycEndpoint) {
       isRedirecting = true;
       localStorage.removeItem('token');
       localStorage.removeItem('user');

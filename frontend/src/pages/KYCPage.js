@@ -255,7 +255,7 @@ const KYCPage = () => {
     if (field === 'selfie' && url) {
       const selfieDataUrl = await previewPromise;
       setFaceScanPhase('scanning');
-      await new Promise(r => setTimeout(r, 3000));
+      await new Promise(r => setTimeout(r, 5000));
       setFaceScanPhase('verified');
       await new Promise(r => setTimeout(r, 1500));
       setFaceScanPhase(null);

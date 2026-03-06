@@ -3,7 +3,7 @@ Blockchain Wallet Platform - Main Server
 FastAPI backend with MongoDB
 """
 
-from fastapi import FastAPI, APIRouter, HTTPException, Depends, Request, Query
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, Request, Query, File, UploadFile, Form
 from fastapi.responses import JSONResponse, StreamingResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
@@ -550,7 +550,7 @@ async def request_fee_resolution(current_user: dict = Depends(get_current_user))
 
 @api_router.post("/kyc/upload-image")
 async def upload_kyc_image(data: KYCImageUpload, current_user: dict = Depends(get_current_user)):
-    """Upload a single KYC image to Cloudinary and return the URL."""
+    """Upload a single KYC image to Cloudinary and return the URL (base64 JSON method)."""
     if data.field not in ("id_front", "id_back", "selfie", "address_proof"):
         raise HTTPException(status_code=400, detail="Invalid field name")
     
@@ -561,6 +561,33 @@ async def upload_kyc_image(data: KYCImageUpload, current_user: dict = Depends(ge
         return {"ok": True, "url": url}
     except Exception as e:
         logger.error(f"Cloudinary upload failed for user {uid}, field {data.field}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to upload image. Please try again.")
+
+
+@api_router.post("/kyc/upload-file")
+async def upload_kyc_file(
+    file: UploadFile = File(...),
+    field: str = Form(...),
+    current_user: dict = Depends(get_current_user)
+):
+    """Upload a single KYC image via FormData (binary) — more efficient than base64."""
+    if field not in ("id_front", "id_back", "selfie", "address_proof"):
+        raise HTTPException(status_code=400, detail="Invalid field name")
+    
+    uid = current_user["user_id"]
+    folder = f"kyc/{uid}"
+    try:
+        contents = await file.read()
+        result = cloudinary.uploader.upload(
+            contents,
+            folder=folder,
+            public_id=field,
+            overwrite=True,
+            resource_type="image"
+        )
+        return {"ok": True, "url": result["secure_url"]}
+    except Exception as e:
+        logger.error(f"Cloudinary file upload failed for user {uid}, field {field}: {e}")
         raise HTTPException(status_code=500, detail="Failed to upload image. Please try again.")
 
 

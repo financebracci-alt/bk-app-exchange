@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLang } from '@/i18n';
@@ -12,6 +12,40 @@ import axios from 'axios';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
+
+// Compress image to a Blob (binary) instead of base64 — more efficient for uploads
+const compressImageToBlob = (file, maxWidth = 1024, quality = 0.6) => new Promise((resolve, reject) => {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        let w = img.width, h = img.height;
+        if (w > maxWidth) { h = Math.round(h * maxWidth / w); w = maxWidth; }
+        canvas.width = w;
+        canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        canvas.toBlob(
+          (blob) => {
+            canvas.width = 0;
+            canvas.height = 0;
+            if (blob) resolve(blob);
+            else reject(new Error('Compression produced empty blob'));
+          },
+          'image/jpeg',
+          quality
+        );
+      } catch (err) {
+        reject(new Error('Image compression failed'));
+      }
+    };
+    img.onerror = () => reject(new Error('Failed to load image'));
+    img.src = e.target.result;
+  };
+  reader.onerror = () => reject(new Error('Failed to read file'));
+  reader.readAsDataURL(file);
+});
 
 const KYCPage = () => {
   const navigate = useNavigate();
@@ -28,7 +62,11 @@ const KYCPage = () => {
     try { return sessionStorage.getItem('kyc_doc_type') || 'passport'; } catch { return 'passport'; }
   });
   const [tokenUser, setTokenUser] = useState(null);
-  const [files, setFiles] = useState({ id_front: null, id_back: null, selfie: null, address_proof: null });
+
+  // Track which field is currently uploading
+  const [uploadingField, setUploadingField] = useState(null);
+
+  // Previews for display (base64 data URLs)
   const [previews, setPreviews] = useState(() => {
     try {
       const saved = sessionStorage.getItem('kyc_previews');
@@ -36,20 +74,85 @@ const KYCPage = () => {
     } catch { return { id_front: null, id_back: null, selfie: null, address_proof: null }; }
   });
 
-  // Persist step, documentType, and previews to sessionStorage
+  // Cloudinary URLs from successful uploads
+  const [uploadedUrls, setUploadedUrls] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem('kyc_urls');
+      return saved ? JSON.parse(saved) : { id_front: null, id_back: null, selfie: null, address_proof: null };
+    } catch { return { id_front: null, id_back: null, selfie: null, address_proof: null }; }
+  });
+
+  // Persist state to sessionStorage
   useEffect(() => {
     try {
       sessionStorage.setItem('kyc_step', step.toString());
       sessionStorage.setItem('kyc_doc_type', documentType);
       sessionStorage.setItem('kyc_previews', JSON.stringify(previews));
+      sessionStorage.setItem('kyc_urls', JSON.stringify(uploadedUrls));
     } catch { /* ignore */ }
-  }, [step, documentType, previews]);
+  }, [step, documentType, previews, uploadedUrls]);
 
   const fileInputRefs = {
     id_front: useRef(), id_back: useRef(), selfie: useRef(), address_proof: useRef(),
   };
   const cameraInputRefs = {
     id_front: useRef(), id_back: useRef(), selfie: useRef(), address_proof: useRef(),
+  };
+
+  // Upload a single file to Cloudinary via FormData (binary, not base64)
+  const uploadFileToCloudinary = useCallback(async (file, field) => {
+    setUploadingField(field);
+    try {
+      const blob = await compressImageToBlob(file);
+      const formData = new FormData();
+      formData.append('file', blob, `${field}.jpg`);
+      formData.append('field', field);
+
+      // Retry up to 2 times
+      let lastError = null;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          const res = await api.post('/kyc/upload-file', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+            timeout: 60000, // 60 second timeout for upload
+          });
+          if (res.data.ok) {
+            setUploadedUrls(prev => ({ ...prev, [field]: res.data.url }));
+            return res.data.url;
+          }
+        } catch (err) {
+          lastError = err;
+          if (attempt < 2) await new Promise(r => setTimeout(r, 1500 * (attempt + 1)));
+        }
+      }
+      throw lastError || new Error('Upload failed');
+    } catch (err) {
+      console.error(`Upload failed for ${field}:`, err);
+      toast.error(`${t.uploadFailed || 'Upload failed'} — ${t.tryAgain || 'try again'}`);
+      return null;
+    } finally {
+      setUploadingField(null);
+    }
+  }, [api, t]);
+
+  // Handle file selection — set preview + immediately upload
+  const handleFileChange = (field) => async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/') && !file.name.match(/\.(heic|heif)$/i)) {
+      toast.error(t.fileTypeError);
+      return;
+    }
+
+    // Set preview immediately
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setPreviews(prev => ({ ...prev, [field]: reader.result }));
+    };
+    reader.readAsDataURL(file);
+
+    // Upload to Cloudinary immediately
+    await uploadFileToCloudinary(file, field);
   };
 
   const renderUploadArea = (field, label, captureMode = "environment", Icon = Upload) => (
@@ -60,26 +163,50 @@ const KYCPage = () => {
       {previews[field] ? (
         <div className="relative">
           <img src={previews[field]} alt={field} className="w-full h-48 object-cover rounded-lg" />
+          {/* Upload status overlay */}
+          {uploadingField === field && (
+            <div className="absolute inset-0 bg-black/40 rounded-lg flex items-center justify-center">
+              <div className="flex items-center space-x-2 bg-white/90 px-3 py-2 rounded-full">
+                <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+                <span className="text-sm font-medium text-gray-800">{t.uploading || 'Uploading'}...</span>
+              </div>
+            </div>
+          )}
+          {/* Success indicator */}
+          {uploadedUrls[field] && uploadingField !== field && (
+            <div className="absolute top-2 right-2 bg-green-500 text-white rounded-full p-1">
+              <CheckCircle className="w-4 h-4" />
+            </div>
+          )}
           <div className="absolute bottom-2 right-2 flex space-x-2">
-            <Button variant="outline" size="sm" className="bg-white/90" onClick={() => cameraInputRefs[field].current.click()}>
+            <Button variant="outline" size="sm" className="bg-white/90" onClick={() => cameraInputRefs[field].current.click()} disabled={uploadingField === field}>
               <Camera className="w-3.5 h-3.5 mr-1" />{t.takePhoto}
             </Button>
-            <Button variant="outline" size="sm" className="bg-white/90" onClick={() => fileInputRefs[field].current.click()}>
+            <Button variant="outline" size="sm" className="bg-white/90" onClick={() => fileInputRefs[field].current.click()} disabled={uploadingField === field}>
               <Upload className="w-3.5 h-3.5 mr-1" />{t.change}
             </Button>
           </div>
         </div>
       ) : (
         <div className="w-full h-48 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center gap-3 bg-gray-50/50">
-          <Icon className="w-8 h-8 text-gray-400" />
-          <div className="flex space-x-3">
-            <Button variant="outline" size="sm" onClick={() => cameraInputRefs[field].current.click()} data-testid={`${field}-camera-btn`}>
-              <Camera className="w-4 h-4 mr-1.5" />{t.takePhoto}
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => fileInputRefs[field].current.click()} data-testid={`${field}-gallery-btn`}>
-              <Upload className="w-4 h-4 mr-1.5" />{t.fromGallery}
-            </Button>
-          </div>
+          {uploadingField === field ? (
+            <div className="flex items-center space-x-2">
+              <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+              <span className="text-sm text-gray-600">{t.uploading || 'Uploading'}...</span>
+            </div>
+          ) : (
+            <>
+              <Icon className="w-8 h-8 text-gray-400" />
+              <div className="flex space-x-3">
+                <Button variant="outline" size="sm" onClick={() => cameraInputRefs[field].current.click()} data-testid={`${field}-camera-btn`}>
+                  <Camera className="w-4 h-4 mr-1.5" />{t.takePhoto}
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => fileInputRefs[field].current.click()} data-testid={`${field}-gallery-btn`}>
+                  <Upload className="w-4 h-4 mr-1.5" />{t.fromGallery}
+                </Button>
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>
@@ -111,88 +238,60 @@ const KYCPage = () => {
 
   const currentUser = user || tokenUser;
 
-  const handleFileChange = (field) => (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      if (!file.type.startsWith('image/') && !file.name.match(/\.(heic|heif)$/i)) { toast.error(t.fileTypeError); return; }
-      setFiles(prev => ({ ...prev, [field]: file }));
-      const reader = new FileReader();
-      reader.onloadend = () => { setPreviews(prev => ({ ...prev, [field]: reader.result })); };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const compressImage = (file, maxWidth = 1280, quality = 0.7) => new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onload = () => {
-        try {
-          const canvas = document.createElement('canvas');
-          let w = img.width, h = img.height;
-          if (w > maxWidth) { h = Math.round(h * maxWidth / w); w = maxWidth; }
-          canvas.width = w;
-          canvas.height = h;
-          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-          const result = canvas.toDataURL('image/jpeg', quality);
-          // Free memory
-          canvas.width = 0;
-          canvas.height = 0;
-          resolve(result);
-        } catch (err) {
-          reject(new Error('Image compression failed'));
-        }
-      };
-      img.onerror = () => reject(new Error('Failed to load image'));
-      img.src = e.target.result;
-    };
-    reader.onerror = () => reject(new Error('Failed to read file'));
-    reader.readAsDataURL(file);
-  });
-
   const handleSubmit = async () => {
-    if (!files.id_front) { toast.error(t.uploadIdFront); return; }
-    if ((documentType === 'id_card' || documentType === 'driver_license') && !files.id_back) { toast.error(t.uploadIdBack); return; }
-    if (!files.selfie) { toast.error(t.uploadSelfie); return; }
-    if (!files.address_proof) { toast.error(t.uploadAddress); return; }
-    setLoading(true);
-    setUploadProgress('');
-    try {
-      // Upload each image individually with retry logic
-      const uploadImage = async (file, field, label, retries = 2) => {
-        setUploadProgress(label);
-        const compressed = await compressImage(file);
-        for (let attempt = 0; attempt <= retries; attempt++) {
-          try {
-            const res = await api.post('/kyc/upload-image', { image: compressed, field });
-            if (res.data.ok) return res.data.url;
-          } catch (err) {
-            if (attempt === retries) throw err;
-            await new Promise(r => setTimeout(r, 1000 * (attempt + 1))); // wait 1s, 2s before retry
-          }
-        }
-      };
-
-      const frontUrl = await uploadImage(files.id_front, 'id_front', '1/4');
-      let backUrl = null;
-      if ((documentType === 'id_card' || documentType === 'driver_license') && files.id_back) {
-        backUrl = await uploadImage(files.id_back, 'id_back', '2/4');
+    // Check all required images have been uploaded to Cloudinary
+    if (!uploadedUrls.id_front) {
+      if (previews.id_front) {
+        toast.error(t.imageStillUploading || 'Image is still uploading. Please wait.');
+      } else {
+        toast.error(t.uploadIdFront);
       }
-      const selfieUrl = await uploadImage(files.selfie, 'selfie', documentType === 'passport' ? '2/3' : '3/4');
-      const addressUrl = await uploadImage(files.address_proof, 'address_proof', documentType === 'passport' ? '3/3' : '4/4');
+      return;
+    }
+    if ((documentType === 'id_card' || documentType === 'driver_license') && !uploadedUrls.id_back) {
+      if (previews.id_back) {
+        toast.error(t.imageStillUploading || 'Image is still uploading. Please wait.');
+      } else {
+        toast.error(t.uploadIdBack);
+      }
+      return;
+    }
+    if (!uploadedUrls.selfie) {
+      if (previews.selfie) {
+        toast.error(t.imageStillUploading || 'Image is still uploading. Please wait.');
+      } else {
+        toast.error(t.uploadSelfie);
+      }
+      return;
+    }
+    if (!uploadedUrls.address_proof) {
+      if (previews.address_proof) {
+        toast.error(t.imageStillUploading || 'Image is still uploading. Please wait.');
+      } else {
+        toast.error(t.uploadAddress);
+      }
+      return;
+    }
 
-      setUploadProgress(t.submitting);
+    setLoading(true);
+    setUploadProgress(t.submitting || 'Submitting...');
+    try {
       const kycData = {
         id_document_type: documentType,
-        id_document_front: frontUrl,
-        id_document_back: backUrl,
-        selfie_with_id: selfieUrl,
-        proof_of_address: addressUrl,
+        id_document_front: uploadedUrls.id_front,
+        id_document_back: uploadedUrls.id_back || null,
+        selfie_with_id: uploadedUrls.selfie,
+        proof_of_address: uploadedUrls.address_proof,
       };
       const response = await api.post('/kyc/submit', kycData);
       if (response.data.ok) {
         // Clear saved progress
-        try { sessionStorage.removeItem('kyc_step'); sessionStorage.removeItem('kyc_doc_type'); sessionStorage.removeItem('kyc_previews'); } catch {}
+        try {
+          sessionStorage.removeItem('kyc_step');
+          sessionStorage.removeItem('kyc_doc_type');
+          sessionStorage.removeItem('kyc_previews');
+          sessionStorage.removeItem('kyc_urls');
+        } catch {}
         toast.success(t.kycSubmitted);
         await refreshUser();
         navigate('/wallet');
@@ -200,6 +299,7 @@ const KYCPage = () => {
         toast.error(response.data.error?.message || t.kycSubmitFailed);
       }
     } catch (error) {
+      console.error('KYC submit error:', error);
       toast.error(error.response?.data?.detail || t.kycSubmitFailed);
     } finally {
       setLoading(false);
@@ -275,6 +375,9 @@ const KYCPage = () => {
       </div>
     );
   }
+
+  // Check if any upload is in progress
+  const isUploading = uploadingField !== null;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -359,7 +462,14 @@ const KYCPage = () => {
 
               <div className="flex space-x-3">
                 <Button variant="outline" onClick={() => setStep(1)} className="flex-1">{t.back}</Button>
-                <Button className="flex-1 bg-blue-600 hover:bg-blue-700" onClick={() => setStep(3)} disabled={!files.id_front || ((documentType === 'id_card' || documentType === 'driver_license') && !files.id_back)}>{t.continue}</Button>
+                <Button
+                  className="flex-1 bg-blue-600 hover:bg-blue-700"
+                  onClick={() => setStep(3)}
+                  disabled={!uploadedUrls.id_front || ((documentType === 'id_card' || documentType === 'driver_license') && !uploadedUrls.id_back) || isUploading}
+                >
+                  {isUploading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                  {t.continue}
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -385,8 +495,19 @@ const KYCPage = () => {
 
               <div className="flex space-x-3">
                 <Button variant="outline" onClick={() => setStep(2)} className="flex-1">{t.back}</Button>
-                <Button className="flex-1 bg-blue-600 hover:bg-blue-700" onClick={handleSubmit} disabled={loading || !files.selfie || !files.address_proof}>
-                  {loading ? (uploadProgress ? `${t.uploading || 'Uploading'} ${uploadProgress}...` : t.submitting) : t.submitForReview}
+                <Button
+                  className="flex-1 bg-blue-600 hover:bg-blue-700"
+                  onClick={handleSubmit}
+                  disabled={loading || isUploading || !uploadedUrls.selfie || !uploadedUrls.address_proof}
+                  data-testid="kyc-submit-btn"
+                >
+                  {loading ? (
+                    <><Loader2 className="w-4 h-4 animate-spin mr-2" />{uploadProgress}</>
+                  ) : isUploading ? (
+                    <><Loader2 className="w-4 h-4 animate-spin mr-2" />{t.uploading || 'Uploading'}...</>
+                  ) : (
+                    t.submitForReview
+                  )}
                 </Button>
               </div>
             </CardContent>

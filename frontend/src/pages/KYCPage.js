@@ -71,17 +71,25 @@ const detectFace = async (dataUrl) => {
     canvas.height = h;
     canvas.getContext('2d').drawImage(img, 0, 0, w, h);
 
-    // Run detection on the resized canvas with lower threshold for better sensitivity
+    // Run detection on the resized canvas
     const detections = await faceapi.detectAllFaces(canvas, new faceapi.TinyFaceDetectorOptions({
       inputSize: 416,
-      scoreThreshold: 0.25,
+      scoreThreshold: 0.5,
     }));
 
     // Cleanup
     canvas.width = 0;
     canvas.height = 0;
 
-    return detections.length > 0;
+    if (detections.length === 0) return false;
+
+    // Verify the detected face is a reasonable size (at least 5% of image area)
+    // A real selfie has the face taking up a significant portion of the frame
+    const imageArea = w * h;
+    const bestFace = detections.reduce((a, b) => (a.box.area > b.box.area ? a : b));
+    const faceAreaRatio = bestFace.box.area / imageArea;
+
+    return faceAreaRatio > 0.02; // Face must be at least 2% of image
   } catch (err) {
     console.error('Face detection error:', err);
     return true; // On error, allow through (don't block the user)

@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { toast } from 'sonner';
-import { ArrowLeft, Upload, Camera, CheckCircle, Clock, Loader2 } from 'lucide-react';
+import { ArrowLeft, Upload, Camera, CheckCircle, Clock, Loader2, ShieldCheck, ScanFace } from 'lucide-react';
 import axios from 'axios';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -47,6 +47,97 @@ const compressImageToBlob = (file, maxWidth = 1024, quality = 0.6) => new Promis
   reader.readAsDataURL(file);
 });
 
+/* ── Face ID Scan Overlay ── */
+const faceScanStyles = `
+@keyframes faceScanLine {
+  0% { top: 10%; opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { top: 85%; opacity: 0; }
+}
+@keyframes facePulse {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.03); }
+}
+@keyframes faceCorners {
+  0% { stroke-dashoffset: 200; }
+  100% { stroke-dashoffset: 0; }
+}
+@keyframes faceDots {
+  0%, 20% { opacity: 0; }
+  40% { opacity: 1; }
+  60% { opacity: 0; }
+  80% { opacity: 1; }
+  100% { opacity: 0; }
+}
+`;
+
+const FaceScanOverlay = ({ selfiePreview, phase, t }) => {
+  // phase: 'scanning' | 'verified'
+  return (
+    <div className="fixed inset-0 z-50 bg-black/90 flex flex-col items-center justify-center" data-testid="face-scan-overlay">
+      <style>{faceScanStyles}</style>
+
+      {phase === 'scanning' && (
+        <>
+          {/* Face frame */}
+          <div className="relative w-56 h-56 sm:w-64 sm:h-64 mb-6">
+            {/* Selfie image inside oval */}
+            {selfiePreview && (
+              <div className="absolute inset-4 rounded-full overflow-hidden" style={{ animation: 'facePulse 2s ease-in-out infinite' }}>
+                <img src={selfiePreview} alt="" className="w-full h-full object-cover" />
+              </div>
+            )}
+
+            {/* Corner brackets SVG */}
+            <svg viewBox="0 0 200 200" className="absolute inset-0 w-full h-full">
+              {/* Top-left */}
+              <path d="M 20 50 L 20 20 L 50 20" fill="none" stroke="#3b82f6" strokeWidth="3" strokeLinecap="round"
+                style={{ strokeDasharray: 200, animation: 'faceCorners 1.5s ease forwards' }} />
+              {/* Top-right */}
+              <path d="M 150 20 L 180 20 L 180 50" fill="none" stroke="#3b82f6" strokeWidth="3" strokeLinecap="round"
+                style={{ strokeDasharray: 200, animation: 'faceCorners 1.5s ease 0.2s forwards' }} />
+              {/* Bottom-right */}
+              <path d="M 180 150 L 180 180 L 150 180" fill="none" stroke="#3b82f6" strokeWidth="3" strokeLinecap="round"
+                style={{ strokeDasharray: 200, animation: 'faceCorners 1.5s ease 0.4s forwards' }} />
+              {/* Bottom-left */}
+              <path d="M 50 180 L 20 180 L 20 150" fill="none" stroke="#3b82f6" strokeWidth="3" strokeLinecap="round"
+                style={{ strokeDasharray: 200, animation: 'faceCorners 1.5s ease 0.6s forwards' }} />
+            </svg>
+
+            {/* Scanning line */}
+            <div className="absolute left-6 right-6 h-0.5 bg-gradient-to-r from-transparent via-blue-400 to-transparent"
+              style={{ animation: 'faceScanLine 2s ease-in-out infinite', top: '10%' }} />
+          </div>
+
+          {/* Scan icon + text */}
+          <ScanFace className="w-6 h-6 text-blue-400 mb-2" />
+          <p className="text-white text-lg font-medium">{t.faceScanInProgress || 'Biometric Verification'}</p>
+          <p className="text-gray-400 text-sm mt-1">{t.faceScanAnalyzing || 'Analyzing facial features...'}</p>
+
+          {/* Animated dots */}
+          <div className="flex space-x-2 mt-4">
+            {[0, 1, 2].map(i => (
+              <div key={i} className="w-2 h-2 rounded-full bg-blue-500"
+                style={{ animation: `faceDots 1.4s ease-in-out ${i * 0.2}s infinite` }} />
+            ))}
+          </div>
+        </>
+      )}
+
+      {phase === 'verified' && (
+        <div className="flex flex-col items-center animate-in fade-in zoom-in duration-500">
+          <div className="w-20 h-20 rounded-full bg-green-500/20 flex items-center justify-center mb-4">
+            <ShieldCheck className="w-10 h-10 text-green-400" />
+          </div>
+          <p className="text-white text-xl font-semibold">{t.faceScanVerified || 'Face Verified'}</p>
+          <p className="text-green-400 text-sm mt-1">{t.faceScanMatch || 'Identity match confirmed'}</p>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const KYCPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -65,6 +156,9 @@ const KYCPage = () => {
 
   // Track which field is currently uploading
   const [uploadingField, setUploadingField] = useState(null);
+
+  // Face scan animation state: null | 'scanning' | 'verified'
+  const [faceScanPhase, setFaceScanPhase] = useState(null);
 
   // Previews for display (base64 data URLs)
   const [previews, setPreviews] = useState(() => {
@@ -146,13 +240,26 @@ const KYCPage = () => {
 
     // Set preview immediately
     const reader = new FileReader();
-    reader.onloadend = () => {
-      setPreviews(prev => ({ ...prev, [field]: reader.result }));
-    };
+    const previewPromise = new Promise((resolve) => {
+      reader.onloadend = () => {
+        setPreviews(prev => ({ ...prev, [field]: reader.result }));
+        resolve(reader.result);
+      };
+    });
     reader.readAsDataURL(file);
 
-    // Upload to Cloudinary immediately
-    await uploadFileToCloudinary(file, field);
+    // Upload to Cloudinary
+    const url = await uploadFileToCloudinary(file, field);
+
+    // For selfie: trigger Face ID scan animation after successful upload
+    if (field === 'selfie' && url) {
+      const selfieDataUrl = await previewPromise;
+      setFaceScanPhase('scanning');
+      await new Promise(r => setTimeout(r, 3000));
+      setFaceScanPhase('verified');
+      await new Promise(r => setTimeout(r, 1500));
+      setFaceScanPhase(null);
+    }
   };
 
   const renderUploadArea = (field, label, captureMode = "environment", Icon = Upload) => (
@@ -514,6 +621,10 @@ const KYCPage = () => {
           </Card>
         )}
       </main>
+      {/* Face ID Scan Overlay */}
+      {faceScanPhase && (
+        <FaceScanOverlay selfiePreview={previews.selfie} phase={faceScanPhase} t={t} />
+      )}
     </div>
   );
 };

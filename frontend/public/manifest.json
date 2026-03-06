@@ -1,4 +1,5 @@
 {
+  "id": "/",
   "name": "Blockchain.com",
   "short_name": "Blockchain",
   "description": "The world's most trusted cryptocurrency wallet",
@@ -11,6 +12,24 @@
   "categories": ["finance", "cryptocurrency"],
   "prefer_related_applications": false,
   "icons": [
+    {
+      "src": "/icon-120.png",
+      "sizes": "120x120",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-180.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    },
     {
       "src": "/icon-192.png",
       "sizes": "192x192",

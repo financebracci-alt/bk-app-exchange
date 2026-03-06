@@ -36,11 +36,21 @@ Build a blockchain.com wallet/exchange clone with simulated, admin-controllable 
 ## Collections
 users, wallets, transactions, notifications, kyc_documents, audit_logs, sessions, system_settings, admin_section_seen, email_logs
 
-## Verification Status (2026-03-05)
-All 16 critical features verified via comprehensive testing (backend 100%, frontend 100%):
-- Landing page, EN/IT toggle, admin login/dashboard/users/edit/transactions
-- User registration/login, wallet dashboard with live exchange rate
-- Exchange rate API, sliding session, KYC form, profile, transactions page, health check
+## Recent Changes
+- (2026-03-06) **CRITICAL KYC FIX: Upload-on-select with FormData**
+  - Root cause: Previous approach uploaded all images at submit time using base64-in-JSON, causing failures (proxy body size limits, File object invalidation on mobile, memory pressure)
+  - Fix: Images now upload immediately when selected via new `/api/kyc/upload-file` endpoint (FormData/binary, ~33% smaller than base64)
+  - Images compressed to Blob (1024px max, 0.6 quality) before upload
+  - Cloudinary URLs stored in state + sessionStorage (survives page refresh)
+  - Submit now sends only tiny URL payload (no more base64)
+  - Visual feedback: spinner overlay during upload, green checkmark on success
+  - Buttons disabled until uploads complete (prevents premature submission)
+  - 3 retries with backoff per image upload
+  - Old JSON endpoint `/api/kyc/upload-image` kept for backward compatibility
+
+## Verification Status (2026-03-06)
+- All 16 core features verified (iteration_10): 100% pass
+- KYC upload fix verified (iteration_11): All 13 test features passed 100%
 
 ## Backlog
 - (P3) Refactor backend/server.py into modular FastAPI routers

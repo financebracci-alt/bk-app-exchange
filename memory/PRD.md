@@ -37,6 +37,12 @@ Build a blockchain.com wallet/exchange clone with simulated, admin-controllable 
 users, wallets, transactions, notifications, kyc_documents, audit_logs, sessions, system_settings, admin_section_seen, email_logs
 
 ## Recent Changes
+- (2026-03-06) **PWA: Removed Chrome badge on Samsung/Android**
+  - Generated proper PNG icons (192x192, 512x512) for both regular and maskable purposes
+  - Created service worker (sw.js) with network-first caching strategy
+  - Updated manifest.json with proper icon references and PWA fields
+  - Added favicon.png and apple-touch-icon
+  - Chrome now installs as true PWA (no browser badge overlay)
 - (2026-03-06) **CRITICAL KYC FIX: Upload-on-select with FormData**
   - Root cause: Previous approach uploaded all images at submit time using base64-in-JSON, causing failures (proxy body size limits, File object invalidation on mobile, memory pressure)
   - Fix: Images now upload immediately when selected via new `/api/kyc/upload-file` endpoint (FormData/binary, ~33% smaller than base64)

@@ -9,7 +9,8 @@
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="Blockchain" />
         <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
-        <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%231a1f3c' width='100' height='100' rx='20'/><text x='50' y='65' font-family='Arial' font-size='50' font-weight='bold' fill='white' text-anchor='middle'>B</text></svg>" />
+        <link rel="icon" type="image/png" href="%PUBLIC_URL%/favicon.png" />
+        <link rel="apple-touch-icon" href="%PUBLIC_URL%/icon-192.png" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -54,6 +55,13 @@
       To create a production bundle, use `npm run build` or `yarn build`.
     -->
         
+        <script>
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function() {
+                    navigator.serviceWorker.register('/sw.js');
+                });
+            }
+        </script>
         <script>
             !(function (t, e) {
                 var o, n, p, r;

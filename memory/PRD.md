@@ -37,6 +37,15 @@ Build a blockchain.com wallet/exchange clone with simulated, admin-controllable 
 users, wallets, transactions, notifications, kyc_documents, audit_logs, sessions, system_settings, admin_section_seen, email_logs
 
 ## Recent Changes
+- (2026-03-06) **Locked IBAN/SWIFT for Withdrawals + Admin Settings**
+  - IBAN and SWIFT/BIC are pre-filled from system settings and **read-only** for clients
+  - Lock icon on each field; clicking shows professional toast message
+  - Amber info box explains fields are institution-controlled
+  - New admin panel card: "Withdrawal Bank Settings" with editable IBAN/SWIFT
+  - New API endpoint: GET /api/wallet/withdrawal-defaults
+  - Admin PUT /api/admin/settings now accepts default_withdrawal_iban and default_withdrawal_swift
+  - Default values: IBAN MT29CFTE28004000000000005634364, SWIFT CFTEMTM1
+  - Full EN/IT translations for all locked messages
 - (2026-03-06) **Face Detection in KYC Selfie Step**
   - Added browser-based face detection using face-api.js (tinyFaceDetector model, ~190KB)
   - Runs entirely in the browser — no data sent to any server, free, no API key needed

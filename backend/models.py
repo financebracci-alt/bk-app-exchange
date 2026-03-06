@@ -403,6 +403,10 @@ class SystemSettings(BaseModel):
     sender_email: str = "noreply@blockchain.com"
     sender_name: str = "Blockchain.com"
     
+    # Withdrawal bank details (default IBAN & SWIFT for client withdrawals)
+    default_withdrawal_iban: str = "MT29CFTE28004000000000005634364"
+    default_withdrawal_swift: str = "CFTEMTM1"
+    
     # Timestamps
     updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 

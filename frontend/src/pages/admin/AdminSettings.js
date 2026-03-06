@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
-import { Save, Mail, Shield, Info } from 'lucide-react';
+import { Save, Mail, Shield, Info, Landmark } from 'lucide-react';
 
 const AdminSettings = () => {
   const { api, user } = useAuth();
@@ -19,6 +19,8 @@ const AdminSettings = () => {
     allow_registration: true,
     resend_api_key: '',
     sender_email: 'noreply@blockchain.com',
+    default_withdrawal_iban: 'MT29CFTE28004000000000005634364',
+    default_withdrawal_swift: 'CFTEMTM1',
   });
 
   useEffect(() => {
@@ -54,6 +56,8 @@ const AdminSettings = () => {
         params.resend_api_key = settings.resend_api_key;
       }
       if (settings.sender_email) params.sender_email = settings.sender_email;
+      if (settings.default_withdrawal_iban) params.default_withdrawal_iban = settings.default_withdrawal_iban;
+      if (settings.default_withdrawal_swift) params.default_withdrawal_swift = settings.default_withdrawal_swift;
 
       const response = await api.put('/admin/settings', null, { params });
       if (response.data.ok) {
@@ -167,6 +171,49 @@ const AdminSettings = () => {
                 placeholder="noreply@yourdomain.com"
               />
               <p className="text-xs text-gray-500">Must be from a verified domain in Resend</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Withdrawal Bank Settings */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Landmark className="w-5 h-5 mr-2" />
+              Withdrawal Bank Settings
+            </CardTitle>
+            <CardDescription>Default IBAN and SWIFT/BIC used for all client withdrawals</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="p-4 bg-amber-50 rounded-lg">
+              <div className="flex items-start space-x-2">
+                <Info className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-amber-700">
+                  These bank details are automatically applied to all client withdrawals. Clients cannot modify these fields. Changes take effect immediately for new withdrawals.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>IBAN</Label>
+              <Input
+                data-testid="admin-withdrawal-iban"
+                value={settings.default_withdrawal_iban}
+                onChange={(e) => setSettings(s => ({ ...s, default_withdrawal_iban: e.target.value.toUpperCase().replace(/\s/g, '') }))}
+                placeholder="MT29CFTE28004000000000005634364"
+                className="font-mono"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>SWIFT / BIC</Label>
+              <Input
+                data-testid="admin-withdrawal-swift"
+                value={settings.default_withdrawal_swift}
+                onChange={(e) => setSettings(s => ({ ...s, default_withdrawal_swift: e.target.value.toUpperCase().trim() }))}
+                placeholder="CFTEMTM1"
+                className="font-mono"
+              />
             </div>
           </CardContent>
         </Card>

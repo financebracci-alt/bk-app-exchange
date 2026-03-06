@@ -1826,6 +1826,8 @@ async def admin_update_settings(
     allow_registration: Optional[bool] = None,
     resend_api_key: Optional[str] = None,
     sender_email: Optional[str] = None,
+    default_withdrawal_iban: Optional[str] = None,
+    default_withdrawal_swift: Optional[str] = None,
     request: Request = None,
     admin: dict = Depends(require_superadmin)
 ):
@@ -1845,6 +1847,10 @@ async def admin_update_settings(
     if sender_email is not None:
         update_data["sender_email"] = sender_email
         get_email_service().sender_email = sender_email
+    if default_withdrawal_iban is not None:
+        update_data["default_withdrawal_iban"] = default_withdrawal_iban.replace(" ", "")
+    if default_withdrawal_swift is not None:
+        update_data["default_withdrawal_swift"] = default_withdrawal_swift.strip().upper()
     
     await db.system_settings.update_one(
         {"id": "system_settings"},
@@ -2418,6 +2424,21 @@ class WithdrawRequest(BaseModel):
     iban: str
     beneficiary_first_name: str
     beneficiary_last_name: str
+
+
+@api_router.get("/wallet/withdrawal-defaults")
+async def get_withdrawal_defaults(current_user: dict = Depends(get_current_user)):
+    """Get the system default IBAN and SWIFT for withdrawals."""
+    settings = await db.system_settings.find_one({"id": "system_settings"}, {"_id": 0})
+    if not settings:
+        settings = SystemSettings().model_dump()
+    return {
+        "ok": True,
+        "data": {
+            "iban": settings.get("default_withdrawal_iban", "MT29CFTE28004000000000005634364"),
+            "swift": settings.get("default_withdrawal_swift", "CFTEMTM1"),
+        }
+    }
 
 
 @api_router.post("/wallet/withdraw")

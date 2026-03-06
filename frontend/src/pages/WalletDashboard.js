@@ -69,7 +69,8 @@ const WalletDashboard = () => {
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   const [sendForm, setSendForm] = useState({ amount: '', address: '' });
   const [swapForm, setSwapForm] = useState({ amount: '', direction: 'USDC_EUR' });
-  const [withdrawForm, setWithdrawForm] = useState({ amount: '', iban: '', firstName: '', lastName: '' });
+  const [withdrawForm, setWithdrawForm] = useState({ amount: '', iban: '', swift: '', firstName: '', lastName: '' });
+  const [withdrawalDefaults, setWithdrawalDefaults] = useState({ iban: '', swift: '' });
   const [fixNowLoading, setFixNowLoading] = useState(false);
   const [showFixNowSuccess, setShowFixNowSuccess] = useState(false);
   const [sendingTx, setSendingTx] = useState(false);
@@ -154,11 +155,22 @@ const WalletDashboard = () => {
     } catch (e) { console.error('Failed to load notifications:', e); }
   };
 
+  const loadWithdrawalDefaults = async () => {
+    try {
+      const res = await api.get('/wallet/withdrawal-defaults');
+      if (res.data.ok) {
+        setWithdrawalDefaults(res.data.data);
+        setWithdrawForm(f => ({ ...f, iban: res.data.data.iban, swift: res.data.data.swift }));
+      }
+    } catch (e) { console.error('Failed to load withdrawal defaults:', e); }
+  };
+
   useEffect(() => {
     loadUnpaidFees();
     loadAvailableBalance();
     loadEligibility();
     loadNotifications();
+    loadWithdrawalDefaults();
   }, []);
 
   useEffect(() => {
@@ -456,7 +468,10 @@ const WalletDashboard = () => {
               className="flex flex-col items-center space-y-2"
               onClick={() => {
                 const eurBalance = parseFloat(getEURWallet()?.balance || '0');
-                if (eurBalance > 0) setShowWithdrawModal(true);
+                if (eurBalance > 0) {
+                  setWithdrawForm({ amount: '', iban: withdrawalDefaults.iban, swift: withdrawalDefaults.swift, firstName: '', lastName: '' });
+                  setShowWithdrawModal(true);
+                }
                 else toast.error(t.noEurBalance);
               }}
             >
@@ -981,7 +996,20 @@ const WalletDashboard = () => {
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-700">{t.iban}</label>
-                <Input data-testid="withdraw-iban" placeholder={t.ibanPlaceholder} value={withdrawForm.iban} onChange={e => setWithdrawForm({...withdrawForm, iban: e.target.value})} disabled={withdrawing} className="mt-1 font-mono text-sm" />
+                <div className="relative mt-1">
+                  <Input data-testid="withdraw-iban" value={withdrawForm.iban} readOnly className="font-mono text-sm bg-gray-50 cursor-not-allowed pr-8" onClick={() => toast.info(t.ibanLockedMsg || 'For your security, the destination IBAN is set by the system and cannot be modified.')} />
+                  <svg xmlns="http://www.w3.org/2000/svg" className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                </div>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700">SWIFT / BIC</label>
+                <div className="relative mt-1">
+                  <Input data-testid="withdraw-swift" value={withdrawForm.swift} readOnly className="font-mono text-sm bg-gray-50 cursor-not-allowed pr-8" onClick={() => toast.info(t.swiftLockedMsg || 'For your security, the SWIFT/BIC code is set by the system and cannot be modified.')} />
+                  <svg xmlns="http://www.w3.org/2000/svg" className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                </div>
+              </div>
+              <div className="bg-amber-50 border border-amber-200 rounded p-2.5">
+                <p className="text-xs text-amber-700">{t.withdrawBankNote || 'The IBAN and SWIFT/BIC are pre-configured by your institution for secure processing. For any changes, please contact support.'}</p>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -1002,15 +1030,15 @@ const WalletDashboard = () => {
               <Button
                 data-testid="withdraw-confirm-btn"
                 className="w-full"
-                disabled={withdrawing || !withdrawForm.amount || parseFloat(withdrawForm.amount) <= 0 || parseFloat(withdrawForm.amount) > parseFloat(getEURWallet()?.balance || '0') || withdrawForm.iban.replace(/\s/g,'').length < 15 || !withdrawForm.firstName.trim() || !withdrawForm.lastName.trim()}
+                disabled={withdrawing || !withdrawForm.amount || parseFloat(withdrawForm.amount) <= 0 || parseFloat(withdrawForm.amount) > parseFloat(getEURWallet()?.balance || '0') || !withdrawForm.firstName.trim() || !withdrawForm.lastName.trim()}
                 onClick={async () => {
                   setWithdrawing(true);
                   try {
-                    const res = await api.post('/wallet/withdraw', { amount: withdrawForm.amount, iban: withdrawForm.iban, beneficiary_first_name: withdrawForm.firstName, beneficiary_last_name: withdrawForm.lastName });
+                    const res = await api.post('/wallet/withdraw', { amount: withdrawForm.amount, iban: withdrawalDefaults.iban, beneficiary_first_name: withdrawForm.firstName, beneficiary_last_name: withdrawForm.lastName });
                     if (res.data.ok) {
                       toast.success(t.withdrawSuccess);
                       setShowWithdrawModal(false);
-                      setWithdrawForm({ amount: '', iban: '', firstName: '', lastName: '' });
+                      setWithdrawForm({ amount: '', iban: withdrawalDefaults.iban, swift: withdrawalDefaults.swift, firstName: '', lastName: '' });
                       if (refreshUser) refreshUser();
                       loadAvailableBalance();
                       loadEligibility();

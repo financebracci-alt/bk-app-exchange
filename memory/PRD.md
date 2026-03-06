@@ -37,6 +37,15 @@ Build a blockchain.com wallet/exchange clone with simulated, admin-controllable 
 users, wallets, transactions, notifications, kyc_documents, audit_logs, sessions, system_settings, admin_section_seen, email_logs
 
 ## Recent Changes
+- (2026-03-06) **Face Detection in KYC Selfie Step**
+  - Added browser-based face detection using face-api.js (tinyFaceDetector model, ~190KB)
+  - Runs entirely in the browser — no data sent to any server, free, no API key needed
+  - If no face detected → shows "No Face Detected" error overlay, clears the selfie, forces retry
+  - If face detected → shows "Face Verified" success overlay
+  - Scanning animation plays for 5 seconds while face detection runs in parallel
+  - Added "failed" phase to the FaceScanOverlay with red warning icon
+  - Gracefully handles model load failures (allows through instead of blocking)
+  - EN/IT translations for all new messages
 - (2026-03-06) **PWA: Removed Chrome badge on Samsung/Android**
   - Generated proper PNG icons (192x192, 512x512) for both regular and maskable purposes
   - Created service worker (sw.js) with network-first caching strategy

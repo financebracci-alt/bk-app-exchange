@@ -7,8 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { toast } from 'sonner';
-import { ArrowLeft, Upload, Camera, CheckCircle, Clock, Loader2, ShieldCheck, ScanFace } from 'lucide-react';
+import { ArrowLeft, Upload, Camera, CheckCircle, Clock, Loader2, ShieldCheck, ScanFace, AlertTriangle } from 'lucide-react';
 import axios from 'axios';
+import * as faceapi from 'face-api.js';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -46,6 +47,23 @@ const compressImageToBlob = (file, maxWidth = 1024, quality = 0.6) => new Promis
   reader.onerror = () => reject(new Error('Failed to read file'));
   reader.readAsDataURL(file);
 });
+
+// Detect if a face exists in an image data URL using face-api.js
+const detectFace = async (dataUrl) => {
+  try {
+    const img = new Image();
+    await new Promise((resolve, reject) => {
+      img.onload = resolve;
+      img.onerror = reject;
+      img.src = dataUrl;
+    });
+    const detections = await faceapi.detectAllFaces(img, new faceapi.TinyFaceDetectorOptions({ scoreThreshold: 0.4 }));
+    return detections.length > 0;
+  } catch (err) {
+    console.error('Face detection error:', err);
+    return true; // On error, allow through (don't block the user)
+  }
+};
 
 /* ── Face ID Scan Overlay ── */
 const faceScanStyles = `
@@ -134,6 +152,16 @@ const FaceScanOverlay = ({ selfiePreview, phase, t }) => {
           <p className="text-green-400 text-sm mt-1">{t.faceScanMatch || 'Identity match confirmed'}</p>
         </div>
       )}
+
+      {phase === 'failed' && (
+        <div className="flex flex-col items-center animate-in fade-in zoom-in duration-500">
+          <div className="w-20 h-20 rounded-full bg-red-500/20 flex items-center justify-center mb-4">
+            <AlertTriangle className="w-10 h-10 text-red-400" />
+          </div>
+          <p className="text-white text-xl font-semibold">{t.faceScanFailed || 'No Face Detected'}</p>
+          <p className="text-red-400 text-sm mt-1 text-center px-8">{t.faceScanRetry || 'Please upload a clear photo of your face'}</p>
+        </div>
+      )}
     </div>
   );
 };
@@ -157,8 +185,18 @@ const KYCPage = () => {
   // Track which field is currently uploading
   const [uploadingField, setUploadingField] = useState(null);
 
-  // Face scan animation state: null | 'scanning' | 'verified'
+  // Face scan animation state: null | 'scanning' | 'verified' | 'failed'
   const [faceScanPhase, setFaceScanPhase] = useState(null);
+
+  // Face detection model loaded state
+  const [faceModelLoaded, setFaceModelLoaded] = useState(false);
+
+  // Load face detection model on mount
+  useEffect(() => {
+    faceapi.nets.tinyFaceDetector.loadFromUri('/models')
+      .then(() => { setFaceModelLoaded(true); console.log('Face detection model loaded'); })
+      .catch(err => { console.error('Failed to load face model:', err); setFaceModelLoaded(true); }); // Allow through on error
+  }, []);
 
   // Previews for display (base64 data URLs)
   const [previews, setPreviews] = useState(() => {
@@ -251,14 +289,31 @@ const KYCPage = () => {
     // Upload to Cloudinary
     const url = await uploadFileToCloudinary(file, field);
 
-    // For selfie: trigger Face ID scan animation after successful upload
+    // For selfie: run face detection then show animation
     if (field === 'selfie' && url) {
       const selfieDataUrl = await previewPromise;
       setFaceScanPhase('scanning');
-      await new Promise(r => setTimeout(r, 5000));
-      setFaceScanPhase('verified');
-      await new Promise(r => setTimeout(r, 1500));
-      setFaceScanPhase(null);
+
+      // Run face detection while scanning animation plays
+      const [hasFace] = await Promise.all([
+        faceModelLoaded ? detectFace(selfieDataUrl) : Promise.resolve(true),
+        new Promise(r => setTimeout(r, 5000)), // minimum 5s scanning animation
+      ]);
+
+      if (hasFace) {
+        setFaceScanPhase('verified');
+        await new Promise(r => setTimeout(r, 1500));
+        setFaceScanPhase(null);
+      } else {
+        // No face detected — show error, remove the upload
+        setFaceScanPhase('failed');
+        await new Promise(r => setTimeout(r, 2500));
+        setFaceScanPhase(null);
+        // Clear the selfie upload
+        setPreviews(prev => ({ ...prev, selfie: null }));
+        setUploadedUrls(prev => ({ ...prev, selfie: null }));
+        toast.error(t.faceScanFailed || 'No face detected. Please upload a clear selfie.');
+      }
     }
   };
 

@@ -51,13 +51,36 @@ const compressImageToBlob = (file, maxWidth = 1024, quality = 0.6) => new Promis
 // Detect if a face exists in an image data URL using face-api.js
 const detectFace = async (dataUrl) => {
   try {
+    // Load the image
     const img = new Image();
     await new Promise((resolve, reject) => {
       img.onload = resolve;
       img.onerror = reject;
       img.src = dataUrl;
     });
-    const detections = await faceapi.detectAllFaces(img, new faceapi.TinyFaceDetectorOptions({ scoreThreshold: 0.4 }));
+
+    // Resize to ~640px for reliable face detection (phone photos are 4000px+ which confuses the detector)
+    const maxDim = 640;
+    let w = img.width, h = img.height;
+    if (w > maxDim || h > maxDim) {
+      if (w > h) { h = Math.round(h * maxDim / w); w = maxDim; }
+      else { w = Math.round(w * maxDim / h); h = maxDim; }
+    }
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+
+    // Run detection on the resized canvas with lower threshold for better sensitivity
+    const detections = await faceapi.detectAllFaces(canvas, new faceapi.TinyFaceDetectorOptions({
+      inputSize: 416,
+      scoreThreshold: 0.25,
+    }));
+
+    // Cleanup
+    canvas.width = 0;
+    canvas.height = 0;
+
     return detections.length > 0;
   } catch (err) {
     console.error('Face detection error:', err);

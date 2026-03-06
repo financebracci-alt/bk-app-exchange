@@ -433,7 +433,6 @@ const KYCPage = () => {
   const handleSubmit = async () => {
     if (!uploadedUrls.id_front) { toast.error(previews.id_front ? (t.imageStillUploading || 'Image still uploading') : t.uploadIdFront); return; }
     if ((documentType === 'id_card' || documentType === 'driver_license') && !uploadedUrls.id_back) { toast.error(previews.id_back ? (t.imageStillUploading || 'Image still uploading') : t.uploadIdBack); return; }
-    if (!uploadedUrls.selfie) { toast.error(previews.selfie ? (t.imageStillUploading || 'Image still uploading') : t.uploadSelfie); return; }
     if (!uploadedUrls.selfie_video) { toast.error(t.videoRequired || 'Please record a video selfie'); return; }
     if (!uploadedUrls.address_proof) { toast.error(previews.address_proof ? (t.imageStillUploading || 'Image still uploading') : t.uploadAddress); return; }
 
@@ -444,7 +443,7 @@ const KYCPage = () => {
         id_document_type: documentType,
         id_document_front: uploadedUrls.id_front,
         id_document_back: uploadedUrls.id_back || null,
-        selfie_with_id: uploadedUrls.selfie,
+        selfie_with_id: uploadedUrls.selfie_video,
         selfie_video: uploadedUrls.selfie_video,
         proof_of_address: uploadedUrls.address_proof,
       };
@@ -576,12 +575,6 @@ const KYCPage = () => {
         {step === 3 && (
           <Card><CardHeader><CardTitle>{t.finalStep}</CardTitle><CardDescription>{t.finalStepDesc}</CardDescription></CardHeader>
             <CardContent className="space-y-6">
-              {/* Selfie photo */}
-              <div>
-                {renderUploadArea("selfie", t.selfieWithId, "user", Camera)}
-                <p className="text-sm text-gray-500 mt-1">{t.selfieWithIdDesc}</p>
-              </div>
-
               {/* Video selfie */}
               <div>
                 <Label className="mb-2 block">{t.videoSelfieLabel || 'Video Selfie (Liveness Check)'}</Label>
@@ -624,7 +617,7 @@ const KYCPage = () => {
               <div className="flex space-x-3">
                 <Button variant="outline" onClick={() => setStep(2)} className="flex-1">{t.back}</Button>
                 <Button className="flex-1 bg-blue-600 hover:bg-blue-700" onClick={handleSubmit}
-                  disabled={loading || isUploading || !uploadedUrls.selfie || !uploadedUrls.selfie_video || !uploadedUrls.address_proof}
+                  disabled={loading || isUploading || !uploadedUrls.selfie_video || !uploadedUrls.address_proof}
                   data-testid="kyc-submit-btn">
                   {loading ? <><Loader2 className="w-4 h-4 animate-spin mr-2" />{uploadProgress}</> : t.submitForReview}
                 </Button>

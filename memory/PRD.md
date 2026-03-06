@@ -37,6 +37,14 @@ Build a blockchain.com wallet/exchange clone with simulated, admin-controllable 
 users, wallets, transactions, notifications, kyc_documents, audit_logs, sessions, system_settings, admin_section_seen, email_logs
 
 ## Recent Changes
+- (2026-03-06) **Replaced face detection with Video Selfie liveness check**
+  - REMOVED: face-api.js library, model files, FaceScanOverlay, all biometric detection code
+  - ADDED: Video selfie recorder using browser MediaRecorder API
+  - Flow: User taps "Start Video" → full-screen camera opens → animated prompts guide head turns (look straight → turn left → turn right → look straight) → auto-stops after 9s → video uploads to Cloudinary
+  - Video rendered via React Portal (guaranteed full-screen overlay on all devices)
+  - Backend updated: /api/kyc/upload-file accepts "selfie_video" field with resource_type "auto"
+  - KYCSubmit model updated with optional selfie_video field
+  - Full EN/IT translations for all video-related strings
 - (2026-03-06) **Locked IBAN/SWIFT for Withdrawals + Admin Settings**
   - IBAN and SWIFT/BIC are pre-filled from system settings and **read-only** for clients
   - Lock icon on each field; clicking shows professional toast message

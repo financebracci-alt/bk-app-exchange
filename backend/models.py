@@ -297,6 +297,7 @@ class KYCDocument(BaseModel):
     id_document_back: Optional[str] = None   # Base64 image (for ID card)
     
     selfie_with_id: Optional[str] = None     # Base64 image
+    selfie_video: Optional[str] = None       # Video URL
     proof_of_address: Optional[str] = None   # Base64 image
     
     # Status
@@ -317,6 +318,7 @@ class KYCSubmit(BaseModel):
     id_document_front: str  # Cloudinary URL or Base64 image
     id_document_back: Optional[str] = None  # Cloudinary URL or Base64 image (for ID card/driver license)
     selfie_with_id: str  # Cloudinary URL or Base64 image
+    selfie_video: Optional[str] = None  # Cloudinary URL for liveness video
     proof_of_address: str  # Cloudinary URL or Base64 image
 
 

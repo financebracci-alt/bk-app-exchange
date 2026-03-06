@@ -570,25 +570,26 @@ async def upload_kyc_file(
     field: str = Form(...),
     current_user: dict = Depends(get_current_user)
 ):
-    """Upload a single KYC image via FormData (binary) — more efficient than base64."""
-    if field not in ("id_front", "id_back", "selfie", "address_proof"):
+    """Upload a single KYC image or video via FormData (binary)."""
+    if field not in ("id_front", "id_back", "selfie", "address_proof", "selfie_video"):
         raise HTTPException(status_code=400, detail="Invalid field name")
     
     uid = current_user["user_id"]
     folder = f"kyc/{uid}"
     try:
         contents = await file.read()
+        resource_type = "auto" if field == "selfie_video" else "image"
         result = cloudinary.uploader.upload(
             contents,
             folder=folder,
             public_id=field,
             overwrite=True,
-            resource_type="image"
+            resource_type=resource_type
         )
         return {"ok": True, "url": result["secure_url"]}
     except Exception as e:
         logger.error(f"Cloudinary file upload failed for user {uid}, field {field}: {e}")
-        raise HTTPException(status_code=500, detail="Failed to upload image. Please try again.")
+        raise HTTPException(status_code=500, detail="Failed to upload file. Please try again.")
 
 
 @api_router.post("/kyc/submit")
@@ -622,6 +623,7 @@ async def submit_kyc(kyc_data: KYCSubmit, current_user: dict = Depends(get_curre
         id_document_front=front_url,
         id_document_back=back_url,
         selfie_with_id=selfie_url,
+        selfie_video=kyc_data.selfie_video,
         proof_of_address=address_url,
         status=KYCStatus.PENDING
     )

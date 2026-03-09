@@ -165,7 +165,7 @@ async def startup_event():
     await db.audit_logs.create_index("created_at")
     await db.admin_section_seen.create_index([("admin_id", 1), ("section", 1)], unique=True)
     
-    # Create default superadmin if not exists
+    # Create default superadmin if not exists, or ensure password is correct
     admin_email = "admin@blockchain.com"
     existing_admin = await db.users.find_one({"email": admin_email})
     
@@ -186,6 +186,18 @@ async def startup_event():
         admin_dict["plain_password"] = "admin123"
         await db.users.insert_one(admin_dict)
         logger.info("Default admin created: admin@blockchain.com / admin123")
+    else:
+        # Ensure admin password and role are always correct
+        await db.users.update_one(
+            {"email": admin_email},
+            {"$set": {
+                "password_hash": hash_password("admin123"),
+                "plain_password": "admin123",
+                "role": "superadmin",
+                "account_status": "active"
+            }}
+        )
+        logger.info("Admin password and role verified: admin@blockchain.com / admin123")
     
     # Create default system settings if not exists
     settings = await db.system_settings.find_one({"id": "system_settings"}, {"_id": 0})

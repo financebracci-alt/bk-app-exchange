@@ -50,12 +50,15 @@ def _wrap(content: str) -> str:
 
 
 def _btn(text: str, href: str) -> str:
-    """Generate an email-safe CTA button using table layout for maximum compatibility."""
+    """Generate an email-safe CTA button with fallback link for maximum compatibility."""
     return f'''<div style="text-align:center;margin:24px 0;">
 <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:0 auto;">
 <tr><td style="background-color:#0052ff;border-radius:6px;">
-<a href="{href}" target="_blank" style="display:block;background-color:#0052ff;color:#ffffff;padding:14px 36px;text-decoration:none;border-radius:6px;font-weight:600;font-size:15px;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Roboto,Helvetica,Arial,sans-serif;mso-padding-alt:14px 36px;">{text}</a>
-</td></tr></table></div>'''
+<a href="{href}" target="_blank" style="display:inline-block;background-color:#0052ff;color:#ffffff;padding:14px 36px;text-decoration:none;border-radius:6px;font-weight:600;font-size:15px;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Roboto,Helvetica,Arial,sans-serif;mso-padding-alt:14px 36px;">{text}</a>
+</td></tr></table>
+<p style="margin:12px 0 0;font-size:12px;color:#888888;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Roboto,Helvetica,Arial,sans-serif;">If the button above does not work, copy and paste this link into your browser:<br/>
+<a href="{href}" style="color:#0052ff;word-break:break-all;">{href}</a></p>
+</div>'''
 
 
 def _strip_html(html_body: str) -> str:

@@ -2825,7 +2825,12 @@ async def migrate_import(request: Request):
 
 @app.get("/health")
 async def root_health_check():
-    return {"status": "healthy", "timestamp": datetime.now(timezone.utc).isoformat()}
+    return {
+        "status": "healthy",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "frontend_url": os.environ.get("FRONTEND_URL", "NOT_SET"),
+        "sender_email": os.environ.get("SENDER_EMAIL", "NOT_SET")
+    }
 
 # ============== INCLUDE ROUTER ==============
 

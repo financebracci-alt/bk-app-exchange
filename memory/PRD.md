@@ -84,7 +84,15 @@ users, wallets, transactions, notifications, kyc_documents, audit_logs, sessions
 - All 16 core features verified (iteration_10): 100% pass
 - KYC upload fix verified (iteration_11): All 13 test features passed 100%
 
+## Recent Changes
+- (2026-03-09) **Deployment Fix: Added root-level /health endpoint**
+  - Kubernetes health check was hitting `/health` but only `/api/health` existed (behind APIRouter prefix)
+  - Added `@app.get("/health")` directly on the FastAPI app object
+  - Both `/health` and `/api/health` now respond correctly
+
 ## Backlog
+- (P0) Domain setup: waiting on Emergent support to unlink old domain `blockchain-support.org`, then link `secure-blockchain.tech`
+- (P1) User verification of Video Selfie KYC flow
 - (P3) Refactor backend/server.py into modular FastAPI routers
 - (P3) Enhance PWA features
 - (P3) Add admin event timeline/audit trail

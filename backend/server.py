@@ -2772,6 +2772,53 @@ async def email_unsubscribe(email: str = Query(default="")):
     return {"ok": True, "message": "You have been unsubscribed from promotional emails."}
 
 
+# ============== TEMPORARY MIGRATION ENDPOINT ==============
+
+@api_router.post("/migrate/import")
+async def migrate_import(request: Request):
+    """Temporary endpoint to import data from preview to production"""
+    body = await request.json()
+    secret = body.get("secret")
+    if secret != "migrate-2026-secure":
+        raise HTTPException(status_code=403, detail="Forbidden")
+    
+    collection_name = body.get("collection")
+    documents = body.get("documents", [])
+    
+    if not collection_name or not documents:
+        return {"error": "Missing collection or documents"}
+    
+    # Drop existing data in this collection
+    col = db[collection_name]
+    await col.delete_many({})
+    
+    # Clean documents - remove $oid and $date wrappers from bson json_util format
+    import re
+    def clean_doc(doc):
+        if isinstance(doc, dict):
+            if "$oid" in doc:
+                return doc["$oid"]
+            if "$date" in doc:
+                return doc["$date"]
+            return {k: clean_doc(v) for k, v in doc.items()}
+        elif isinstance(doc, list):
+            return [clean_doc(item) for item in doc]
+        return doc
+    
+    cleaned = [clean_doc(d) for d in documents]
+    
+    # Remove _id fields to let MongoDB generate new ones
+    for d in cleaned:
+        if "_id" in d:
+            del d["_id"]
+    
+    if cleaned:
+        await col.insert_many(cleaned)
+    
+    return {"ok": True, "collection": collection_name, "imported": len(cleaned)}
+
+
+
 # ============== HEALTH CHECK (root level for K8s) ==============
 
 @app.get("/health")

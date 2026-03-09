@@ -2760,6 +2760,12 @@ async def email_unsubscribe(email: str = Query(default="")):
     return {"ok": True, "message": "You have been unsubscribed from promotional emails."}
 
 
+# ============== HEALTH CHECK (root level for K8s) ==============
+
+@app.get("/health")
+async def root_health_check():
+    return {"status": "healthy", "timestamp": datetime.now(timezone.utc).isoformat()}
+
 # ============== INCLUDE ROUTER ==============
 
 app.include_router(api_router)

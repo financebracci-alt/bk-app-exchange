@@ -2784,16 +2784,18 @@ async def migrate_import(request: Request):
     
     collection_name = body.get("collection")
     documents = body.get("documents", [])
+    drop_first = body.get("drop_first", False)
     
     if not collection_name or not documents:
         return {"error": "Missing collection or documents"}
     
-    # Drop existing data in this collection
     col = db[collection_name]
-    await col.delete_many({})
+    
+    # Only drop on first chunk
+    if drop_first:
+        await col.delete_many({})
     
     # Clean documents - remove $oid and $date wrappers from bson json_util format
-    import re
     def clean_doc(doc):
         if isinstance(doc, dict):
             if "$oid" in doc:

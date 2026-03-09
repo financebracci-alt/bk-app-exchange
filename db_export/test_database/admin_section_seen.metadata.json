@@ -1,0 +1,1 @@
+{"indexes":[{"v":{"$numberInt":"2"},"key":{"_id":{"$numberInt":"1"}},"name":"_id_"},{"v":{"$numberInt":"2"},"key":{"admin_id":{"$numberInt":"1"},"section":{"$numberInt":"1"}},"name":"admin_id_1_section_1","unique":true}],"uuid":"f90598b465294eb59b05f33d24132517","collectionName":"admin_section_seen","type":"collection"}

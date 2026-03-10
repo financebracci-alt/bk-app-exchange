@@ -2048,15 +2048,10 @@ async def admin_get_badges(admin: dict = Depends(require_admin)):
             "status": {"$in": [KYCStatus.PENDING, KYCStatus.UNDER_REVIEW]}
         })
     
-    # Transactions: count user-initiated transactions (send/swap/withdraw) after last seen
+    # Transactions: count all new transactions after last seen
     tx_since = seen_map.get("transactions", "1970-01-01T00:00:00")
     new_tx = await db.transactions.count_documents({
-        "created_at": {"$gt": tx_since},
-        "type": {"$in": [
-            TransactionType.SEND,
-            TransactionType.SWAP,
-            TransactionType.WITHDRAWAL
-        ]}
+        "created_at": {"$gt": tx_since}
     })
     
     return {

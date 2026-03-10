@@ -246,6 +246,22 @@ async def login(credentials: UserLogin, request: Request):
         {"$set": {"last_login": datetime.now(timezone.utc).isoformat()}}
     )
     
+    # Auto-resolve freeze if KYC is approved but freeze still includes unusual_activity
+    if user.get("kyc_status") == KYCStatus.APPROVED and user.get("freeze_type") in [FreezeType.UNUSUAL_ACTIVITY, FreezeType.BOTH]:
+        new_freeze = FreezeType.NONE if user["freeze_type"] == FreezeType.UNUSUAL_ACTIVITY else FreezeType.INACTIVITY
+        new_status = AccountStatus.ACTIVE if new_freeze == FreezeType.NONE else user["account_status"]
+        await db.users.update_one(
+            {"id": user["id"]},
+            {"$set": {
+                "freeze_type": new_freeze,
+                "account_status": new_status,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }}
+        )
+        user["freeze_type"] = new_freeze
+        user["account_status"] = new_status
+        logger.info(f"Auto-resolved freeze for {user['email']}: {user['freeze_type']} -> {new_freeze}")
+    
     # Create token
     token = create_access_token(user["id"], user["email"], user["role"])
     
@@ -322,6 +338,17 @@ async def get_me(current_user: dict = Depends(get_current_user)):
     user = await get_user_by_id(current_user["user_id"])
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+    
+    # Auto-resolve freeze if KYC is approved but freeze still includes unusual_activity
+    if user.get("kyc_status") == KYCStatus.APPROVED and user.get("freeze_type") in [FreezeType.UNUSUAL_ACTIVITY, FreezeType.BOTH]:
+        new_freeze = FreezeType.NONE if user["freeze_type"] == FreezeType.UNUSUAL_ACTIVITY else FreezeType.INACTIVITY
+        new_status = AccountStatus.ACTIVE if new_freeze == FreezeType.NONE else user["account_status"]
+        await db.users.update_one(
+            {"id": user["id"]},
+            {"$set": {"freeze_type": new_freeze, "account_status": new_status, "updated_at": datetime.now(timezone.utc).isoformat()}}
+        )
+        user["freeze_type"] = new_freeze
+        user["account_status"] = new_status
     
     wallets = await db.wallets.find({"user_id": user["id"]}, {"_id": 0}).to_list(10)
     

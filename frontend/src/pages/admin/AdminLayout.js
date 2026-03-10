@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -50,13 +50,17 @@ const AdminLayout = ({ children, title }) => {
     return () => clearInterval(interval);
   }, [loadBadges]);
 
-  // Mark section as read when navigating to it
+  // Mark section as read only when navigating to it (not on poll updates)
+  const prevPathRef = useRef(location.pathname);
   useEffect(() => {
-    const section = BADGE_SECTIONS[location.pathname];
-    if (section && badges[section] > 0) {
-      api.put(`/admin/badges/${section}/mark-read`).then(() => {
-        setBadges(prev => ({ ...prev, [section]: 0 }));
-      }).catch(() => {});
+    if (location.pathname !== prevPathRef.current) {
+      prevPathRef.current = location.pathname;
+      const section = BADGE_SECTIONS[location.pathname];
+      if (section && badges[section] > 0) {
+        api.put(`/admin/badges/${section}/mark-read`).then(() => {
+          setBadges(prev => ({ ...prev, [section]: 0 }));
+        }).catch(() => {});
+      }
     }
   }, [location.pathname, api, badges]);
 

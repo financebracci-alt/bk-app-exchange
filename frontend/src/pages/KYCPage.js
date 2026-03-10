@@ -14,6 +14,100 @@ import axios from 'axios';
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
+// Detect in-app browsers (WhatsApp, Instagram, Facebook, Telegram, etc.)
+const detectInAppBrowser = () => {
+  const ua = navigator.userAgent || navigator.vendor || '';
+  // Common in-app browser identifiers
+  const inAppPatterns = [
+    /FBAN|FBAV/i,          // Facebook
+    /Instagram/i,           // Instagram
+    /WhatsApp/i,            // WhatsApp (Android)
+    /\bLine\//i,            // LINE
+    /\bTwitter/i,           // Twitter/X
+    /\bSnapchat/i,          // Snapchat
+    /\bTelegram/i,          // Telegram
+    /\bWeChat|MicroMessenger/i, // WeChat
+    /\bPinterest/i,         // Pinterest
+    /\bLinkedIn/i,          // LinkedIn
+  ];
+  // Android WebView detection
+  const isAndroidWebView = /wv\)/.test(ua) || (/Android/.test(ua) && /Version\/[\d.]+/.test(ua) && !/Chrome\/[\d.]+ Mobile Safari\/[\d.]+$/.test(ua));
+  // iOS WebView detection (not Safari, not Chrome)
+  const isIOSWebView = /iPhone|iPad|iPod/.test(ua) && !/(Safari|CriOS|FxiOS|OPiOS|EdgiOS)/.test(ua);
+
+  const matchedPattern = inAppPatterns.some(p => p.test(ua));
+  return matchedPattern || isAndroidWebView || isIOSWebView;
+};
+
+const isInAppBrowser = detectInAppBrowser();
+
+// In-app browser warning component
+const InAppBrowserWarning = ({ t }) => {
+  const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const isAndroid = /Android/i.test(navigator.userAgent);
+
+  const copyUrl = () => {
+    try {
+      navigator.clipboard.writeText(window.location.href);
+      toast.success(t.linkCopied || 'Link copied!');
+    } catch {
+      // Fallback: select text
+      const input = document.createElement('input');
+      input.value = window.location.href;
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand('copy');
+      document.body.removeChild(input);
+      toast.success(t.linkCopied || 'Link copied!');
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[9999] bg-white flex flex-col items-center justify-center p-6" data-testid="inapp-browser-warning">
+      <div className="max-w-md w-full text-center space-y-6">
+        <div className="w-16 h-16 mx-auto bg-amber-100 rounded-full flex items-center justify-center">
+          <svg className="w-8 h-8 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
+          </svg>
+        </div>
+        <h2 className="text-xl font-bold text-gray-900">
+          {t.inAppBrowserTitle || 'Open in your browser'}
+        </h2>
+        <p className="text-gray-600 text-sm leading-relaxed">
+          {t.inAppBrowserDesc || 'This page needs to be opened in your default browser (Chrome or Safari) to upload documents. In-app browsers do not support camera and file access.'}
+        </p>
+
+        <div className="space-y-3 pt-2">
+          {isAndroid && (
+            <div className="bg-gray-50 rounded-lg p-4 text-left text-sm text-gray-700">
+              <p className="font-semibold mb-2">{t.inAppAndroidSteps || 'How to open in Chrome:'}</p>
+              <ol className="list-decimal list-inside space-y-1">
+                <li>{t.inAppStep1Android || 'Tap the three dots menu (⋮) in the top right'}</li>
+                <li>{t.inAppStep2Android || 'Select "Open in Chrome" or "Open in browser"'}</li>
+              </ol>
+            </div>
+          )}
+          {isIOS && (
+            <div className="bg-gray-50 rounded-lg p-4 text-left text-sm text-gray-700">
+              <p className="font-semibold mb-2">{t.inAppIOSSteps || 'How to open in Safari:'}</p>
+              <ol className="list-decimal list-inside space-y-1">
+                <li>{t.inAppStep1IOS || 'Tap the compass icon or "Open in Safari"'}</li>
+                <li>{t.inAppStep2IOS || 'Or copy the link below and paste it in Safari'}</li>
+              </ol>
+            </div>
+          )}
+
+          <Button onClick={copyUrl} className="w-full bg-blue-600 hover:bg-blue-700" data-testid="copy-link-btn">
+            {t.copyLink || 'Copy Link'}
+          </Button>
+
+          <p className="text-xs text-gray-400 break-all mt-2">{window.location.href}</p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Compress image to a Blob (binary) - Android-safe with memory limits
 const compressImageToBlob = (file, maxWidth = 1024, quality = 0.6) => new Promise((resolve, reject) => {
   // For very large files (>10MB), reduce quality further
@@ -397,13 +491,18 @@ const KYCPage = () => {
     await uploadVideoToCloudinary(blob);
   };
 
+  // Detect if device is mobile (has touch + small screen) for camera button visibility
+  const isMobile = /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  // Camera is only available on mobile AND not in an in-app browser
+  const canUseCamera = isMobile && !isInAppBrowser;
+
   const renderUploadArea = (field, label, captureMode = "environment", Icon = Upload) => {
     const previewSrc = previews[field] || uploadedUrls[field];
     return (
     <div>
       <Label className="mb-2 block">{label}</Label>
       <input type="file" ref={fileInputRefs[field]} onChange={handleFileChange(field)} accept="image/*,.heic,.heif" className="hidden" />
-      <input type="file" ref={cameraInputRefs[field]} onChange={handleFileChange(field)} accept="image/*" capture={captureMode} className="hidden" />
+      {canUseCamera && <input type="file" ref={cameraInputRefs[field]} onChange={handleFileChange(field)} accept="image/*" capture={captureMode} className="hidden" />}
       {previewSrc ? (
         <div className="relative">
           <img src={previewSrc} alt={field} className="w-full h-48 object-cover rounded-lg" onError={(e) => { e.target.style.display = 'none'; }} />
@@ -421,11 +520,13 @@ const KYCPage = () => {
             </div>
           )}
           <div className="absolute bottom-2 right-2 flex space-x-2">
-            <Button variant="outline" size="sm" className="bg-white/90" onClick={() => cameraInputRefs[field].current.click()} disabled={uploadingField === field}>
-              <Camera className="w-3.5 h-3.5 mr-1" />{t.takePhoto}
-            </Button>
-            <Button variant="outline" size="sm" className="bg-white/90" onClick={() => fileInputRefs[field].current.click()} disabled={uploadingField === field}>
-              <Upload className="w-3.5 h-3.5 mr-1" />{t.change}
+            {canUseCamera && (
+              <Button variant="outline" size="sm" className="bg-white/90" onClick={() => cameraInputRefs[field].current?.click()} disabled={uploadingField === field}>
+                <Camera className="w-3.5 h-3.5 mr-1" />{t.takePhoto}
+              </Button>
+            )}
+            <Button variant="outline" size="sm" className="bg-white/90" onClick={() => fileInputRefs[field].current?.click()} disabled={uploadingField === field}>
+              <Upload className="w-3.5 h-3.5 mr-1" />{isMobile ? t.change : (t.chooseFile || 'Choose File')}
             </Button>
           </div>
         </div>
@@ -440,11 +541,13 @@ const KYCPage = () => {
             <>
               <Icon className="w-8 h-8 text-gray-400" />
               <div className="flex space-x-3">
-                <Button variant="outline" size="sm" onClick={() => cameraInputRefs[field].current.click()} data-testid={`${field}-camera-btn`}>
-                  <Camera className="w-4 h-4 mr-1.5" />{t.takePhoto}
-                </Button>
-                <Button variant="outline" size="sm" onClick={() => fileInputRefs[field].current.click()} data-testid={`${field}-gallery-btn`}>
-                  <Upload className="w-4 h-4 mr-1.5" />{t.fromGallery}
+                {canUseCamera && (
+                  <Button variant="outline" size="sm" onClick={() => cameraInputRefs[field].current?.click()} data-testid={`${field}-camera-btn`}>
+                    <Camera className="w-4 h-4 mr-1.5" />{t.takePhoto}
+                  </Button>
+                )}
+                <Button variant="outline" size="sm" onClick={() => fileInputRefs[field].current?.click()} data-testid={`${field}-gallery-btn`}>
+                  <Upload className="w-4 h-4 mr-1.5" />{isMobile ? t.fromGallery : (t.chooseFile || 'Choose File')}
                 </Button>
               </div>
             </>
@@ -565,6 +668,11 @@ const KYCPage = () => {
   }
 
   const isUploading = uploadingField !== null;
+
+  // Show in-app browser warning if detected
+  if (isInAppBrowser) {
+    return <InAppBrowserWarning t={t} />;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">

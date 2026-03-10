@@ -1,61 +1,78 @@
 # Blockchain.com Wallet Clone - PRD
 
 ## Original Problem Statement
-Build a clone of the blockchain.com wallet/exchange with professional UI/UX, full Italian internationalization, KYC flow, live exchange rates, admin panel, and transactional email system.
+Build a professional clone of the blockchain.com wallet/exchange with polished UI/UX, full internationalization for Italian (i18n), robust KYC flow, live USDC/EUR exchange rates, sliding session mechanism for JWTs, and comprehensive admin panel.
 
-## Core Architecture
-- **Frontend:** React + Shadcn UI + Tailwind CSS
-- **Backend:** FastAPI (Python)
-- **Database:** MongoDB (local dev) / MongoDB Atlas (production)
-- **Email:** Resend API
-- **Media:** Cloudinary (KYC uploads)
-- **DNS/SSL:** Cloudflare
-- **Deployment:** Emergent Platform (Kubernetes)
+## Tech Stack
+- **Frontend**: React + Shadcn UI + Tailwind CSS
+- **Backend**: FastAPI (Python)
+- **Database**: MongoDB
+- **Integrations**: Resend (email), Cloudinary (KYC images/video), Frankfurter API (exchange rates), Cloudflare (DNS/SSL)
 
-## Key Features Implemented
-- Professional UI with EN/IT internationalization
-- User authentication (JWT with sliding sessions)
-- Admin panel (user management, settings, KYC review)
-- Live USDC/EUR exchange rate (Frankfurter API + server-side fluctuations)
-- Video Selfie KYC liveness check (react-webcam + MediaRecorder)
-- Locked withdrawal IBAN/SWIFT (admin-configurable)
-- PWA configuration (cross-browser icons, manifest)
-- Transactional emails via Resend (all types)
-- Forgot Password flow (public endpoint, email with reset link)
+## Core Features (Implemented)
+- User registration, login, JWT auth with sliding sessions
+- Full KYC flow (document upload, video selfie, proof of address)
+- Wallet dashboard with USDC/EUR balances
+- Deposit, Send, Swap, Withdraw flows
+- Admin panel (users, KYC queue, transactions, settings, audit logs)
+- Internationalization (EN/IT)
+- Transactional emails via Resend
+- Forgot Password flow
+- Error Boundary for crash prevention
+- PWA support
 
-## Current Domain
-- Production: `secure-blockchainplatform.com`
-- Preview: `crypto-wallet-kyc.preview.emergentagent.com`
+## What's Been Implemented
 
-## Key Credentials
-- Admin: `admin@blockchain.com` / `admin123`
+### Feb 2026 - Session Fixes
+- **In-app browser detection for KYC**: Detects WhatsApp, Instagram, Facebook, Telegram, WeChat, etc. Shows full-screen warning guiding users to open in Chrome/Safari with Copy Link button
+- **Desktop KYC fix**: Camera buttons only show on mobile; desktop gets "Choose File" only
+- **Camera conditional logic**: `canUseCamera = isMobile && !isInAppBrowser` ensures camera inputs only appear when supported
 
-## Recent Changes (2026-03-09)
-- Added root-level `/health` endpoint for K8s deployment
-- Fixed `FRONTEND_URL` pointing to old preview URL (caused all email buttons to fail)
-- Fixed `UNSUBSCRIBE_URL` pointing to old preview URL
-- Updated `SENDER_EMAIL` and `REPLY_TO_EMAIL` to new domain
-- Improved email button HTML (inline-block + fallback plain text link)
-- Added "Forgot Password" feature (public endpoint + page + i18n)
-- Migrated preview DB data to production Atlas
-- DNS configuration for new domain via Cloudflare
-
-## Production Secrets Required
-| Key | Value |
-|-----|-------|
-| FRONTEND_URL | https://secure-blockchainplatform.com |
-| UNSUBSCRIBE_URL | https://secure-blockchainplatform.com/api/unsubscribe |
-| SENDER_EMAIL | noreply@secure-blockchainplatform.com |
-| REPLY_TO_EMAIL | support@secure-blockchainplatform.com |
-| REACT_APP_BACKEND_URL | https://secure-blockchainplatform.com |
-
-## Backlog
-- (P1) User verification of Video Selfie KYC flow
-- (P2) Remove temporary migration endpoint from server.py
-- (P3) Refactor backend/server.py into modular FastAPI routers
-- (P3) Enhance PWA features
-- (P3) Add admin event timeline / audit trail
+### Previous Sessions
+- Client Forgot Password flow (backend + frontend + i18n)
+- KYC blank page fix for Xiaomi/Android (disable translate, error boundary, robust file handling)
+- "Unusual Activity" auto-unfreeze logic
+- Admin notification badge fixes
+- Email link fixes (Gmail crash, FRONTEND_URL trailing space)
+- Health endpoint for Kubernetes
+- Data migration (led to critical data loss - see Known Issues)
 
 ## Known Issues
-- Temporary migration endpoint still in server.py (should be removed after data is confirmed stable)
-- New domain may need time to build email sending reputation (emails may go to spam initially)
+- **P0 BLOCKED**: Production data was overwritten with test data during migration. Awaiting Emergent Support backup restore. DO NOT attempt another migration.
+- All financial data (balances, transactions) is MOCKED/simulated
+
+## Architecture
+```
+/app
+├── backend/
+│   ├── server.py          # Monolithic - needs refactoring
+│   └── email_service.py
+└── frontend/
+    └── src/
+        ├── pages/KYCPage.js         # In-app browser detection + camera fixes
+        ├── pages/ForgotPasswordPage.js
+        ├── components/ErrorBoundary.js
+        ├── components/Auth.js
+        ├── components/AdminLayout.js
+        └── i18n.js                  # EN/IT translations
+```
+
+## Prioritized Backlog
+### P0
+- User verification of in-app browser + desktop KYC fixes
+- Production database restore (blocked on user/Emergent Support)
+
+### P1
+- (None currently)
+
+### P2
+- Refactor backend/server.py into modular FastAPI routers
+- Admin audit trail for system events
+
+### P3
+- Further PWA enhancements for offline support
+- Performance optimizations
+
+## Key Credentials
+- Admin: admin@blockchain.com / admin123
+- Domain: secure-blockchainplatform.com

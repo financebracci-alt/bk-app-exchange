@@ -14,8 +14,13 @@ import axios from 'axios';
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
-// Compress image to a Blob (binary)
+// Compress image to a Blob (binary) - Android-safe with memory limits
 const compressImageToBlob = (file, maxWidth = 1024, quality = 0.6) => new Promise((resolve, reject) => {
+  // For very large files (>10MB), reduce quality further
+  const fileSize = file.size || 0;
+  if (fileSize > 10 * 1024 * 1024) { maxWidth = 800; quality = 0.5; }
+  if (fileSize > 20 * 1024 * 1024) { maxWidth = 640; quality = 0.4; }
+
   const reader = new FileReader();
   reader.onload = (e) => {
     const img = new Image();
@@ -23,20 +28,45 @@ const compressImageToBlob = (file, maxWidth = 1024, quality = 0.6) => new Promis
       try {
         const canvas = document.createElement('canvas');
         let w = img.width, h = img.height;
+        // Enforce max dimensions for Android memory safety
+        const MAX_DIM = 4096;
+        if (w > MAX_DIM) { h = Math.round(h * MAX_DIM / w); w = MAX_DIM; }
+        if (h > MAX_DIM) { w = Math.round(w * MAX_DIM / h); h = MAX_DIM; }
         if (w > maxWidth) { h = Math.round(h * maxWidth / w); w = maxWidth; }
         canvas.width = w;
         canvas.height = h;
-        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        const ctx = canvas.getContext('2d');
+        if (!ctx) { reject(new Error('Canvas context unavailable')); return; }
+        ctx.drawImage(img, 0, 0, w, h);
         canvas.toBlob(
-          (blob) => { canvas.width = 0; canvas.height = 0; blob ? resolve(blob) : reject(new Error('Compression failed')); },
+          (blob) => {
+            canvas.width = 0; canvas.height = 0;
+            if (blob) { resolve(blob); }
+            else {
+              // Fallback: return original file as blob
+              resolve(file);
+            }
+          },
           'image/jpeg', quality
         );
-      } catch (err) { reject(err); }
+      } catch (err) {
+        // Fallback: return original file if compression fails
+        console.warn('Image compression failed, using original:', err);
+        resolve(file);
+      }
     };
-    img.onerror = () => reject(new Error('Failed to load image'));
+    img.onerror = () => {
+      // Fallback: return original file if image can't load
+      console.warn('Image load failed, using original file');
+      resolve(file);
+    };
     img.src = e.target.result;
   };
-  reader.onerror = () => reject(new Error('Failed to read file'));
+  reader.onerror = () => {
+    // Fallback: return original file
+    console.warn('FileReader failed, using original file');
+    resolve(file);
+  };
   reader.readAsDataURL(file);
 });
 
@@ -230,13 +260,8 @@ const KYCPage = () => {
   // Show video recorder
   const [showVideoRecorder, setShowVideoRecorder] = useState(false);
 
-  // Previews for display
-  const [previews, setPreviews] = useState(() => {
-    try {
-      const saved = sessionStorage.getItem('kyc_previews');
-      return saved ? JSON.parse(saved) : { id_front: null, id_back: null, selfie: null, address_proof: null };
-    } catch { return { id_front: null, id_back: null, selfie: null, address_proof: null }; }
-  });
+  // Previews for display (use uploaded URLs as fallback when no object URL)
+  const [previews, setPreviews] = useState({ id_front: null, id_back: null, selfie: null, address_proof: null });
 
   // Cloudinary URLs
   const [uploadedUrls, setUploadedUrls] = useState(() => {
@@ -246,15 +271,14 @@ const KYCPage = () => {
     } catch { return { id_front: null, id_back: null, selfie: null, address_proof: null, selfie_video: null }; }
   });
 
-  // Persist state
+  // Persist state (only save URLs, not object URL previews)
   useEffect(() => {
     try {
       sessionStorage.setItem('kyc_step', step.toString());
       sessionStorage.setItem('kyc_doc_type', documentType);
-      sessionStorage.setItem('kyc_previews', JSON.stringify(previews));
       sessionStorage.setItem('kyc_urls', JSON.stringify(uploadedUrls));
     } catch {}
-  }, [step, documentType, previews, uploadedUrls]);
+  }, [step, documentType, uploadedUrls]);
 
   const fileInputRefs = { id_front: useRef(), id_back: useRef(), selfie: useRef(), address_proof: useRef() };
   const cameraInputRefs = { id_front: useRef(), id_back: useRef(), selfie: useRef(), address_proof: useRef() };
@@ -337,10 +361,17 @@ const KYCPage = () => {
       toast.error(t.fileTypeError);
       return;
     }
-    const reader = new FileReader();
-    reader.onloadend = () => setPreviews(prev => ({ ...prev, [field]: reader.result }));
-    reader.readAsDataURL(file);
-    await uploadFileToCloudinary(file, field);
+    // Use object URL for preview (much faster & less memory than data URL)
+    const objectUrl = URL.createObjectURL(file);
+    setPreviews(prev => ({ ...prev, [field]: objectUrl }));
+    try {
+      await uploadFileToCloudinary(file, field);
+    } catch (err) {
+      console.error('Upload error:', err);
+      toast.error(t.uploadFailed || 'Upload failed');
+    }
+    // Reset input so the same file can be re-selected
+    e.target.value = '';
   };
 
   // Handle video recording complete
@@ -349,14 +380,16 @@ const KYCPage = () => {
     await uploadVideoToCloudinary(blob);
   };
 
-  const renderUploadArea = (field, label, captureMode = "environment", Icon = Upload) => (
+  const renderUploadArea = (field, label, captureMode = "environment", Icon = Upload) => {
+    const previewSrc = previews[field] || uploadedUrls[field];
+    return (
     <div>
       <Label className="mb-2 block">{label}</Label>
       <input type="file" ref={fileInputRefs[field]} onChange={handleFileChange(field)} accept="image/*,.heic,.heif" className="hidden" />
       <input type="file" ref={cameraInputRefs[field]} onChange={handleFileChange(field)} accept="image/*" capture={captureMode} className="hidden" />
-      {previews[field] ? (
+      {previewSrc ? (
         <div className="relative">
-          <img src={previews[field]} alt={field} className="w-full h-48 object-cover rounded-lg" />
+          <img src={previewSrc} alt={field} className="w-full h-48 object-cover rounded-lg" onError={(e) => { e.target.style.display = 'none'; }} />
           {uploadingField === field && (
             <div className="absolute inset-0 bg-black/40 rounded-lg flex items-center justify-center">
               <div className="flex items-center space-x-2 bg-white/90 px-3 py-2 rounded-full">
@@ -402,7 +435,7 @@ const KYCPage = () => {
         </div>
       )}
     </div>
-  );
+  );};
 
   useEffect(() => {
     const token = searchParams.get('token');
@@ -449,7 +482,7 @@ const KYCPage = () => {
       };
       const response = await api.post('/kyc/submit', kycData);
       if (response.data.ok) {
-        try { sessionStorage.removeItem('kyc_step'); sessionStorage.removeItem('kyc_doc_type'); sessionStorage.removeItem('kyc_previews'); sessionStorage.removeItem('kyc_urls'); } catch {}
+        try { sessionStorage.removeItem('kyc_step'); sessionStorage.removeItem('kyc_doc_type'); sessionStorage.removeItem('kyc_urls'); } catch {}
         toast.success(t.kycSubmitted);
         await refreshUser();
         navigate('/wallet');

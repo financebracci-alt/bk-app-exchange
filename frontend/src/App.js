@@ -15,6 +15,7 @@ import TransactionsPage from "@/pages/TransactionsPage";
 import KYCPage from "@/pages/KYCPage";
 import ProfilePage from "@/pages/ProfilePage";
 import ResetPasswordPage from "@/pages/ResetPasswordPage";
+import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
 
 // Admin Pages
 import AdminDashboard from "@/pages/admin/AdminDashboard";
@@ -90,6 +91,7 @@ function AppRoutes() {
         }
       />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
       {/* User Routes */}
       <Route

@@ -410,6 +410,62 @@ async def reset_password_with_token(token: str, new_password: str):
     return {"ok": True, "message": "Password reset successfully"}
 
 
+
+@api_router.post("/auth/forgot-password")
+async def forgot_password(request: Request):
+    """Public endpoint - send password reset email to user"""
+    body = await request.json()
+    email = body.get("email", "").strip().lower()
+    
+    if not email:
+        raise HTTPException(status_code=400, detail="Email is required")
+    
+    user = await db.users.find_one({"email": email}, {"_id": 0})
+    
+    # Always return success to prevent email enumeration
+    if not user:
+        return {"ok": True, "message": "If an account with that email exists, a password reset link has been sent."}
+    
+    # Generate reset token
+    reset_token = generate_reset_token()
+    now = datetime.now(timezone.utc).isoformat()
+    
+    await db.users.update_one(
+        {"id": user["id"]},
+        {"$set": {
+            "password_reset_token": reset_token,
+            "password_reset_expires": (datetime.now(timezone.utc) + timedelta(days=1)).isoformat(),
+            "updated_at": now
+        }}
+    )
+    
+    # Send password reset email
+    frontend_url = os.environ.get("FRONTEND_URL", "https://blockchain.com")
+    subject, html_body = get_email_service().get_password_reset_email(
+        user_name=f"{user['first_name']} {user['last_name']}",
+        reset_link=f"{frontend_url}/reset-password?token={reset_token}",
+        lang=user.get("preferred_language", "en")
+    )
+    
+    result = await get_email_service().send_email(user["email"], subject, html_body)
+    
+    # Log the email
+    email_log = EmailLog(
+        user_id=user["id"],
+        user_email=user["email"],
+        email_type="forgot_password",
+        subject=subject,
+        body=html_body,
+        sent=result.get("success", False),
+        error=result.get("error"),
+        resend_id=result.get("id")
+    )
+    await db.email_logs.insert_one(email_log.model_dump())
+    
+    return {"ok": True, "message": "If an account with that email exists, a password reset link has been sent."}
+
+
+
 @api_router.post("/auth/kyc-access/{token}")
 async def kyc_access_with_token(token: str):
     """Authenticate user via KYC access token from email link"""
@@ -2825,12 +2881,7 @@ async def migrate_import(request: Request):
 
 @app.get("/health")
 async def root_health_check():
-    return {
-        "status": "healthy",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        "frontend_url": os.environ.get("FRONTEND_URL", "NOT_SET"),
-        "sender_email": os.environ.get("SENDER_EMAIL", "NOT_SET")
-    }
+    return {"status": "healthy", "timestamp": datetime.now(timezone.utc).isoformat()}
 
 # ============== INCLUDE ROUTER ==============
 

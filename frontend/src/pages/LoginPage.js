@@ -83,6 +83,9 @@ const LoginPage = () => {
                   </button>
                 </div>
               </div>
+              <div className="flex justify-end">
+                <Link to="/forgot-password" className="text-sm text-blue-600 hover:text-blue-700 font-medium" data-testid="forgot-password-link">{t.forgotPassword}</Link>
+              </div>
               <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={loading} data-testid="login-submit-button">
                 {loading ? t.loggingIn : t.loginButton}
               </Button>

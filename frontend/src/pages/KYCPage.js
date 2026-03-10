@@ -287,9 +287,17 @@ const KYCPage = () => {
   const uploadFileToCloudinary = useCallback(async (file, field) => {
     setUploadingField(field);
     try {
-      const blob = await compressImageToBlob(file);
+      let blob;
+      try {
+        blob = await compressImageToBlob(file);
+      } catch {
+        // If compression fails completely, use original file
+        blob = file;
+      }
       const formData = new FormData();
-      formData.append('file', blob, `${field}.jpg`);
+      // Ensure proper filename with extension for Xiaomi/Android
+      const fileName = `${field}.jpg`;
+      formData.append('file', blob, fileName);
       formData.append('field', field);
 
       let lastError = null;
@@ -353,25 +361,34 @@ const KYCPage = () => {
     }
   }, [api, t]);
 
-  // Handle file selection — set preview + upload
+  // Handle file selection — set preview + upload (Xiaomi/Android safe)
   const handleFileChange = (field) => async (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files?.[0];
     if (!file) return;
-    if (!file.type.startsWith('image/') && !file.name.match(/\.(heic|heif)$/i)) {
+    // Xiaomi HyperOS and some Android browsers return empty MIME types
+    // Accept any file from camera capture, only validate gallery uploads
+    const hasValidType = file.type?.startsWith('image/') || file.name?.match(/\.(jpg|jpeg|png|gif|webp|heic|heif|bmp)$/i);
+    const isFromCamera = e.target.hasAttribute('capture');
+    if (!hasValidType && !isFromCamera) {
       toast.error(t.fileTypeError);
       return;
     }
-    // Use object URL for preview (much faster & less memory than data URL)
-    const objectUrl = URL.createObjectURL(file);
-    setPreviews(prev => ({ ...prev, [field]: objectUrl }));
+    try {
+      // Use object URL for preview (much faster & less memory than data URL)
+      const objectUrl = URL.createObjectURL(file);
+      setPreviews(prev => ({ ...prev, [field]: objectUrl }));
+    } catch (err) {
+      console.warn('Preview creation failed:', err);
+      // Continue with upload even if preview fails
+    }
     try {
       await uploadFileToCloudinary(file, field);
     } catch (err) {
       console.error('Upload error:', err);
-      toast.error(t.uploadFailed || 'Upload failed');
+      toast.error(t.uploadFailed || 'Upload failed. Please try again.');
     }
     // Reset input so the same file can be re-selected
-    e.target.value = '';
+    try { e.target.value = ''; } catch {}
   };
 
   // Handle video recording complete

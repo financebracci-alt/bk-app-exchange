@@ -376,6 +376,7 @@ const KYCPage = () => {
 
   const fileInputRefs = { id_front: useRef(), id_back: useRef(), selfie: useRef(), address_proof: useRef() };
   const cameraInputRefs = { id_front: useRef(), id_back: useRef(), selfie: useRef(), address_proof: useRef() };
+  const videoFileInputRef = useRef();
 
   // Upload a single file to Cloudinary via FormData
   const uploadFileToCloudinary = useCallback(async (file, field) => {
@@ -385,11 +386,9 @@ const KYCPage = () => {
       try {
         blob = await compressImageToBlob(file);
       } catch {
-        // If compression fails completely, use original file
         blob = file;
       }
       const formData = new FormData();
-      // Ensure proper filename with extension for Xiaomi/Android
       const fileName = `${field}.jpg`;
       formData.append('file', blob, fileName);
       formData.append('field', field);
@@ -399,7 +398,7 @@ const KYCPage = () => {
         try {
           const res = await api.post('/kyc/upload-file', formData, {
             headers: { 'Content-Type': 'multipart/form-data' },
-            timeout: 60000,
+            timeout: 90000,
           });
           if (res.data.ok) {
             setUploadedUrls(prev => ({ ...prev, [field]: res.data.url }));
@@ -407,13 +406,39 @@ const KYCPage = () => {
           }
         } catch (err) {
           lastError = err;
+          // On first failure with compressed blob, retry with original file
+          if (attempt === 0 && blob !== file) {
+            const rawFormData = new FormData();
+            rawFormData.append('file', file, file.name || `${field}.jpg`);
+            rawFormData.append('field', field);
+            try {
+              const res = await api.post('/kyc/upload-file', rawFormData, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+                timeout: 90000,
+              });
+              if (res.data.ok) {
+                setUploadedUrls(prev => ({ ...prev, [field]: res.data.url }));
+                return res.data.url;
+              }
+            } catch (rawErr) {
+              lastError = rawErr;
+            }
+          }
           if (attempt < 2) await new Promise(r => setTimeout(r, 1500 * (attempt + 1)));
         }
       }
       throw lastError || new Error('Upload failed');
     } catch (err) {
       console.error(`Upload failed for ${field}:`, err);
-      toast.error(`${t.uploadFailed || 'Upload failed'} — ${t.tryAgain || 'try again'}`);
+      const status = err?.response?.status;
+      const detail = err?.response?.data?.detail;
+      let msg = t.uploadFailed || 'Upload failed';
+      if (status === 401) msg += ` — ${t.sessionExpired || 'Session expired. Please login again.'}`;
+      else if (status === 413) msg += ` — ${t.fileTooLarge || 'File too large'}`;
+      else if (detail) msg += ` — ${detail}`;
+      else if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) msg += ` — ${t.uploadTimeout || 'Connection timeout. Check your internet.'}`;
+      else msg += ` — ${t.tryAgain || 'try again'}`;
+      toast.error(msg);
       return null;
     } finally {
       setUploadingField(null);
@@ -421,11 +446,11 @@ const KYCPage = () => {
   }, [api, t]);
 
   // Upload video blob to Cloudinary
-  const uploadVideoToCloudinary = useCallback(async (blob) => {
+  const uploadVideoToCloudinary = useCallback(async (blob, fileName = 'selfie_video.webm') => {
     setUploadingField('selfie_video');
     try {
       const formData = new FormData();
-      formData.append('file', blob, 'selfie_video.webm');
+      formData.append('file', blob, fileName);
       formData.append('field', 'selfie_video');
 
       let lastError = null;
@@ -448,12 +473,37 @@ const KYCPage = () => {
       throw lastError || new Error('Upload failed');
     } catch (err) {
       console.error('Video upload failed:', err);
-      toast.error(`${t.uploadFailed || 'Upload failed'} — ${t.tryAgain || 'try again'}`);
+      const status = err?.response?.status;
+      const detail = err?.response?.data?.detail;
+      let msg = t.uploadFailed || 'Upload failed';
+      if (status === 401) msg += ` — ${t.sessionExpired || 'Session expired. Please login again.'}`;
+      else if (detail) msg += ` — ${detail}`;
+      else if (err.code === 'ECONNABORTED') msg += ` — ${t.uploadTimeout || 'Connection timeout'}`;
+      else msg += ` — ${t.tryAgain || 'try again'}`;
+      toast.error(msg);
       return null;
     } finally {
       setUploadingField(null);
     }
   }, [api, t]);
+
+  // Handle video file selection from gallery
+  const handleVideoFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const isVideo = file.type?.startsWith('video/') || file.name?.match(/\.(mp4|mov|webm|avi|3gp|mkv)$/i);
+    if (!isVideo) {
+      toast.error(t.videoFileTypeError || 'Please select a video file');
+      return;
+    }
+    // 100MB limit for video
+    if (file.size > 100 * 1024 * 1024) {
+      toast.error(t.videoTooLarge || 'Video must be smaller than 100MB');
+      return;
+    }
+    await uploadVideoToCloudinary(file, file.name || 'selfie_video.mp4');
+    try { e.target.value = ''; } catch {}
+  };
 
   // Handle file selection — set preview + upload (Xiaomi/Android safe)
   const handleFileChange = (field) => async (e) => {
@@ -736,6 +786,7 @@ const KYCPage = () => {
               {/* Video selfie */}
               <div>
                 <Label className="mb-2 block">{t.videoSelfieLabel || 'Video Selfie (Liveness Check)'}</Label>
+                <input type="file" ref={videoFileInputRef} onChange={handleVideoFileChange} accept="video/*" className="hidden" />
                 {uploadedUrls.selfie_video ? (
                   <div className="relative border rounded-lg overflow-hidden bg-gray-900">
                     <div className="flex items-center justify-center p-6 gap-3">
@@ -757,9 +808,14 @@ const KYCPage = () => {
                       <>
                         <Video className="w-8 h-8 text-gray-400" />
                         <p className="text-sm text-gray-500 text-center">{t.videoSelfieDesc || 'Record a short video turning your head left and right'}</p>
-                        <Button onClick={() => setShowVideoRecorder(true)} className="bg-blue-600 hover:bg-blue-700" data-testid="start-video-btn">
-                          <Video className="w-4 h-4 mr-2" />{t.startVideo || 'Start Video'}
-                        </Button>
+                        <div className="flex space-x-3">
+                          <Button onClick={() => setShowVideoRecorder(true)} className="bg-blue-600 hover:bg-blue-700" data-testid="start-video-btn">
+                            <Video className="w-4 h-4 mr-2" />{t.startVideo || 'Start Video'}
+                          </Button>
+                          <Button variant="outline" onClick={() => videoFileInputRef.current?.click()} data-testid="upload-video-btn">
+                            <Upload className="w-4 h-4 mr-2" />{t.uploadVideo || 'Upload Video'}
+                          </Button>
+                        </div>
                       </>
                     )}
                   </div>

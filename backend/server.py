@@ -673,6 +673,14 @@ async def upload_kyc_file(
     folder = f"kyc/{uid}"
     try:
         contents = await file.read()
+        file_size = len(contents)
+        logger.info(f"KYC upload: user={uid}, field={field}, size={file_size}, filename={file.filename}, content_type={file.content_type}")
+        
+        if file_size == 0:
+            raise HTTPException(status_code=400, detail="Empty file received")
+        if file_size > 100 * 1024 * 1024:  # 100MB limit
+            raise HTTPException(status_code=413, detail="File too large (max 100MB)")
+        
         resource_type = "auto" if field == "selfie_video" else "image"
         result = cloudinary.uploader.upload(
             contents,
@@ -681,9 +689,12 @@ async def upload_kyc_file(
             overwrite=True,
             resource_type=resource_type
         )
+        logger.info(f"KYC upload success: user={uid}, field={field}, url={result['secure_url']}")
         return {"ok": True, "url": result["secure_url"]}
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Cloudinary file upload failed for user {uid}, field {field}: {e}")
+        logger.error(f"Cloudinary file upload failed for user {uid}, field {field}, file_size={file.size if hasattr(file, 'size') else 'unknown'}: {e}")
         raise HTTPException(status_code=500, detail="Failed to upload file. Please try again.")
 
 

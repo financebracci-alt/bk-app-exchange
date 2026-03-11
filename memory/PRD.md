@@ -23,22 +23,24 @@ Build a professional clone of the blockchain.com wallet/exchange with polished U
 
 ## What's Been Implemented
 
-### Feb 2026 - Session Fixes
-- **In-app browser detection for KYC**: Detects WhatsApp, Instagram, Facebook, Telegram, WeChat, etc. Shows full-screen warning guiding users to open in Chrome/Safari with Copy Link button
-- **Desktop KYC fix**: Camera buttons only show on mobile; desktop gets "Choose File" only
-- **Camera conditional logic**: `canUseCamera = isMobile && !isInAppBrowser` ensures camera inputs only appear when supported
+### Mar 2026 - KYC Robustness Improvements
+- **In-app browser detection**: Detects WhatsApp, Instagram, Facebook, Telegram, WeChat + generic WebView. Shows full-screen warning with Copy Link button
+- **Desktop KYC fix**: Camera buttons only on mobile; desktop gets "Choose File" only
+- **Video upload from gallery**: Added "Upload Video" button alongside "Start Video" in KYC Step 3. Clients who can't use camera can upload pre-recorded video from gallery
+- **Improved upload error messages**: Specific error messages for session expired (401), file too large (413), connection timeout. Raw file fallback when compression fails
+- **Backend upload hardening**: File size validation (100MB limit), empty file check, detailed logging (file size, content type, user ID)
 
 ### Previous Sessions
-- Client Forgot Password flow (backend + frontend + i18n)
-- KYC blank page fix for Xiaomi/Android (disable translate, error boundary, robust file handling)
+- Client Forgot Password flow
+- KYC blank page fix for Xiaomi/Android
 - "Unusual Activity" auto-unfreeze logic
 - Admin notification badge fixes
-- Email link fixes (Gmail crash, FRONTEND_URL trailing space)
+- Email link fixes
 - Health endpoint for Kubernetes
-- Data migration (led to critical data loss - see Known Issues)
 
 ## Known Issues
-- **P0 BLOCKED**: Production data was overwritten with test data during migration. Awaiting Emergent Support backup restore. DO NOT attempt another migration.
+- **P0 BLOCKED**: Production data was overwritten. Awaiting Emergent Support backup restore
+- **P0 INVESTIGATION NEEDED**: Production KYC upload fails ("Caricamento non riuscito"). Likely caused by misconfigured Cloudinary credentials in production Secrets. Upload works perfectly in preview. User needs to verify Cloudinary credentials in Emergent Secrets tab match: CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET
 - All financial data (balances, transactions) is MOCKED/simulated
 
 ## Architecture
@@ -46,10 +48,12 @@ Build a professional clone of the blockchain.com wallet/exchange with polished U
 /app
 ├── backend/
 │   ├── server.py          # Monolithic - needs refactoring
-│   └── email_service.py
+│   ├── email_service.py
+│   └── tests/
+│       └── test_kyc_video_upload.py
 └── frontend/
     └── src/
-        ├── pages/KYCPage.js         # In-app browser detection + camera fixes
+        ├── pages/KYCPage.js         # In-app browser detection, video upload, improved error handling
         ├── pages/ForgotPasswordPage.js
         ├── components/ErrorBoundary.js
         ├── components/Auth.js
@@ -59,18 +63,18 @@ Build a professional clone of the blockchain.com wallet/exchange with polished U
 
 ## Prioritized Backlog
 ### P0
-- User verification of in-app browser + desktop KYC fixes
+- Verify production Cloudinary credentials in Emergent Secrets
 - Production database restore (blocked on user/Emergent Support)
 
 ### P1
-- (None currently)
+- User verification of all KYC fixes with real clients
 
 ### P2
 - Refactor backend/server.py into modular FastAPI routers
 - Admin audit trail for system events
 
 ### P3
-- Further PWA enhancements for offline support
+- Further PWA enhancements
 - Performance optimizations
 
 ## Key Credentials

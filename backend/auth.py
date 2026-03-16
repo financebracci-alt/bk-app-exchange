@@ -1,5 +1,5 @@
 """
-Authentication utilities for Blockchain Wallet Platform
+Authentication utilities for Zenthos Wallet Platform
 JWT tokens, password hashing, and authentication middleware
 """
 

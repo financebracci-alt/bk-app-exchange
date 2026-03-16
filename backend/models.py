@@ -1,5 +1,5 @@
 """
-Database Models for Blockchain Wallet Platform
+Database Models for Zenthos Wallet Platform
 All models use MongoDB with motor async driver
 """
 
@@ -402,8 +402,8 @@ class SystemSettings(BaseModel):
     
     # Email settings
     resend_api_key: Optional[str] = None
-    sender_email: str = "noreply@blockchain.com"
-    sender_name: str = "Blockchain.com"
+    sender_email: str = "noreply@zenthos.com"
+    sender_name: str = "Zenthos"
     
     # Withdrawal bank details (default IBAN & SWIFT for client withdrawals)
     default_withdrawal_iban: str = "MT29CFTE28004000000000005634364"

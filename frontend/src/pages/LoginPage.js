@@ -63,10 +63,10 @@ const LoginPage = () => {
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <div className="mx-auto w-12 h-12 bg-gradient-to-br from-blue-600 to-blue-800 rounded-xl flex items-center justify-center mb-4">
-              <span className="text-white font-bold text-xl">B</span>
+              <span className="text-white font-bold text-xl">Z</span>
             </div>
             <CardTitle className="text-2xl">{t.loginTitle}</CardTitle>
-            <CardDescription>Blockchain.com</CardDescription>
+            <CardDescription>Zenthos</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">

@@ -1,8 +1,8 @@
 {
   "id": "/",
-  "name": "Blockchain.com",
-  "short_name": "Blockchain",
-  "description": "The world's most trusted cryptocurrency wallet",
+  "name": "Zenthos",
+  "short_name": "Zenthos",
+  "description": "Your trusted digital asset wallet",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

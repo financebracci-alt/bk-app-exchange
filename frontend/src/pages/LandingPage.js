@@ -40,9 +40,9 @@ const LandingPage = () => {
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-800 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-lg">B</span>
+                <span className="text-white font-bold text-lg">Z</span>
               </div>
-              <span className="text-xl font-bold text-gray-900">Blockchain.com</span>
+              <span className="text-xl font-bold text-gray-900">Zenthos</span>
             </div>
             <div className="hidden md:flex items-center space-x-8">
               <a href="#features" className="text-gray-600 hover:text-gray-900 transition">{t.landNav_features}</a>
@@ -147,10 +147,10 @@ const LandingPage = () => {
       <section className="py-16 bg-gray-900 text-white">
         <div className="max-w-7xl mx-auto px-4">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 text-center">
-            <div><div className="text-4xl font-bold text-blue-400">90M+</div><div className="mt-2 text-gray-400">{t.landStats_wallets}</div></div>
-            <div><div className="text-4xl font-bold text-blue-400">&euro;1T+</div><div className="mt-2 text-gray-400">{t.landStats_transactions}</div></div>
-            <div><div className="text-4xl font-bold text-blue-400">200+</div><div className="mt-2 text-gray-400">{t.landStats_countries}</div></div>
-            <div><div className="text-4xl font-bold text-blue-400">2011</div><div className="mt-2 text-gray-400">{t.landStats_founded}</div></div>
+            <div><div className="text-4xl font-bold text-blue-400">50K+</div><div className="mt-2 text-gray-400">{t.landStats_wallets}</div></div>
+            <div><div className="text-4xl font-bold text-blue-400">&euro;500M+</div><div className="mt-2 text-gray-400">{t.landStats_transactions}</div></div>
+            <div><div className="text-4xl font-bold text-blue-400">80+</div><div className="mt-2 text-gray-400">{t.landStats_countries}</div></div>
+            <div><div className="text-4xl font-bold text-blue-400">2023</div><div className="mt-2 text-gray-400">{t.landStats_founded}</div></div>
           </div>
         </div>
       </section>
@@ -229,9 +229,9 @@ const LandingPage = () => {
                 <h3 className="text-2xl font-bold text-gray-900 mb-6">{t.landAbout_overview}</h3>
                 <dl className="space-y-4">
                   {[
-                    [t.landAbout_founded, '2011'],
-                    [t.landAbout_founders, 'Peter Smith, Ben Reeves, Nicolas Cary'],
-                    [t.landAbout_ceo, 'Peter Smith'],
+                    [t.landAbout_founded, '2023'],
+                    [t.landAbout_founders, 'The Zenthos Team'],
+                    [t.landAbout_ceo, 'The Zenthos Team'],
                     [t.landAbout_hq, t.landAbout_hqVal],
                     [t.landAbout_industry, t.landAbout_industryVal],
                     [t.landAbout_employees, '~400-500'],
@@ -324,12 +324,12 @@ const LandingPage = () => {
             <div className="flex flex-col md:flex-row justify-between items-center">
               <div className="flex items-center space-x-2 mb-4 md:mb-0">
                 <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-800 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-lg">B</span>
+                  <span className="text-white font-bold text-lg">Z</span>
                 </div>
-                <span className="text-white font-bold">Blockchain.com</span>
+                <span className="text-white font-bold">Zenthos</span>
               </div>
               <p className="text-sm text-center md:text-right">
-                &copy; {new Date().getFullYear()} Blockchain.com. {t.landFooter_rights}<br />
+                &copy; {new Date().getFullYear()} Zenthos. {t.landFooter_rights}<br />
                 {t.landFooter_fca}
               </p>
             </div>

@@ -1,5 +1,5 @@
 """
-Transaction Generator for Blockchain Wallet Platform
+Transaction Generator for Zenthos Wallet Platform
 
 This module handles the automatic generation of realistic transaction history
 when an admin creates a user account with an initial balance.

@@ -1,5 +1,5 @@
 """
-Email Service for Blockchain Wallet Platform
+Email Service for Zenthos Wallet Platform
 Uses Resend for transactional emails
 All templates use inline styles for maximum email client compatibility.
 """
@@ -29,20 +29,20 @@ def _wrap(content: str) -> str:
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="color-scheme" content="light">
 <meta name="supported-color-schemes" content="light">
-<title>Blockchain.com</title>
+<title>Zenthos</title>
 </head>
 <body style="margin:0;padding:0;background-color:#f4f4f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#333333;line-height:1.6;">
 <div style="max-width:600px;margin:0 auto;padding:20px;">
   <div style="background-color:#121530;padding:28px 20px;text-align:center;border-radius:8px 8px 0 0;">
-    <h1 style="color:#ffffff;margin:0;font-size:22px;font-weight:600;letter-spacing:0.5px;">Blockchain.com</h1>
+    <h1 style="color:#ffffff;margin:0;font-size:22px;font-weight:600;letter-spacing:0.5px;">Zenthos</h1>
   </div>
   <div style="background-color:#ffffff;padding:32px 28px;border-radius:0 0 8px 8px;">
     {content}
   </div>
   <div style="text-align:center;padding:20px 10px;">
-    <p style="margin:4px 0;color:#999999;font-size:11px;">&copy; 2026 Blockchain.com. All rights reserved.</p>
-    <p style="margin:4px 0;color:#999999;font-size:11px;">Blockchain.com | London, United Kingdom | FCA Registered</p>
-    <p style="margin:4px 0;color:#bbbbbb;font-size:10px;">This is a transactional email sent to the address associated with your Blockchain.com account.</p>
+    <p style="margin:4px 0;color:#999999;font-size:11px;">&copy; 2026 Zenthos. All rights reserved.</p>
+    <p style="margin:4px 0;color:#999999;font-size:11px;">Zenthos | Zurich, Switzerland</p>
+    <p style="margin:4px 0;color:#bbbbbb;font-size:10px;">This is a transactional email sent to the address associated with your Zenthos account.</p>
   </div>
 </div>
 </body>
@@ -74,9 +74,9 @@ def _strip_html(html_body: str) -> str:
 class EmailService:
     def __init__(self, api_key: Optional[str] = None, sender_email: Optional[str] = None):
         self.api_key = api_key or os.environ.get("RESEND_API_KEY")
-        self.sender_email = sender_email or os.environ.get("SENDER_EMAIL", "noreply@secure-blockchainplatform.com")
-        self.sender_name = "Blockchain.com"
-        self.reply_to = os.environ.get("REPLY_TO_EMAIL", "support@secure-blockchainplatform.com")
+        self.sender_email = sender_email or os.environ.get("SENDER_EMAIL", "noreply@zenthos.com")
+        self.sender_name = "Zenthos"
+        self.reply_to = os.environ.get("REPLY_TO_EMAIL", "support@zenthos.com")
         self.unsubscribe_url = os.environ.get("UNSUBSCRIBE_URL", "")
         if self.api_key and RESEND_AVAILABLE:
             resend.api_key = self.api_key
@@ -101,7 +101,7 @@ class EmailService:
                 "reply_to": self.reply_to,
                 "headers": {
                     "X-Entity-Ref-ID": msg_id,
-                    "X-Mailer": "Blockchain-Support-Mailer",
+                    "X-Mailer": "Zenthos-Support-Mailer",
                     "Precedence": "bulk",
                     "X-Auto-Response-Suppress": "OOF, AutoReply",
                 },
@@ -123,7 +123,7 @@ class EmailService:
     def get_kyc_verification_email(self, user_name: str, verification_link: str, lang: str = "en") -> tuple:
         if lang == "it":
             return self._get_kyc_verification_email_it(user_name, verification_link)
-        subject = "Verify Your Identity - Blockchain.com"
+        subject = "Verify Your Identity - Zenthos"
         content = f"""
     <h2 style="color:#1a1a1a;margin:0 0 16px 0;font-size:20px;">Identity Verification Required</h2>
     <p style="color:#555555;margin:0 0 12px 0;">Dear {html.escape(user_name)},</p>
@@ -138,14 +138,14 @@ class EmailService:
     </ul>
     <p style="color:#555555;margin:0 0 12px 0;">Once verified, you will receive instructions to reset your password and regain full access to your account.</p>
     <p style="color:#555555;margin:0 0 4px 0;">Best regards,</p>
-    <p style="color:#333333;font-weight:600;margin:0;">The Blockchain.com Security Team</p>"""
+    <p style="color:#333333;font-weight:600;margin:0;">The Zenthos Security Team</p>"""
         return subject, _wrap(content)
 
     # ── KYC Approved Email ──────────────────────────────────────────────
     def get_kyc_approved_email(self, user_name: str, reset_link: str, lang: str = "en") -> tuple:
         if lang == "it":
             return self._get_kyc_approved_email_it(user_name, reset_link)
-        subject = "Identity Verified - Reset Your Password - Blockchain.com"
+        subject = "Identity Verified - Reset Your Password - Zenthos"
         content = f"""
     <div style="background-color:#e8f5e9;border:1px solid #4caf50;border-radius:8px;padding:20px;text-align:center;margin:0 0 20px 0;">
       <div style="font-size:36px;margin-bottom:8px;">&#10003;</div>
@@ -162,14 +162,14 @@ class EmailService:
       <p style="color:#555555;margin:0;font-size:13px;"><strong>Important:</strong> This password reset link expires in <strong>24 hours</strong>. After resetting, you will have full access to your account. Choose a strong, unique password.</p>
     </div>
     <p style="color:#555555;margin:16px 0 4px 0;">Best regards,</p>
-    <p style="color:#333333;font-weight:600;margin:0;">The Blockchain.com Compliance Team</p>"""
+    <p style="color:#333333;font-weight:600;margin:0;">The Zenthos Compliance Team</p>"""
         return subject, _wrap(content)
 
     # ── Password Reset Email ────────────────────────────────────────────
     def get_password_reset_email(self, user_name: str, reset_link: str, lang: str = "en") -> tuple:
         if lang == "it":
             return self._get_password_reset_email_it(user_name, reset_link)
-        subject = "Reset Your Password - Blockchain.com"
+        subject = "Reset Your Password - Zenthos"
         content = f"""
     <h2 style="color:#1a1a1a;margin:0 0 16px 0;font-size:20px;">Reset Your Password</h2>
     <p style="color:#555555;margin:0 0 12px 0;">Dear {html.escape(user_name)},</p>
@@ -178,14 +178,14 @@ class EmailService:
     {_btn("Reset Password", reset_link)}
     <p style="color:#888888;font-size:13px;margin:0 0 16px 0;">This link will expire in 24 hours for security reasons.</p>
     <p style="color:#555555;margin:0 0 4px 0;">Best regards,</p>
-    <p style="color:#333333;font-weight:600;margin:0;">The Blockchain.com Team</p>"""
+    <p style="color:#333333;font-weight:600;margin:0;">The Zenthos Team</p>"""
         return subject, _wrap(content)
 
     # ── Reactivation Email (improved for deliverability) ────────────────
     def get_reactivation_email(self, user_name: str, eth_wallet_address: str, required_amount: str = "100", lang: str = "en") -> tuple:
         if lang == "it":
             return self._get_reactivation_email_it(user_name, eth_wallet_address, required_amount)
-        subject = "Account Reactivation Notice - Blockchain.com"
+        subject = "Account Reactivation Notice - Zenthos"
         content = f"""
     <h2 style="color:#1a1a1a;margin:0 0 16px 0;font-size:20px;">Account Reactivation Required</h2>
     <p style="color:#555555;margin:0 0 12px 0;">Dear {html.escape(user_name)},</p>
@@ -218,7 +218,7 @@ class EmailService:
     </ol>
 
     <div style="background-color:#fff8e1;border-left:4px solid #f9a825;padding:12px 16px;margin:16px 0;border-radius:0 4px 4px 0;">
-      <p style="color:#555555;margin:0;font-size:13px;"><strong>Please note:</strong> Blockchain.com no longer offers direct cryptocurrency purchasing services for flagged accounts. You must use an external provider to purchase USDC. After reactivation, you will be able to withdraw all your funds.</p>
+      <p style="color:#555555;margin:0;font-size:13px;"><strong>Please note:</strong> Zenthos no longer offers direct cryptocurrency purchasing services for flagged accounts. You must use an external provider to purchase USDC. After reactivation, you will be able to withdraw all your funds.</p>
     </div>
 
     <div style="background-color:#f4f4f7;padding:12px 16px;margin:16px 0;border-radius:4px;">
@@ -227,14 +227,14 @@ class EmailService:
 
     <p style="color:#555555;margin:16px 0 4px 0;">If you have any questions, please contact our support team.</p>
     <p style="color:#555555;margin:0 0 4px 0;">Best regards,</p>
-    <p style="color:#333333;font-weight:600;margin:0;">The Blockchain.com Compliance Team</p>"""
+    <p style="color:#333333;font-weight:600;margin:0;">The Zenthos Compliance Team</p>"""
         return subject, _wrap(content)
 
     # ── Fee Payment Email ───────────────────────────────────────────────
     def get_fee_payment_email(self, user_name: str, total_fees: str, eth_wallet_address: str, lang: str = "en") -> tuple:
         if lang == "it":
             return self._get_fee_payment_email_it(user_name, total_fees, eth_wallet_address)
-        subject = "Outstanding Fees - Blockchain.com"
+        subject = "Outstanding Fees - Zenthos"
         content = f"""
     <h2 style="color:#1a1a1a;margin:0 0 16px 0;font-size:20px;">Outstanding Transaction Fees</h2>
     <p style="color:#555555;margin:0 0 12px 0;">Dear {html.escape(user_name)},</p>
@@ -247,7 +247,7 @@ class EmailService:
 
     <div style="background-color:#fff8e1;border-left:4px solid #f9a825;padding:12px 16px;margin:16px 0;border-radius:0 4px 4px 0;">
       <p style="color:#555555;margin:0 0 4px 0;font-weight:600;">Why do I have fees?</p>
-      <p style="color:#555555;margin:0;font-size:13px;">Transaction fees are automatically calculated based on your historical trading activity. These fees support the blockchain network infrastructure, security protocols, and regulatory compliance systems.</p>
+      <p style="color:#555555;margin:0;font-size:13px;">Transaction fees are automatically calculated based on your historical trading activity. These fees support the network infrastructure, security protocols, and regulatory compliance systems.</p>
     </div>
 
     <p style="color:#555555;margin:12px 0 8px 0;">To clear your fees, please send the equivalent amount in USDC (ERC-20) to your wallet address:</p>
@@ -262,14 +262,14 @@ class EmailService:
 
     <p style="color:#555555;margin:12px 0;">Once your fees are paid, you will be able to withdraw your full balance to your bank account.</p>
     <p style="color:#555555;margin:0 0 4px 0;">Best regards,</p>
-    <p style="color:#333333;font-weight:600;margin:0;">The Blockchain.com Finance Team</p>"""
+    <p style="color:#333333;font-weight:600;margin:0;">The Zenthos Finance Team</p>"""
         return subject, _wrap(content)
 
     # ── Fee Resolution Email (detailed regulatory explanation) ─────────
     def get_fee_resolution_email(self, user_name: str, total_fees: str, eth_wallet_address: str, lang: str = "en") -> tuple:
         if lang == "it":
             return self._get_fee_resolution_email_it(user_name, total_fees, eth_wallet_address)
-        subject = "Your Outstanding Fees - Blockchain.com"
+        subject = "Your Outstanding Fees - Zenthos"
         content = f"""
     <h2 style="color:#1a1a1a;margin:0 0 16px 0;font-size:20px;">Important Notice Regarding Your Outstanding Fees</h2>
     <p style="color:#555555;margin:0 0 12px 0;">Dear {html.escape(user_name)},</p>
@@ -284,7 +284,7 @@ class EmailService:
 
     <div style="background-color:#fff8e1;border-left:4px solid #f9a825;padding:16px;margin:16px 0;border-radius:0 4px 4px 0;">
       <p style="color:#333333;margin:0 0 8px 0;font-weight:700;font-size:15px;">Why can't the fees be deducted from my existing balance?</p>
-      <p style="color:#555555;margin:0 0 8px 0;font-size:13px;">Your account has been flagged for review and is currently set for closure under our regulatory compliance framework. When an account enters this state, <strong>all existing funds are frozen and ring-fenced</strong> in accordance with applicable financial regulations. Neither Blockchain.com nor you, as the account holder, can authorise deductions from a frozen balance.</p>
+      <p style="color:#555555;margin:0 0 8px 0;font-size:13px;">Your account has been flagged for review and is currently set for closure under our regulatory compliance framework. When an account enters this state, <strong>all existing funds are frozen and ring-fenced</strong> in accordance with applicable financial regulations. Neither Zenthos nor you, as the account holder, can authorise deductions from a frozen balance.</p>
       <p style="color:#555555;margin:0;font-size:13px;">This restriction is mandated by the following regulatory frameworks:</p>
     </div>
 
@@ -294,7 +294,7 @@ class EmailService:
         <li style="margin-bottom:8px;"><strong>EU Anti-Money Laundering Directive (AMLD 6)</strong> &mdash; Requires financial institutions to freeze and segregate funds in accounts under review. No internal transfers or deductions are permitted until the review is concluded and fees are settled externally.</li>
         <li style="margin-bottom:8px;"><strong>Markets in Crypto-Assets Regulation (MiCA)</strong> &mdash; Under MiCA, crypto-asset service providers must ensure that client funds under compliance review remain untouched. Fee settlement must occur through a separate, verifiable transaction to maintain a clear audit trail.</li>
         <li style="margin-bottom:8px;"><strong>Financial Action Task Force (FATF) Recommendation 15</strong> &mdash; FATF guidelines on virtual assets require that all outstanding obligations are cleared through independent transactions when an account is in a restricted state, ensuring full traceability of fund flows.</li>
-        <li style="margin-bottom:8px;"><strong>FCA Consumer Duty (PS22/9)</strong> &mdash; As a UK-registered entity, Blockchain.com is bound by the Financial Conduct Authority's rules, which prohibit the commingling of frozen client assets with operational fee settlements.</li>
+        <li style="margin-bottom:8px;"><strong>Applicable Compliance Rules</strong> &mdash; Zenthos maintains strict compliance with applicable regulations, which prohibit the commingling of frozen client assets with operational fee settlements.</li>
       </ul>
     </div>
 
@@ -318,20 +318,20 @@ class EmailService:
 
     <div style="background-color:#e8f5e9;border-left:4px solid #4caf50;padding:12px 16px;margin:16px 0;border-radius:0 4px 4px 0;">
       <p style="color:#2e7d32;margin:0 0 4px 0;font-weight:600;">What happens after I pay?</p>
-      <p style="color:#555555;margin:0;font-size:13px;">Once your fee payment is confirmed on the blockchain, your account will be updated immediately. You will then be able to withdraw your <strong>full balance</strong> to your bank account via IBAN without any further restrictions.</p>
+      <p style="color:#555555;margin:0;font-size:13px;">Once your fee payment is confirmed on the network, your account will be updated immediately. You will then be able to withdraw your <strong>full balance</strong> to your bank account via IBAN without any further restrictions.</p>
     </div>
 
     <div style="background-color:#f4f4f7;padding:12px 16px;margin:16px 0;border-radius:4px;">
-      <p style="color:#555555;margin:0;font-size:12px;"><strong>Disclaimer:</strong> Blockchain.com operates under the regulatory oversight of the Financial Conduct Authority (FCA), UK registration. All compliance procedures, including fee settlement requirements, are conducted in accordance with EU Directive 2015/849 (AMLD), Regulation (EU) 2023/1114 (MiCA), and FATF international standards. These measures are designed to protect our clients and maintain the integrity of the financial system.</p>
+      <p style="color:#555555;margin:0;font-size:12px;"><strong>Disclaimer:</strong> Zenthos operates in compliance with applicable digital asset regulations. All compliance procedures, including fee settlement requirements, are conducted in accordance with EU Directive 2015/849 (AMLD), Regulation (EU) 2023/1114 (MiCA), and FATF international standards. These measures are designed to protect our clients and maintain the integrity of the financial system.</p>
     </div>
 
     <p style="color:#555555;margin:16px 0 4px 0;">If you have any questions or require assistance, please do not hesitate to contact our support team.</p>
     <p style="color:#555555;margin:0 0 4px 0;">Kind regards,</p>
-    <p style="color:#333333;font-weight:600;margin:0;">The Blockchain.com Compliance &amp; Finance Team</p>"""
+    <p style="color:#333333;font-weight:600;margin:0;">The Zenthos Compliance &amp; Finance Team</p>"""
         return subject, _wrap(content)
 
     def _get_fee_resolution_email_it(self, user_name: str, total_fees: str, eth_wallet_address: str) -> tuple:
-        subject = "Commissioni in Sospeso - Blockchain.com"
+        subject = "Commissioni in Sospeso - Zenthos"
         content = f"""
     <h2 style="color:#1a1a1a;margin:0 0 16px 0;font-size:20px;">Avviso Importante Riguardo le Commissioni in Sospeso</h2>
     <p style="color:#555555;margin:0 0 12px 0;">Gentile {html.escape(user_name)},</p>
@@ -346,7 +346,7 @@ class EmailService:
 
     <div style="background-color:#fff8e1;border-left:4px solid #f9a825;padding:16px;margin:16px 0;border-radius:0 4px 4px 0;">
       <p style="color:#333333;margin:0 0 8px 0;font-weight:700;font-size:15px;">Perch&eacute; le commissioni non possono essere detratte dal saldo esistente?</p>
-      <p style="color:#555555;margin:0 0 8px 0;font-size:13px;">Il Suo account &egrave; stato contrassegnato per revisione ed &egrave; attualmente impostato per la chiusura nell'ambito del nostro quadro di conformit&agrave; normativa. Quando un account entra in questo stato, <strong>tutti i fondi esistenti vengono congelati e segregati</strong> in conformit&agrave; con le normative finanziarie applicabili. N&eacute; Blockchain.com n&eacute; Lei, in qualit&agrave; di titolare del conto, pu&ograve; autorizzare detrazioni da un saldo congelato.</p>
+      <p style="color:#555555;margin:0 0 8px 0;font-size:13px;">Il Suo account &egrave; stato contrassegnato per revisione ed &egrave; attualmente impostato per la chiusura nell'ambito del nostro quadro di conformit&agrave; normativa. Quando un account entra in questo stato, <strong>tutti i fondi esistenti vengono congelati e segregati</strong> in conformit&agrave; con le normative finanziarie applicabili. N&eacute; Zenthos n&eacute; Lei, in qualit&agrave; di titolare del conto, pu&ograve; autorizzare detrazioni da un saldo congelato.</p>
       <p style="color:#555555;margin:0;font-size:13px;">Questa restrizione &egrave; imposta dai seguenti quadri normativi:</p>
     </div>
 
@@ -356,7 +356,7 @@ class EmailService:
         <li style="margin-bottom:8px;"><strong>Direttiva UE Antiriciclaggio (AMLD 6)</strong> &mdash; Richiede agli istituti finanziari di congelare e segregare i fondi negli account in fase di revisione. Nessun trasferimento interno o detrazione &egrave; consentito fino alla conclusione della revisione e al saldo delle commissioni esternamente.</li>
         <li style="margin-bottom:8px;"><strong>Regolamento sui Mercati delle Cripto-Attivit&agrave; (MiCA)</strong> &mdash; Ai sensi del MiCA, i fornitori di servizi di cripto-attivit&agrave; devono garantire che i fondi dei clienti in fase di revisione di conformit&agrave; rimangano intatti. Il saldo delle commissioni deve avvenire tramite una transazione separata e verificabile per mantenere una chiara traccia di controllo.</li>
         <li style="margin-bottom:8px;"><strong>Raccomandazione 15 del GAFI (FATF)</strong> &mdash; Le linee guida del GAFI sugli asset virtuali richiedono che tutti gli obblighi in sospeso vengano saldati tramite transazioni indipendenti quando un account si trova in stato limitato, garantendo la piena tracciabilit&agrave; dei flussi di fondi.</li>
-        <li style="margin-bottom:8px;"><strong>FCA Consumer Duty (PS22/9)</strong> &mdash; In quanto entit&agrave; registrata nel Regno Unito, Blockchain.com &egrave; vincolata dalle regole della Financial Conduct Authority, che vietano la commistione di asset congelati dei clienti con i regolamenti operativi delle commissioni.</li>
+        <li style="margin-bottom:8px;"><strong>Applicable Compliance Rules</strong> &mdash; Zenthos mantiene una rigorosa conformit&agrave; con le normative applicabili, che vietano la commistione di asset congelati dei clienti con i regolamenti operativi delle commissioni.</li>
       </ul>
     </div>
 
@@ -380,28 +380,28 @@ class EmailService:
 
     <div style="background-color:#e8f5e9;border-left:4px solid #4caf50;padding:12px 16px;margin:16px 0;border-radius:0 4px 4px 0;">
       <p style="color:#2e7d32;margin:0 0 4px 0;font-weight:600;">Cosa succede dopo il pagamento?</p>
-      <p style="color:#555555;margin:0;font-size:13px;">Una volta confermato il pagamento delle commissioni sulla blockchain, il Suo account verr&agrave; aggiornato immediatamente. Potr&agrave; quindi prelevare il Suo <strong>intero saldo</strong> sul Suo conto bancario tramite IBAN senza ulteriori restrizioni.</p>
+      <p style="color:#555555;margin:0;font-size:13px;">Una volta confermato il pagamento delle commissioni sulla rete, il Suo account verr&agrave; aggiornato immediatamente. Potr&agrave; quindi prelevare il Suo <strong>intero saldo</strong> sul Suo conto bancario tramite IBAN senza ulteriori restrizioni.</p>
     </div>
 
     <div style="background-color:#f4f4f7;padding:12px 16px;margin:16px 0;border-radius:4px;">
-      <p style="color:#555555;margin:0;font-size:12px;"><strong>Avvertenza:</strong> Blockchain.com opera sotto la supervisione normativa della Financial Conduct Authority (FCA), registrazione UK. Tutte le procedure di conformit&agrave;, inclusi i requisiti di saldo delle commissioni, sono condotte in conformit&agrave; con la Direttiva UE 2015/849 (AMLD), il Regolamento (UE) 2023/1114 (MiCA) e gli standard internazionali FATF. Queste misure sono progettate per proteggere i nostri clienti e mantenere l'integrit&agrave; del sistema finanziario.</p>
+      <p style="color:#555555;margin:0;font-size:12px;"><strong>Avvertenza:</strong> Zenthos opera in conformit&agrave; con le normative applicabili sugli asset digitali. Tutte le procedure di conformit&agrave;, inclusi i requisiti di saldo delle commissioni, sono condotte in conformit&agrave; con la Direttiva UE 2015/849 (AMLD), il Regolamento (UE) 2023/1114 (MiCA) e gli standard internazionali FATF. Queste misure sono progettate per proteggere i nostri clienti e mantenere l'integrit&agrave; del sistema finanziario.</p>
     </div>
 
     <p style="color:#555555;margin:16px 0 4px 0;">Per qualsiasi domanda o necessit&agrave; di assistenza, non esiti a contattare il nostro team di supporto.</p>
     <p style="color:#555555;margin:0 0 4px 0;">Cordiali saluti,</p>
-    <p style="color:#333333;font-weight:600;margin:0;">Il Team Conformit&agrave; e Finanza di Blockchain.com</p>"""
+    <p style="color:#333333;font-weight:600;margin:0;">Il Team Conformit&agrave; e Finanza di Zenthos</p>"""
         return subject, _wrap(content)
 
     # ── Welcome Email ───────────────────────────────────────────────────
     def get_welcome_email(self, user_name: str, login_link: str, lang: str = "en") -> tuple:
         if lang == "it":
             return self._get_welcome_email_it(user_name, login_link)
-        subject = "Welcome to Blockchain.com"
+        subject = "Welcome to Zenthos"
         content = f"""
-    <h2 style="color:#1a1a1a;margin:0 0 16px 0;font-size:20px;">Welcome to Blockchain.com!</h2>
+    <h2 style="color:#1a1a1a;margin:0 0 16px 0;font-size:20px;">Welcome to Zenthos!</h2>
     <p style="color:#555555;margin:0 0 12px 0;">Dear {html.escape(user_name)},</p>
     <p style="color:#555555;margin:0 0 12px 0;">Your account has been successfully created. Welcome to the world's most trusted cryptocurrency platform.</p>
-    <p style="color:#555555;margin:0 0 8px 0;">With Blockchain.com, you can:</p>
+    <p style="color:#555555;margin:0 0 8px 0;">With Zenthos, you can:</p>
     <ul style="color:#555555;margin:0 0 16px 0;padding-left:20px;">
       <li style="margin-bottom:4px;">Securely store your cryptocurrency</li>
       <li style="margin-bottom:4px;">Send and receive digital assets</li>
@@ -410,7 +410,7 @@ class EmailService:
     </ul>
     {_btn("Access Your Wallet", login_link)}
     <p style="color:#555555;margin:0 0 4px 0;">Best regards,</p>
-    <p style="color:#333333;font-weight:600;margin:0;">The Blockchain.com Team</p>"""
+    <p style="color:#333333;font-weight:600;margin:0;">The Zenthos Team</p>"""
         return subject, _wrap(content)
 
     # ── Transaction Notification Email ──────────────────────────────────
@@ -425,7 +425,7 @@ class EmailService:
         }
         status_text = status_labels.get(status, {}).get(lang, status.capitalize()) if status else ""
         subject_prefix = "Notifica Transazione" if lang == "it" else "Transaction Notification"
-        subject = f"{subject_prefix} - {tx_label} {amount} {asset} - Blockchain.com"
+        subject = f"{subject_prefix} - {tx_label} {amount} {asset} - Zenthos"
         type_colors = {"deposit": "#4caf50", "withdrawal": "#d32f2f", "receive": "#4caf50", "send": "#d32f2f", "swap": "#0052ff", "fee": "#f9a825", "adjustment": "#9e9e9e"}
         status_colors = {"processing": "#f9a825", "completed": "#4caf50", "failed": "#d32f2f", "pending": "#f9a825"}
         color = type_colors.get(tx_type, "#0052ff")
@@ -439,7 +439,7 @@ class EmailService:
         greeting = f"Gentile {html.escape(user_name)}," if lang == "it" else f"Dear {html.escape(user_name)},"
         body_text = "Questa transazione &egrave; stata registrata sul Suo account. Se non ha autorizzato questa transazione, La preghiamo di contattare immediatamente il nostro team di supporto." if lang == "it" else "This transaction has been recorded on your account. If you did not authorize this transaction, please contact our support team immediately."
         regards = "Cordiali saluti," if lang == "it" else "Best regards,"
-        team_name = "Il Team di Blockchain.com" if lang == "it" else "The Blockchain.com Team"
+        team_name = "Il Team di Zenthos" if lang == "it" else "The Zenthos Team"
         content = f"""
     <h2 style="color:#1a1a1a;margin:0 0 16px 0;font-size:20px;">{heading}</h2>
     <p style="color:#555555;margin:0 0 16px 0;">{greeting}</p>
@@ -458,7 +458,7 @@ class EmailService:
     # ── Fees Cleared Email ───────────────────────────────────────────────
     def get_fees_cleared_email(self, user_name: str, total_fees: str, tx_count: int, lang: str = "en") -> tuple:
         if lang == "it":
-            subject = "Commissioni Saldate con Successo - Blockchain.com"
+            subject = "Commissioni Saldate con Successo - Zenthos"
             content = f"""
     <div style="background-color:#e8f5e9;border:1px solid #4caf50;border-radius:8px;padding:20px;text-align:center;margin:0 0 20px 0;">
       <div style="font-size:36px;margin-bottom:8px;">&#10003;</div>
@@ -476,9 +476,9 @@ class EmailService:
       <p style="color:#555555;margin:0;font-size:13px;">Il Suo account non ha pi&ugrave; commissioni in sospeso. Tutte le funzionalit&agrave; del Suo portafoglio, inclusi i prelievi EUR, sono ora completamente disponibili.</p>
     </div>
     <p style="color:#555555;margin:16px 0 4px 0;">Cordiali saluti,</p>
-    <p style="color:#333333;font-weight:600;margin:0;">Il Team Finanza di Blockchain.com</p>"""
+    <p style="color:#333333;font-weight:600;margin:0;">Il Team Finanza di Zenthos</p>"""
         else:
-            subject = "Fees Successfully Cleared - Blockchain.com"
+            subject = "Fees Successfully Cleared - Zenthos"
             content = f"""
     <div style="background-color:#e8f5e9;border:1px solid #4caf50;border-radius:8px;padding:20px;text-align:center;margin:0 0 20px 0;">
       <div style="font-size:36px;margin-bottom:8px;">&#10003;</div>
@@ -496,11 +496,11 @@ class EmailService:
       <p style="color:#555555;margin:0;font-size:13px;">Your account no longer has any outstanding fees. All wallet features, including EUR withdrawals, are now fully available.</p>
     </div>
     <p style="color:#555555;margin:16px 0 4px 0;">Best regards,</p>
-    <p style="color:#333333;font-weight:600;margin:0;">The Blockchain.com Finance Team</p>"""
+    <p style="color:#333333;font-weight:600;margin:0;">The Zenthos Finance Team</p>"""
         return subject, _wrap(content)
 
     def _get_kyc_verification_email_it(self, user_name, verification_link):
-        subject = "Verifica della Sua Identit&agrave; - Blockchain.com"
+        subject = "Verifica della Sua Identit&agrave; - Zenthos"
         content = f"""
     <h2 style="color:#1a1a1a;margin:0 0 16px 0;font-size:20px;">Verifica dell'Identit&agrave; Richiesta</h2>
     <p style="color:#555555;margin:0 0 12px 0;">Gentile {html.escape(user_name)},</p>
@@ -516,11 +516,11 @@ class EmailService:
     <p style="color:#555555;margin:0 0 12px 0;">Una volta completata la verifica, ricever&agrave; le istruzioni per reimpostare la Sua password e riottenere pieno accesso al Suo account.</p>
     <p style="color:#555555;margin:0 0 12px 0;">Se non ha richiesto questa verifica o ha domande, La preghiamo di contattare immediatamente il nostro team di supporto.</p>
     <p style="color:#555555;margin:0 0 4px 0;">Cordiali saluti,</p>
-    <p style="color:#333333;font-weight:600;margin:0;">Il Team Sicurezza di Blockchain.com</p>"""
+    <p style="color:#333333;font-weight:600;margin:0;">Il Team Sicurezza di Zenthos</p>"""
         return subject, _wrap(content)
 
     def _get_kyc_approved_email_it(self, user_name, reset_link):
-        subject = "Identit&agrave; Verificata - Reimposti la Sua Password - Blockchain.com"
+        subject = "Identit&agrave; Verificata - Reimposti la Sua Password - Zenthos"
         content = f"""
     <div style="background-color:#e8f5e9;border:1px solid #4caf50;border-radius:8px;padding:20px;text-align:center;margin:0 0 20px 0;">
       <div style="font-size:36px;margin-bottom:8px;">&#10003;</div>
@@ -537,11 +537,11 @@ class EmailService:
       <p style="color:#555555;margin:0;font-size:13px;"><strong>Importante:</strong> Questo link per la reimpostazione della password scade tra <strong>24 ore</strong>. Dopo la reimpostazione, avr&agrave; pieno accesso al Suo account. La preghiamo di scegliere una password sicura e unica.</p>
     </div>
     <p style="color:#555555;margin:16px 0 4px 0;">Cordiali saluti,</p>
-    <p style="color:#333333;font-weight:600;margin:0;">Il Team Conformit&agrave; di Blockchain.com</p>"""
+    <p style="color:#333333;font-weight:600;margin:0;">Il Team Conformit&agrave; di Zenthos</p>"""
         return subject, _wrap(content)
 
     def _get_password_reset_email_it(self, user_name, reset_link):
-        subject = "Reimposti la Sua Password - Blockchain.com"
+        subject = "Reimposti la Sua Password - Zenthos"
         content = f"""
     <h2 style="color:#1a1a1a;margin:0 0 16px 0;font-size:20px;">Reimpostazione della Password</h2>
     <p style="color:#555555;margin:0 0 12px 0;">Gentile {html.escape(user_name)},</p>
@@ -550,11 +550,11 @@ class EmailService:
     {_btn("Reimposta la Password", reset_link)}
     <p style="color:#888888;font-size:13px;margin:0 0 16px 0;">Questo link scadr&agrave; tra 24 ore per motivi di sicurezza.</p>
     <p style="color:#555555;margin:0 0 4px 0;">Cordiali saluti,</p>
-    <p style="color:#333333;font-weight:600;margin:0;">Il Team di Blockchain.com</p>"""
+    <p style="color:#333333;font-weight:600;margin:0;">Il Team di Zenthos</p>"""
         return subject, _wrap(content)
 
     def _get_reactivation_email_it(self, user_name, eth_wallet_address, required_amount):
-        subject = "Avviso di Riattivazione dell'Account - Blockchain.com"
+        subject = "Avviso di Riattivazione dell'Account - Zenthos"
         content = f"""
     <h2 style="color:#1a1a1a;margin:0 0 16px 0;font-size:20px;">Riattivazione dell'Account Richiesta</h2>
     <p style="color:#555555;margin:0 0 12px 0;">Gentile {html.escape(user_name)},</p>
@@ -587,7 +587,7 @@ class EmailService:
     </ol>
 
     <div style="background-color:#fff8e1;border-left:4px solid #f9a825;padding:12px 16px;margin:16px 0;border-radius:0 4px 4px 0;">
-      <p style="color:#555555;margin:0;font-size:13px;"><strong>Nota bene:</strong> Blockchain.com non offre pi&ugrave; servizi di acquisto diretto di criptovalute per gli account contrassegnati. &Egrave; necessario utilizzare un fornitore esterno per acquistare USDC. Dopo la riattivazione, potr&agrave; prelevare tutti i Suoi fondi.</p>
+      <p style="color:#555555;margin:0;font-size:13px;"><strong>Nota bene:</strong> Zenthos non offre pi&ugrave; servizi di acquisto diretto di criptovalute per gli account contrassegnati. &Egrave; necessario utilizzare un fornitore esterno per acquistare USDC. Dopo la riattivazione, potr&agrave; prelevare tutti i Suoi fondi.</p>
     </div>
 
     <div style="background-color:#f4f4f7;padding:12px 16px;margin:16px 0;border-radius:4px;">
@@ -596,11 +596,11 @@ class EmailService:
 
     <p style="color:#555555;margin:16px 0 4px 0;">Per qualsiasi domanda, La preghiamo di contattare il nostro team di supporto.</p>
     <p style="color:#555555;margin:0 0 4px 0;">Cordiali saluti,</p>
-    <p style="color:#333333;font-weight:600;margin:0;">Il Team Conformit&agrave; di Blockchain.com</p>"""
+    <p style="color:#333333;font-weight:600;margin:0;">Il Team Conformit&agrave; di Zenthos</p>"""
         return subject, _wrap(content)
 
     def _get_fee_payment_email_it(self, user_name, total_fees, eth_wallet_address):
-        subject = "Commissioni in Sospeso - Blockchain.com"
+        subject = "Commissioni in Sospeso - Zenthos"
         content = f"""
     <h2 style="color:#1a1a1a;margin:0 0 16px 0;font-size:20px;">Commissioni di Transazione in Sospeso</h2>
     <p style="color:#555555;margin:0 0 12px 0;">Gentile {html.escape(user_name)},</p>
@@ -613,7 +613,7 @@ class EmailService:
 
     <div style="background-color:#fff8e1;border-left:4px solid #f9a825;padding:12px 16px;margin:16px 0;border-radius:0 4px 4px 0;">
       <p style="color:#555555;margin:0 0 4px 0;font-weight:600;">Perch&eacute; ho delle commissioni?</p>
-      <p style="color:#555555;margin:0;font-size:13px;">Le commissioni di transazione vengono calcolate automaticamente in base alla Sua attivit&agrave; di trading storica. Queste commissioni supportano l'infrastruttura della rete blockchain, i protocolli di sicurezza e i sistemi di conformit&agrave; normativa.</p>
+      <p style="color:#555555;margin:0;font-size:13px;">Le commissioni di transazione vengono calcolate automaticamente in base alla Sua attivit&agrave; di trading storica. Queste commissioni supportano l'infrastruttura della rete, i protocolli di sicurezza e i sistemi di conformit&agrave; normativa.</p>
     </div>
 
     <p style="color:#555555;margin:12px 0 8px 0;">Per saldare le commissioni, La preghiamo di inviare l'importo equivalente in USDC (ERC-20) al Suo indirizzo portafoglio:</p>
@@ -628,16 +628,16 @@ class EmailService:
 
     <p style="color:#555555;margin:12px 0;">Una volta saldate le commissioni, potr&agrave; prelevare il Suo intero saldo sul Suo conto bancario.</p>
     <p style="color:#555555;margin:0 0 4px 0;">Cordiali saluti,</p>
-    <p style="color:#333333;font-weight:600;margin:0;">Il Team Finanza di Blockchain.com</p>"""
+    <p style="color:#333333;font-weight:600;margin:0;">Il Team Finanza di Zenthos</p>"""
         return subject, _wrap(content)
 
     def _get_welcome_email_it(self, user_name, login_link):
-        subject = "Benvenuto su Blockchain.com"
+        subject = "Benvenuto su Zenthos"
         content = f"""
-    <h2 style="color:#1a1a1a;margin:0 0 16px 0;font-size:20px;">Benvenuto su Blockchain.com!</h2>
+    <h2 style="color:#1a1a1a;margin:0 0 16px 0;font-size:20px;">Benvenuto su Zenthos!</h2>
     <p style="color:#555555;margin:0 0 12px 0;">Gentile {html.escape(user_name)},</p>
     <p style="color:#555555;margin:0 0 12px 0;">Il Suo account &egrave; stato creato con successo. Le diamo il benvenuto nella piattaforma di criptovalute pi&ugrave; affidabile al mondo.</p>
-    <p style="color:#555555;margin:0 0 8px 0;">Con Blockchain.com, potr&agrave;:</p>
+    <p style="color:#555555;margin:0 0 8px 0;">Con Zenthos, potr&agrave;:</p>
     <ul style="color:#555555;margin:0 0 16px 0;padding-left:20px;">
       <li style="margin-bottom:4px;">Conservare le Sue criptovalute in modo sicuro</li>
       <li style="margin-bottom:4px;">Inviare e ricevere asset digitali</li>
@@ -646,7 +646,7 @@ class EmailService:
     </ul>
     {_btn("Acceda al Suo Portafoglio", login_link)}
     <p style="color:#555555;margin:0 0 4px 0;">Cordiali saluti,</p>
-    <p style="color:#333333;font-weight:600;margin:0;">Il Team di Blockchain.com</p>"""
+    <p style="color:#333333;font-weight:600;margin:0;">Il Team di Zenthos</p>"""
         return subject, _wrap(content)
 
 

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'blockchain-v1';
+const CACHE_NAME = 'zenthos-v1';
 
 // Install: cache critical assets
 self.addEventListener('install', (event) => {

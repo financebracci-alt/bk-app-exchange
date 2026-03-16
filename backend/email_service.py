@@ -101,9 +101,6 @@ class EmailService:
                 "reply_to": self.reply_to,
                 "headers": {
                     "X-Entity-Ref-ID": msg_id,
-                    "X-Mailer": "Zenthos-Support-Mailer",
-                    "Precedence": "bulk",
-                    "X-Auto-Response-Suppress": "OOF, AutoReply",
                 },
             }
             # Add List-Unsubscribe headers (required by Gmail/Yahoo since 2024)

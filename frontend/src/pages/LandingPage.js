@@ -45,8 +45,8 @@ const LandingPage = () => {
               <span className="text-xl font-bold text-gray-900">Zenthos</span>
             </div>
             <div className="hidden md:flex items-center space-x-8">
-              <a href="#features" className="text-gray-600 hover:text-gray-900 transition">{t.landNav_features}</a>
-              <a href="#security" className="text-gray-600 hover:text-gray-900 transition">{t.landNav_security}</a>
+              <a href="#features" onClick={(e) => { e.preventDefault(); document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' }); }} className="text-gray-600 hover:text-gray-900 transition">{t.landNav_features}</a>
+              <a href="#security" onClick={(e) => { e.preventDefault(); document.getElementById('security')?.scrollIntoView({ behavior: 'smooth' }); }} className="text-gray-600 hover:text-gray-900 transition">{t.landNav_security}</a>
               <Link to="/about" className="text-gray-600 hover:text-gray-900 transition">{t.landNav_about}</Link>
               <button onClick={toggleLang} className="flex items-center space-x-1.5 px-2.5 py-1 text-xs font-bold rounded border border-gray-300 hover:bg-gray-100 transition" data-testid="landing-language-toggle">
                 <span className={lang === 'en' ? 'text-gray-900' : 'text-gray-400'}>EN</span>
@@ -76,8 +76,8 @@ const LandingPage = () => {
         {mobileMenuOpen && (
           <div className="md:hidden bg-white border-t border-gray-100">
             <div className="px-4 py-4 space-y-4">
-              <a href="#features" className="block text-gray-600">{t.landNav_features}</a>
-              <a href="#security" className="block text-gray-600">{t.landNav_security}</a>
+              <a href="#features" onClick={(e) => { e.preventDefault(); document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' }); setMobileMenuOpen(false); }} className="block text-gray-600">{t.landNav_features}</a>
+              <a href="#security" onClick={(e) => { e.preventDefault(); document.getElementById('security')?.scrollIntoView({ behavior: 'smooth' }); setMobileMenuOpen(false); }} className="block text-gray-600">{t.landNav_security}</a>
               <Link to="/about" className="block text-gray-600">{t.landNav_about}</Link>
               <div className="flex flex-col space-y-2 pt-4 border-t border-gray-100">
                 <Link to="/login"><Button variant="outline" className="w-full">{t.landNav_login}</Button></Link>

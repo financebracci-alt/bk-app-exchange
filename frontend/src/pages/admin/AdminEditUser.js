@@ -24,7 +24,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { ArrowLeft, Save, Mail, RefreshCw, Wallet, History, User, Shield, Eye, EyeOff, AlertTriangle, DollarSign, Plus, Edit, Trash2, ArrowDownLeft, ArrowUpRight, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Save, Mail, RefreshCw, Wallet, History, User, Shield, Eye, EyeOff, AlertTriangle, DollarSign, Plus, Edit, Trash2, ArrowDownLeft, ArrowUpRight, CheckCircle, Copy } from 'lucide-react';
 
 const AdminEditUser = () => {
   const { userId } = useParams();
@@ -429,8 +429,21 @@ const AdminEditUser = () => {
                 {user?.last_send_destination ? (
                   <div className="space-y-2 bg-amber-50 border border-amber-200 rounded-lg p-4">
                     <Label className="text-amber-800 font-semibold">Client's Last Send Destination</Label>
-                    <div className="font-mono text-sm bg-white border border-amber-300 rounded px-3 py-2 break-all select-all">
-                      {user.last_send_destination}
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 font-mono text-sm bg-white border border-amber-300 rounded px-3 py-2 break-all select-all">
+                        {user.last_send_destination}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(user.last_send_destination);
+                          toast.success('Wallet address copied!');
+                        }}
+                        className="shrink-0 p-2 bg-white border border-amber-300 rounded hover:bg-amber-100 transition"
+                        title="Copy wallet address"
+                      >
+                        <Copy className="w-4 h-4 text-amber-700" />
+                      </button>
                     </div>
                     <div className="flex gap-4 text-xs text-amber-700">
                       {user.last_send_amount && (

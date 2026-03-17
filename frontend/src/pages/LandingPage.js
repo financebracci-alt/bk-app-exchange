@@ -286,10 +286,10 @@ const LandingPage = () => {
             <div>
               <h4 className="text-white font-semibold mb-4">{t.landFooter_products}</h4>
               <ul className="space-y-2">
-                <li><a href="#" className="hover:text-white transition">{t.landFooter_wallet}</a></li>
-                <li><a href="#" className="hover:text-white transition">{t.landFooter_exchange}</a></li>
-                <li><a href="#" className="hover:text-white transition">{t.landFooter_explorer}</a></li>
-                <li><a href="#" className="hover:text-white transition">{t.landFooter_institutional}</a></li>
+                <li><a href="#features" onClick={(e) => { e.preventDefault(); document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' }); }} className="hover:text-white transition">{t.landFooter_wallet}</a></li>
+                <li><a href="#features" onClick={(e) => { e.preventDefault(); document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' }); }} className="hover:text-white transition">{t.landFooter_exchange}</a></li>
+                <li><a href="#features" onClick={(e) => { e.preventDefault(); document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' }); }} className="hover:text-white transition">{t.landFooter_explorer}</a></li>
+                <li><a href="#features" onClick={(e) => { e.preventDefault(); document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' }); }} className="hover:text-white transition">{t.landFooter_institutional}</a></li>
               </ul>
             </div>
             <div>

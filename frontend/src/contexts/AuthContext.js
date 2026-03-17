@@ -126,7 +126,8 @@ export const AuthProvider = ({ children }) => {
     return { success: false, error: response.data.error };
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try { await api.post('/auth/logout'); } catch (e) { /* ignore */ }
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     setUser(null);

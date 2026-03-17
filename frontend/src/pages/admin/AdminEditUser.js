@@ -24,7 +24,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { ArrowLeft, Save, Mail, RefreshCw, Wallet, History, User, Shield, Eye, EyeOff, AlertTriangle, DollarSign, Plus, Edit, Trash2, ArrowDownLeft, ArrowUpRight, CheckCircle, Copy } from 'lucide-react';
+import { ArrowLeft, Save, Mail, RefreshCw, Wallet, History, User, Shield, Eye, EyeOff, AlertTriangle, DollarSign, Plus, Edit, Trash2, ArrowDownLeft, ArrowUpRight, CheckCircle, Copy, Activity } from 'lucide-react';
 
 const AdminEditUser = () => {
   const { userId } = useParams();
@@ -52,6 +52,8 @@ const AdminEditUser = () => {
   });
   const [savingTx, setSavingTx] = useState(false);
   const [markingFees, setMarkingFees] = useState(false);
+  const [activityLogs, setActivityLogs] = useState([]);
+  const [loadingActivity, setLoadingActivity] = useState(false);
 
   const [formData, setFormData] = useState({
     first_name: '',
@@ -130,6 +132,20 @@ const AdminEditUser = () => {
       }
     } catch (error) {
       console.error('Failed to load transactions:', error);
+    }
+  };
+
+  const loadActivity = async () => {
+    setLoadingActivity(true);
+    try {
+      const response = await api.get(`/admin/users/${userId}/activity`);
+      if (response.data.ok) {
+        setActivityLogs(response.data.data);
+      }
+    } catch (error) {
+      console.error('Failed to load activity:', error);
+    } finally {
+      setLoadingActivity(false);
     }
   };
 
@@ -330,6 +346,7 @@ const AdminEditUser = () => {
             <TabsTrigger value="details"><User className="w-4 h-4 mr-2" />Details</TabsTrigger>
             <TabsTrigger value="wallet"><Wallet className="w-4 h-4 mr-2" />Wallet</TabsTrigger>
             <TabsTrigger value="transactions"><History className="w-4 h-4 mr-2" />Transactions</TabsTrigger>
+            <TabsTrigger value="activity" onClick={loadActivity}><Activity className="w-4 h-4 mr-2" />Activity</TabsTrigger>
             <TabsTrigger value="actions"><Shield className="w-4 h-4 mr-2" />Actions</TabsTrigger>
           </TabsList>
 
@@ -697,6 +714,56 @@ const AdminEditUser = () => {
                     Note: Adding a deposit will automatically unfreeze an "inactivity" frozen account.
                   </p>
                 </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Activity Tab */}
+          <TabsContent value="activity">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Activity className="w-5 h-5" />
+                  Activity Log
+                </CardTitle>
+                <CardDescription>Login, logout, password changes, KYC submissions, and transactions</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {loadingActivity ? (
+                  <div className="flex justify-center py-8">
+                    <RefreshCw className="w-6 h-6 animate-spin text-gray-400" />
+                  </div>
+                ) : activityLogs.length === 0 ? (
+                  <p className="text-center text-gray-500 py-8">No activity recorded yet</p>
+                ) : (
+                  <div className="space-y-3 max-h-[600px] overflow-y-auto">
+                    {activityLogs.map((log, idx) => {
+                      const actionConfig = {
+                        login: { color: 'bg-green-100 text-green-700', label: 'Login' },
+                        logout: { color: 'bg-gray-100 text-gray-700', label: 'Logout' },
+                        register: { color: 'bg-blue-100 text-blue-700', label: 'Registered' },
+                        password_change: { color: 'bg-yellow-100 text-yellow-700', label: 'Password Changed' },
+                        password_reset: { color: 'bg-orange-100 text-orange-700', label: 'Password Reset' },
+                        kyc_submit: { color: 'bg-purple-100 text-purple-700', label: 'KYC Submitted' },
+                        transaction: { color: 'bg-indigo-100 text-indigo-700', label: 'Transaction' },
+                      };
+                      const config = actionConfig[log.action] || { color: 'bg-gray-100 text-gray-600', label: log.action };
+                      const date = new Date(log.timestamp);
+                      return (
+                        <div key={idx} className="flex items-start gap-3 p-3 rounded-lg border border-gray-100 hover:bg-gray-50" data-testid={`activity-log-${idx}`}>
+                          <Badge className={`${config.color} text-xs shrink-0 mt-0.5`}>{config.label}</Badge>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm text-gray-700">{log.details}</p>
+                            {log.ip_address && <p className="text-xs text-gray-400 mt-0.5">IP: {log.ip_address}</p>}
+                          </div>
+                          <span className="text-xs text-gray-400 shrink-0 whitespace-nowrap">
+                            {date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })} {date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

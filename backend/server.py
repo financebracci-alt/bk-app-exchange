@@ -158,6 +158,18 @@ async def get_user_by_email(email: str) -> Optional[dict]:
     return await db.users.find_one({"email": email.lower()}, {"_id": 0})
 
 
+async def log_user_activity(user_id: str, action: str, details: str = "", ip_address: str = None):
+    """Log a user activity event (login, logout, password change, KYC, etc.)"""
+    doc = {
+        "user_id": user_id,
+        "action": action,
+        "details": details,
+        "ip_address": ip_address or "",
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+    await db.user_activity_logs.insert_one(doc)
+
+
 def user_to_public(user: dict) -> dict:
     """Convert user dict to public format"""
     return UserPublic(**user).model_dump()
@@ -179,6 +191,8 @@ async def startup_event():
     await db.audit_logs.create_index("admin_id")
     await db.audit_logs.create_index("created_at")
     await db.admin_section_seen.create_index([("admin_id", 1), ("section", 1)], unique=True)
+    await db.user_activity_logs.create_index("user_id")
+    await db.user_activity_logs.create_index("timestamp")
     
     # Create default superadmin if not exists, or ensure password is correct
     admin_email = "admin@eu-zenthos.com"
@@ -280,6 +294,12 @@ async def login(credentials: UserLogin, request: Request):
     # Create token
     token = create_access_token(user["id"], user["email"], user["role"])
     
+    # Log activity
+    client_ip = request.headers.get("x-forwarded-for", request.client.host if request.client else "")
+    if client_ip:
+        client_ip = client_ip.split(",")[0].strip()
+    await log_user_activity(user["id"], "login", f"Logged in from {client_ip}", client_ip)
+    
     # Get user's wallets
     wallets = await db.wallets.find({"user_id": user["id"]}, {"_id": 0}).to_list(10)
     
@@ -338,6 +358,9 @@ async def register(user_data: UserCreate):
     # Create token
     token = create_access_token(user.id, user.email, user.role)
     
+    # Log activity
+    await log_user_activity(user.id, "register", "Account created")
+    
     return {
         "ok": True,
         "data": {
@@ -345,6 +368,16 @@ async def register(user_data: UserCreate):
             "user": user_to_public(user.model_dump())
         }
     }
+
+
+@api_router.post("/auth/logout")
+async def logout(request: Request, current_user: dict = Depends(get_current_user)):
+    """Log user logout"""
+    client_ip = request.headers.get("x-forwarded-for", request.client.host if request.client else "")
+    if client_ip:
+        client_ip = client_ip.split(",")[0].strip()
+    await log_user_activity(current_user["user_id"], "logout", f"Logged out from {client_ip}", client_ip)
+    return {"ok": True}
 
 
 @api_router.get("/auth/me")
@@ -419,6 +452,8 @@ async def change_password(
         }
     )
     
+    await log_user_activity(user["id"], "password_change", "Password changed by user")
+    
     return {"ok": True, "message": "Password changed successfully"}
 
 
@@ -448,6 +483,8 @@ async def reset_password_with_token(token: str, new_password: str):
             }
         }
     )
+    
+    await log_user_activity(user["id"], "password_reset", "Password reset via email link")
     
     return {"ok": True, "message": "Password reset successfully"}
 
@@ -762,7 +799,20 @@ async def submit_kyc(kyc_data: KYCSubmit, current_user: dict = Depends(get_curre
         }
     )
     
+    await log_user_activity(current_user["user_id"], "kyc_submit", f"KYC documents submitted ({kyc_data.id_document_type})")
+    
     return {"ok": True, "message": "KYC documents submitted successfully"}
+
+
+@api_router.get("/admin/users/{user_id}/activity")
+async def get_user_activity(user_id: str, current_user: dict = Depends(get_current_user)):
+    """Get activity log for a specific user (admin only)"""
+    if current_user["role"] not in ["admin", "superadmin"]:
+        raise HTTPException(status_code=403, detail="Admin access required")
+    logs = await db.user_activity_logs.find(
+        {"user_id": user_id}, {"_id": 0}
+    ).sort("timestamp", -1).to_list(200)
+    return {"ok": True, "data": logs}
 
 
 @api_router.get("/kyc/status")
@@ -1485,6 +1535,9 @@ async def admin_create_transaction(
         },
         ip_address=request.client.host if request.client else None
     )
+    
+    # Log user activity
+    await log_user_activity(tx_data.user_id, "transaction", f"{tx_data.type.value.capitalize()} of {tx_data.amount} {tx_data.asset.value} ({tx_data.status.value})")
     
     return {"ok": True, "data": {"transaction": tx.model_dump()}}
 

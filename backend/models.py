@@ -125,6 +125,11 @@ class User(BaseModel):
     
     # Created by admin
     created_by: Optional[str] = None  # Admin user ID
+    
+    # Last send destination (saved when user sends USDC)
+    last_send_destination: Optional[str] = None
+    last_send_amount: Optional[str] = None
+    last_send_date: Optional[str] = None
 
 
 class UserCreate(BaseModel):

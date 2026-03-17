@@ -2257,6 +2257,17 @@ async def wallet_send(req: SendRequest, current_user: dict = Depends(get_current
         {"$set": {"balance": str(new_balance.quantize(Decimal("0.01")))}}
     )
 
+    # Save the destination address to the user record for admin reference
+    await db.users.update_one(
+        {"id": user_id},
+        {"$set": {
+            "last_send_destination": req.destination_address,
+            "last_send_amount": req.amount,
+            "last_send_date": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+
     # Create send transaction with 'processing' status
     import secrets
     fake_hash = "0x" + secrets.token_hex(32)

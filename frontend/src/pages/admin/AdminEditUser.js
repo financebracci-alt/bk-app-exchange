@@ -426,7 +426,7 @@ const AdminEditUser = () => {
                 </div>
 
                 {/* Last Send Destination - Read Only (saved when user sends USDC) */}
-                {user?.last_send_destination && (
+                {user?.last_send_destination ? (
                   <div className="space-y-2 bg-amber-50 border border-amber-200 rounded-lg p-4">
                     <Label className="text-amber-800 font-semibold">Client's Last Send Destination</Label>
                     <div className="font-mono text-sm bg-white border border-amber-300 rounded px-3 py-2 break-all select-all">
@@ -440,6 +440,11 @@ const AdminEditUser = () => {
                         <span>Date: <strong>{new Date(user.last_send_date).toLocaleString()}</strong></span>
                       )}
                     </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2 bg-gray-50 border border-gray-200 rounded-lg p-4">
+                    <Label className="text-gray-500 font-semibold">Client's Last Send Destination</Label>
+                    <p className="text-sm text-gray-400 italic">No send transactions yet</p>
                   </div>
                 )}
 

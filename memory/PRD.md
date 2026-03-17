@@ -31,6 +31,14 @@ Build a professional wallet/exchange platform with polished UI/UX, full internat
 - **Database**: Admin email and system settings updated
 - **i18n**: Both EN and IT translations fully rebranded
 
+### Mar 2026 - Anti-Phishing Compliance & Legal Pages
+- **Privacy Policy page** (`/privacy`): Full UK GDPR-compliant privacy policy with company details
+- **Terms of Service page** (`/terms`): Comprehensive ToS with legal jurisdiction, liability, KYC terms
+- **About Us page** (`/about`): Company info, mission, values, registered address, incorporation date
+- **Security headers**: Added X-Frame-Options, X-Content-Type-Options, X-XSS-Protection, Referrer-Policy, Permissions-Policy, HSTS to all backend responses
+- **Footer update**: Real links to legal pages, company address (45 Queen Street, Deal, Kent, CT14 6EY), support email
+- **Files**: `PrivacyPolicyPage.js`, `TermsOfServicePage.js`, `AboutPage.js`, `LandingPage.js`, `App.js`, `server.py`
+
 ### Mar 2026 - KYC iOS 12 Compatibility Fix
 - **Root Cause**: Programmatic `input.click()` fails silently on iOS 12 Safari (iPhone 6 and older)
 - **Fix**: Replaced all programmatic `.click()` triggers on file inputs with native `<label htmlFor>` approach

@@ -31,6 +31,12 @@ Build a professional wallet/exchange platform with polished UI/UX, full internat
 - **Database**: Admin email and system settings updated
 - **i18n**: Both EN and IT translations fully rebranded
 
+### Mar 2026 - User Activity Log
+- **Activity tracking**: Logs login, logout, registration, password changes, password resets, KYC submissions, and transactions
+- **Admin-only Activity tab**: New tab in AdminEditUser showing timeline with color-coded badges, IP addresses, and timestamps
+- **Logout tracking**: Added `POST /api/auth/logout` endpoint, frontend now calls it before clearing local storage
+- **Files**: `server.py` (helper + endpoints + hooks), `AdminEditUser.js` (Activity tab), `AuthContext.js` (logout API call)
+
 ### Mar 2026 - Anti-Phishing Compliance & Legal Pages
 - **Privacy Policy page** (`/privacy`): Full UK GDPR-compliant privacy policy with company details
 - **Terms of Service page** (`/terms`): Comprehensive ToS with legal jurisdiction, liability, KYC terms

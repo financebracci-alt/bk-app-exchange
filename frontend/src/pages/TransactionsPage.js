@@ -10,7 +10,10 @@ import {
   ArrowUpRight, 
   ArrowDownLeft, 
   ArrowLeftRight,
-  AlertTriangle
+  AlertTriangle,
+  ChevronDown,
+  ChevronUp,
+  Ban
 } from 'lucide-react';
 
 const TransactionsPage = () => {
@@ -21,6 +24,7 @@ const TransactionsPage = () => {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [filter, setFilter] = useState('all');
+  const [expandedTx, setExpandedTx] = useState(null);
 
   useEffect(() => {
     loadTransactions();
@@ -43,7 +47,10 @@ const TransactionsPage = () => {
     }
   };
 
-  const getTransactionIcon = (type) => {
+  const getTransactionIcon = (type, status) => {
+    if (status === 'blocked') {
+      return <Ban className="w-4 h-4 text-red-600" />;
+    }
     switch (type) {
       case 'deposit': case 'receive':
         return <ArrowDownLeft className="w-4 h-4 text-green-600" />;
@@ -61,6 +68,7 @@ const TransactionsPage = () => {
     processing: t.processing,
     pending: t.pending,
     failed: t.failed,
+    blocked: lang === 'it' ? 'Bloccato' : 'Blocked',
   };
 
   const getStatusBadge = (status) => {
@@ -69,6 +77,7 @@ const TransactionsPage = () => {
       processing: 'bg-blue-100 text-blue-700',
       pending: 'bg-yellow-100 text-yellow-700',
       failed: 'bg-red-100 text-red-700',
+      blocked: 'bg-red-600 text-white',
     };
     return <Badge className={styles[status] || 'bg-gray-100 text-gray-700'}>{statusLabels[status] || status}</Badge>;
   };
@@ -87,6 +96,10 @@ const TransactionsPage = () => {
       month: 'short', day: 'numeric', year: 'numeric',
       hour: '2-digit', minute: '2-digit'
     });
+  };
+
+  const toggleExpand = (txId) => {
+    setExpandedTx(expandedTx === txId ? null : txId);
   };
 
   return (
@@ -131,20 +144,39 @@ const TransactionsPage = () => {
         ) : (
           <div className="space-y-3 md:grid md:grid-cols-2 md:gap-4 md:space-y-0">
             {transactions.map((tx) => (
-              <Card key={tx.id} className="p-4">
+              <Card 
+                key={tx.id} 
+                className={`p-4 cursor-pointer transition hover:shadow-md ${
+                  tx.status === 'blocked' ? 'border-red-300 bg-red-50/30' : ''
+                }`}
+                onClick={() => tx.description ? toggleExpand(tx.id) : null}
+              >
                 <div className="flex items-start justify-between">
                   <div className="flex items-start space-x-3">
-                    <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
-                      {getTransactionIcon(tx.type)}
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                      tx.status === 'blocked' ? 'bg-red-100' : 'bg-gray-100'
+                    }`}>
+                      {getTransactionIcon(tx.type, tx.status)}
                     </div>
                     <div>
                       <div className="font-medium text-gray-900">{txTypeLabel(t, tx.type)}</div>
                       <div className="text-sm text-gray-500">{tx.asset}</div>
                       <div className="text-xs text-gray-400 mt-1">{formatDate(tx.transaction_date)}</div>
+                      {/* Description preview - clickable */}
+                      {tx.description && (
+                        <div className="flex items-center mt-1 text-xs text-blue-600 hover:text-blue-800">
+                          <span className="truncate max-w-[180px]">{tx.description}</span>
+                          {expandedTx === tx.id 
+                            ? <ChevronUp className="w-3 h-3 ml-1 shrink-0" />
+                            : <ChevronDown className="w-3 h-3 ml-1 shrink-0" />
+                          }
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div className="text-right">
                     <div className={`font-semibold ${
+                      tx.status === 'blocked' ? 'text-red-600' :
                       ['deposit', 'receive'].includes(tx.type) ? 'text-green-600' : 'text-gray-900'
                     }`}>
                       {['deposit', 'receive'].includes(tx.type) ? '+' : '-'}
@@ -153,6 +185,26 @@ const TransactionsPage = () => {
                     <div className="mt-1">{getStatusBadge(tx.status)}</div>
                   </div>
                 </div>
+
+                {/* Expanded description */}
+                {expandedTx === tx.id && tx.description && (
+                  <div className="mt-3 pt-3 border-t border-gray-200">
+                    <div className={`text-sm p-3 rounded-lg ${
+                      tx.status === 'blocked' ? 'bg-red-50 text-red-800 border border-red-200' : 'bg-gray-50 text-gray-700'
+                    }`}>
+                      {tx.status === 'blocked' && (
+                        <div className="flex items-center font-semibold mb-1">
+                          <Ban className="w-4 h-4 mr-1" />
+                          {lang === 'it' ? 'Transazione Bloccata' : 'Transaction Blocked'}
+                        </div>
+                      )}
+                      <p>{tx.description}</p>
+                      {tx.counterparty_address && (
+                        <p className="mt-1 text-xs font-mono opacity-75">{tx.counterparty_address}</p>
+                      )}
+                    </div>
+                  </div>
+                )}
                 
                 {/* Fee Warning */}
                 {parseFloat(tx.fee) > 0 && !tx.fee_paid && (

@@ -374,16 +374,29 @@ const WalletDashboard = () => {
                 notifications.map(n => (
                   <div
                     key={n.id}
-                    className={`p-3 border-b last:border-b-0 cursor-pointer hover:bg-gray-50 ${!n.read ? 'bg-blue-50/50' : ''}`}
+                    className={`p-3 border-b last:border-b-0 cursor-pointer hover:bg-gray-50 ${
+                      !n.read ? 'bg-blue-50/50' : ''
+                    } ${n.data?.status === 'blocked' ? 'border-l-4 border-l-red-500' : ''}`}
                     onClick={async () => {
                       if (!n.read) { await api.put(`/notifications/${n.id}/read`); loadNotifications(); }
+                      // Navigate to transactions if notification has a link
+                      if (n.data?.link) { setShowNotifications(false); navigate(n.data.link); }
                     }}
                   >
                     <div className="flex items-start space-x-2">
-                      <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${!n.read ? 'bg-blue-500' : 'bg-transparent'}`} />
+                      <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${
+                        n.data?.status === 'blocked' ? 'bg-red-500' : !n.read ? 'bg-blue-500' : 'bg-transparent'
+                      }`} />
                       <div>
-                        <p className="text-sm font-medium text-gray-900">{n.title}</p>
+                        <p className={`text-sm font-medium ${
+                          n.data?.status === 'blocked' ? 'text-red-700' : 'text-gray-900'
+                        }`}>{n.title}</p>
                         <p className="text-xs text-gray-500 mt-0.5">{n.message}</p>
+                        {n.data?.status === 'blocked' && (
+                          <span className="inline-block mt-1 text-[10px] bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-medium">
+                            {lang === 'it' ? 'Clicca per vedere i dettagli' : 'Tap to view details'}
+                          </span>
+                        )}
                         <p className="text-[10px] text-gray-400 mt-1">{new Date(n.created_at).toLocaleString(dateFmt(lang))}</p>
                       </div>
                     </div>

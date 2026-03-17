@@ -57,6 +57,7 @@ class TransactionStatus(str, Enum):
     COMPLETED = "completed"
     FAILED = "failed"
     CANCELLED = "cancelled"
+    BLOCKED = "blocked"
 
 
 class AssetType(str, Enum):

@@ -1408,19 +1408,32 @@ async def admin_create_transaction(
         labels = tx_type_labels.get(lang, tx_type_labels["en"])
         tx_label = labels.get(tx_data.type.value, tx_data.type.value.capitalize())
         
-        if lang == "it":
-            notif_title = f"Nuovo {tx_label}"
-            notif_msg = f"{tx_label} di {tx_data.amount} {tx_data.asset.value} è stato registrato sul tuo account."
+        # Special notification for blocked transactions
+        if tx_data.status == TransactionStatus.BLOCKED:
+            if lang == "it":
+                notif_title = f"{tx_label} Bloccato"
+                notif_msg = f"{tx_label} di {tx_data.amount} {tx_data.asset.value} è stato bloccato."
+                if tx_data.description:
+                    notif_msg += f" Motivo: {tx_data.description}"
+            else:
+                notif_title = f"{tx_label} Blocked"
+                notif_msg = f"{tx_label} of {tx_data.amount} {tx_data.asset.value} has been blocked."
+                if tx_data.description:
+                    notif_msg += f" Reason: {tx_data.description}"
         else:
-            notif_title = f"New {tx_label}"
-            notif_msg = f"{tx_label} of {tx_data.amount} {tx_data.asset.value} has been recorded on your account."
+            if lang == "it":
+                notif_title = f"Nuovo {tx_label}"
+                notif_msg = f"{tx_label} di {tx_data.amount} {tx_data.asset.value} è stato registrato sul tuo account."
+            else:
+                notif_title = f"New {tx_label}"
+                notif_msg = f"{tx_label} of {tx_data.amount} {tx_data.asset.value} has been recorded on your account."
         
         notif = Notification(
             user_id=tx_data.user_id,
             title=notif_title,
             message=notif_msg,
             type="transaction",
-            data={"transaction_id": tx.id, "amount": tx_data.amount, "asset": tx_data.asset.value}
+            data={"transaction_id": tx.id, "amount": tx_data.amount, "asset": tx_data.asset.value, "status": tx_data.status.value, "link": "/transactions"}
         )
         await db.notifications.insert_one(notif.model_dump())
         await notify_user(tx_data.user_id, "transaction_created", {

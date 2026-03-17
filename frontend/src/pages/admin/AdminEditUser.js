@@ -222,8 +222,7 @@ const AdminEditUser = () => {
 
   const handleSaveTransaction = async () => {
     if (txForm.amount === '' || txForm.amount === null || txForm.amount === undefined) {
-      toast.error('Please enter an amount');
-      return;
+      txForm.amount = '0.00';
     }
 
     setSavingTx(true);

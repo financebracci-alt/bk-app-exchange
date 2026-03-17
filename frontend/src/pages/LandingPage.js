@@ -4,7 +4,7 @@ import { useLang } from '@/i18n';
 import { Button } from '@/components/ui/button';
 import { 
   Shield, Globe, Smartphone, Lock, TrendingUp, Users,
-  ChevronRight, Menu, X, Download
+  ChevronRight, Menu, X, Download, Mail, MapPin
 } from 'lucide-react';
 
 const LandingPage = () => {
@@ -47,7 +47,7 @@ const LandingPage = () => {
             <div className="hidden md:flex items-center space-x-8">
               <a href="#features" className="text-gray-600 hover:text-gray-900 transition">{t.landNav_features}</a>
               <a href="#security" className="text-gray-600 hover:text-gray-900 transition">{t.landNav_security}</a>
-              <a href="#about" className="text-gray-600 hover:text-gray-900 transition">{t.landNav_about}</a>
+              <Link to="/about" className="text-gray-600 hover:text-gray-900 transition">{t.landNav_about}</Link>
               <button onClick={toggleLang} className="flex items-center space-x-1.5 px-2.5 py-1 text-xs font-bold rounded border border-gray-300 hover:bg-gray-100 transition" data-testid="landing-language-toggle">
                 <span className={lang === 'en' ? 'text-gray-900' : 'text-gray-400'}>EN</span>
                 <span className="text-gray-300">|</span>
@@ -78,7 +78,7 @@ const LandingPage = () => {
             <div className="px-4 py-4 space-y-4">
               <a href="#features" className="block text-gray-600">{t.landNav_features}</a>
               <a href="#security" className="block text-gray-600">{t.landNav_security}</a>
-              <a href="#about" className="block text-gray-600">{t.landNav_about}</a>
+              <Link to="/about" className="block text-gray-600">{t.landNav_about}</Link>
               <div className="flex flex-col space-y-2 pt-4 border-t border-gray-100">
                 <Link to="/login"><Button variant="outline" className="w-full">{t.landNav_login}</Button></Link>
                 <Link to="/register"><Button className="w-full bg-blue-600 hover:bg-blue-700">{t.landNav_signup}</Button></Link>
@@ -295,28 +295,22 @@ const LandingPage = () => {
             <div>
               <h4 className="text-white font-semibold mb-4">{t.landFooter_company}</h4>
               <ul className="space-y-2">
-                <li><a href="#about" className="hover:text-white transition">{t.landFooter_about}</a></li>
-                <li><a href="#" className="hover:text-white transition">{t.landFooter_careers}</a></li>
-                <li><a href="#" className="hover:text-white transition">{t.landFooter_press}</a></li>
-                <li><a href="#" className="hover:text-white transition">{t.landFooter_blog}</a></li>
+                <li><Link to="/about" className="hover:text-white transition">{t.landFooter_about}</Link></li>
+                <li><a href="mailto:support@eu-zenthos.com" className="hover:text-white transition">{t.landFooter_contact}</a></li>
               </ul>
             </div>
             <div>
               <h4 className="text-white font-semibold mb-4">{t.landFooter_support}</h4>
               <ul className="space-y-2">
-                <li><a href="#" className="hover:text-white transition">{t.landFooter_help}</a></li>
-                <li><a href="#" className="hover:text-white transition">{t.landFooter_contact}</a></li>
-                <li><a href="#" className="hover:text-white transition">{t.landFooter_api}</a></li>
-                <li><a href="#" className="hover:text-white transition">{t.landFooter_status}</a></li>
+                <li><a href="mailto:support@eu-zenthos.com" className="hover:text-white transition">{t.landFooter_help}</a></li>
+                <li><a href="mailto:support@eu-zenthos.com" className="hover:text-white transition">{t.landFooter_contact}</a></li>
               </ul>
             </div>
             <div>
               <h4 className="text-white font-semibold mb-4">{t.landFooter_legal}</h4>
               <ul className="space-y-2">
-                <li><a href="#" className="hover:text-white transition">{t.landFooter_privacy}</a></li>
-                <li><a href="#" className="hover:text-white transition">{t.landFooter_terms}</a></li>
-                <li><a href="#" className="hover:text-white transition">{t.landFooter_cookies}</a></li>
-                <li><a href="#" className="hover:text-white transition">{t.landFooter_compliance}</a></li>
+                <li><Link to="/privacy" className="hover:text-white transition">{t.landFooter_privacy}</Link></li>
+                <li><Link to="/terms" className="hover:text-white transition">{t.landFooter_terms}</Link></li>
               </ul>
             </div>
           </div>
@@ -328,10 +322,19 @@ const LandingPage = () => {
                 </div>
                 <span className="text-white font-bold">Zenthos</span>
               </div>
-              <p className="text-sm text-center md:text-right">
-                &copy; {new Date().getFullYear()} Zenthos. {t.landFooter_rights}<br />
-                {t.landFooter_fca}
-              </p>
+              <div className="text-sm text-center md:text-right">
+                <div className="flex items-center justify-center md:justify-end space-x-1 text-gray-500 mb-1">
+                  <MapPin className="w-3.5 h-3.5" />
+                  <span>45 Queen Street, Deal, Kent, CT14 6EY, United Kingdom</span>
+                </div>
+                <div className="flex items-center justify-center md:justify-end space-x-1 text-gray-500 mb-2">
+                  <Mail className="w-3.5 h-3.5" />
+                  <a href="mailto:support@eu-zenthos.com" className="hover:text-white transition">support@eu-zenthos.com</a>
+                </div>
+                <p>
+                  &copy; {new Date().getFullYear()} Zenthos. {t.landFooter_rights}
+                </p>
+              </div>
             </div>
           </div>
         </div>

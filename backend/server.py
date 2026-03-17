@@ -586,24 +586,17 @@ async def get_user_transactions(
 
 @api_router.get("/wallet/unpaid-fees")
 async def get_unpaid_fees(current_user: dict = Depends(get_current_user)):
-    """Get user's unpaid transaction fees"""
+    """Get user's unpaid transaction fees - uses admin-set value as authoritative"""
     user = await get_user_by_id(current_user["user_id"])
     
-    # Get transactions with unpaid fees
-    transactions = await db.transactions.find({
-        "user_id": current_user["user_id"],
-        "fee_paid": False,
-        "fee": {"$ne": "0.00"}
-    }, {"_id": 0}).to_list(1000)
-    
-    total_fees = sum((Decimal(t["fee"]) for t in transactions), Decimal("0"))
+    total_fees = Decimal(str(user.get("total_unpaid_fees", "0.00")))
     
     return {
         "ok": True,
         "data": {
             "total_unpaid_fees": str(total_fees.quantize(Decimal("0.01"))),
             "fees_paid": user.get("fees_paid", False),
-            "transactions_with_fees": len(transactions)
+            "transactions_with_fees": 0
         }
     }
 
@@ -2758,15 +2751,11 @@ async def check_action_eligibility(current_user: dict = Depends(get_current_user
     wallets = await db.wallets.find({"user_id": current_user["user_id"]}, {"_id": 0}).to_list(10)
     wallet_map = {w["asset"]: w for w in wallets}
 
-    # Check for unpaid fees - user-level flag is authoritative
-    unpaid = await db.transactions.find({
-        "user_id": current_user["user_id"], "fee_paid": False, "fee": {"$ne": "0.00"}
-    }, {"_id": 0}).to_list(10000)
-    total_unpaid_fees_from_txs = sum((Decimal(str(t["fee"])) for t in unpaid), Decimal("0"))
+    # Check for unpaid fees - user-level field is authoritative (admin controls this)
     user_fees_paid = user.get("fees_paid", True)
     user_total_unpaid = Decimal(str(user.get("total_unpaid_fees", "0")))
-    total_unpaid_fees = max(total_unpaid_fees_from_txs, user_total_unpaid)
-    has_unpaid_fees = not user_fees_paid
+    total_unpaid_fees = user_total_unpaid
+    has_unpaid_fees = not user_fees_paid and user_total_unpaid > 0
 
     lang = user.get("preferred_language", "en")
 

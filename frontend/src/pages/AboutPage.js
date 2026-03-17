@@ -24,7 +24,7 @@ const AboutPage = () => {
             Trusted Digital Asset Management
           </h2>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
-            Zenthos provides a secure, reliable platform for managing digital assets. Founded in 2017 and headquartered in the United Kingdom, we are committed to delivering institutional-grade security and a seamless user experience for individuals and businesses alike.
+            Zenthos provides a secure, reliable platform for managing digital assets. Founded in 2023 and headquartered in the United Kingdom, we are committed to delivering institutional-grade security and a seamless user experience for individuals and businesses alike.
           </p>
         </div>
 
@@ -106,8 +106,8 @@ const AboutPage = () => {
                 <Shield className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
                 <div>
                   <p className="text-sm font-medium text-gray-500">Incorporated</p>
-                  <p className="text-gray-900">28 June 2017</p>
-                  <p className="text-sm text-gray-500">England and Wales</p>
+                  <p className="text-gray-900">2023</p>
+                  <p className="text-sm text-gray-500">United Kingdom</p>
                 </div>
               </div>
             </div>

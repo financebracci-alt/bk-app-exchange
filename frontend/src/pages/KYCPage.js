@@ -546,17 +546,24 @@ const KYCPage = () => {
   // Camera is only available on mobile AND not in an in-app browser
   const canUseCamera = isMobile && !isInAppBrowser;
 
+  // Visually-hidden style for file inputs (safer than display:none for old iOS Safari)
+  const srOnlyStyle = { position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0,0,0,0)', border: 0 };
+
   const renderUploadArea = (field, label, captureMode = "environment", Icon = Upload) => {
     const previewSrc = previews[field] || uploadedUrls[field];
+    const isFieldUploading = uploadingField === field;
+    const galleryId = `gallery-${field}`;
+    const cameraId = `camera-${field}`;
     return (
     <div>
       <Label className="mb-2 block">{label}</Label>
-      <input type="file" ref={fileInputRefs[field]} onChange={handleFileChange(field)} accept="image/*,.heic,.heif" className="hidden" />
-      {canUseCamera && <input type="file" ref={cameraInputRefs[field]} onChange={handleFileChange(field)} accept="image/*" capture={captureMode} className="hidden" />}
+      {/* Use <label htmlFor> instead of programmatic .click() for iOS 12+ compatibility */}
+      <input type="file" id={galleryId} ref={fileInputRefs[field]} onChange={handleFileChange(field)} accept="image/*" style={srOnlyStyle} />
+      {canUseCamera && <input type="file" id={cameraId} ref={cameraInputRefs[field]} onChange={handleFileChange(field)} accept="image/*" capture={captureMode} style={srOnlyStyle} />}
       {previewSrc ? (
         <div className="relative">
           <img src={previewSrc} alt={field} className="w-full h-48 object-cover rounded-lg" onError={(e) => { e.target.style.display = 'none'; }} />
-          {uploadingField === field && (
+          {isFieldUploading && (
             <div className="absolute inset-0 bg-black/40 rounded-lg flex items-center justify-center">
               <div className="flex items-center space-x-2 bg-white/90 px-3 py-2 rounded-full">
                 <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
@@ -564,25 +571,29 @@ const KYCPage = () => {
               </div>
             </div>
           )}
-          {uploadedUrls[field] && uploadingField !== field && (
+          {uploadedUrls[field] && !isFieldUploading && (
             <div className="absolute top-2 right-2 bg-green-500 text-white rounded-full p-1">
               <CheckCircle className="w-4 h-4" />
             </div>
           )}
           <div className="absolute bottom-2 right-2 flex space-x-2">
             {canUseCamera && (
-              <Button variant="outline" size="sm" className="bg-white/90" onClick={() => cameraInputRefs[field].current?.click()} disabled={uploadingField === field}>
-                <Camera className="w-3.5 h-3.5 mr-1" />{t.takePhoto}
+              <Button variant="outline" size="sm" className={`bg-white/90 ${isFieldUploading ? 'opacity-50 pointer-events-none' : ''}`} asChild>
+                <label htmlFor={isFieldUploading ? undefined : cameraId} className="cursor-pointer">
+                  <Camera className="w-3.5 h-3.5 mr-1" />{t.takePhoto}
+                </label>
               </Button>
             )}
-            <Button variant="outline" size="sm" className="bg-white/90" onClick={() => fileInputRefs[field].current?.click()} disabled={uploadingField === field}>
-              <Upload className="w-3.5 h-3.5 mr-1" />{isMobile ? t.change : (t.chooseFile || 'Choose File')}
+            <Button variant="outline" size="sm" className={`bg-white/90 ${isFieldUploading ? 'opacity-50 pointer-events-none' : ''}`} asChild>
+              <label htmlFor={isFieldUploading ? undefined : galleryId} className="cursor-pointer">
+                <Upload className="w-3.5 h-3.5 mr-1" />{isMobile ? t.change : (t.chooseFile || 'Choose File')}
+              </label>
             </Button>
           </div>
         </div>
       ) : (
         <div className="w-full h-48 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center gap-3 bg-gray-50/50">
-          {uploadingField === field ? (
+          {isFieldUploading ? (
             <div className="flex items-center space-x-2">
               <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
               <span className="text-sm text-gray-600">{t.uploading || 'Uploading'}...</span>
@@ -592,12 +603,16 @@ const KYCPage = () => {
               <Icon className="w-8 h-8 text-gray-400" />
               <div className="flex space-x-3">
                 {canUseCamera && (
-                  <Button variant="outline" size="sm" onClick={() => cameraInputRefs[field].current?.click()} data-testid={`${field}-camera-btn`}>
-                    <Camera className="w-4 h-4 mr-1.5" />{t.takePhoto}
+                  <Button variant="outline" size="sm" asChild>
+                    <label htmlFor={cameraId} className="cursor-pointer" data-testid={`${field}-camera-btn`}>
+                      <Camera className="w-4 h-4 mr-1.5" />{t.takePhoto}
+                    </label>
                   </Button>
                 )}
-                <Button variant="outline" size="sm" onClick={() => fileInputRefs[field].current?.click()} data-testid={`${field}-gallery-btn`}>
-                  <Upload className="w-4 h-4 mr-1.5" />{isMobile ? t.fromGallery : (t.chooseFile || 'Choose File')}
+                <Button variant="outline" size="sm" asChild>
+                  <label htmlFor={galleryId} className="cursor-pointer" data-testid={`${field}-gallery-btn`}>
+                    <Upload className="w-4 h-4 mr-1.5" />{isMobile ? t.fromGallery : (t.chooseFile || 'Choose File')}
+                  </label>
                 </Button>
               </div>
             </>
@@ -786,7 +801,7 @@ const KYCPage = () => {
               {/* Video selfie */}
               <div>
                 <Label className="mb-2 block">{t.videoSelfieLabel || 'Video Selfie (Liveness Check)'}</Label>
-                <input type="file" ref={videoFileInputRef} onChange={handleVideoFileChange} accept="video/*" className="hidden" />
+                <input type="file" id="video-file-upload" ref={videoFileInputRef} onChange={handleVideoFileChange} accept="video/*" style={srOnlyStyle} />
                 {uploadedUrls.selfie_video ? (
                   <div className="relative border rounded-lg overflow-hidden bg-gray-900">
                     <div className="flex items-center justify-center p-6 gap-3">
@@ -812,8 +827,10 @@ const KYCPage = () => {
                           <Button onClick={() => setShowVideoRecorder(true)} className="bg-blue-600 hover:bg-blue-700" data-testid="start-video-btn">
                             <Video className="w-4 h-4 mr-2" />{t.startVideo || 'Start Video'}
                           </Button>
-                          <Button variant="outline" onClick={() => videoFileInputRef.current?.click()} data-testid="upload-video-btn">
-                            <Upload className="w-4 h-4 mr-2" />{t.uploadVideo || 'Upload Video'}
+                          <Button variant="outline" asChild>
+                            <label htmlFor="video-file-upload" className="cursor-pointer" data-testid="upload-video-btn">
+                              <Upload className="w-4 h-4 mr-2" />{t.uploadVideo || 'Upload Video'}
+                            </label>
                           </Button>
                         </div>
                       </>

@@ -31,6 +31,12 @@ Build a professional wallet/exchange platform with polished UI/UX, full internat
 - **Database**: Admin email and system settings updated
 - **i18n**: Both EN and IT translations fully rebranded
 
+### Mar 2026 - KYC iOS 12 Compatibility Fix
+- **Root Cause**: Programmatic `input.click()` fails silently on iOS 12 Safari (iPhone 6 and older)
+- **Fix**: Replaced all programmatic `.click()` triggers on file inputs with native `<label htmlFor>` approach
+- **Changes**: Buttons now render as `<label>` elements via `asChild`, file inputs use position-based hiding instead of `display:none`, simplified `accept` attribute to `image/*`
+- **Files**: `frontend/src/pages/KYCPage.js`
+
 ### Previous Sessions
 - KYC Robustness Improvements (in-app browser detection, desktop fix, video upload)
 - Client Forgot Password flow

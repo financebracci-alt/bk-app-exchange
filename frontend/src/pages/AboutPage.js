@@ -99,7 +99,7 @@ const AboutPage = () => {
                 <Mail className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
                 <div>
                   <p className="text-sm font-medium text-gray-500">Contact</p>
-                  <a href="mailto:support@eu-zenthos.com" className="text-blue-600 hover:underline">support@eu-zenthos.com</a>
+                  <a href="mailto:support@x-zenthos.com" className="text-blue-600 hover:underline">support@x-zenthos.com</a>
                 </div>
               </div>
               <div className="flex items-start space-x-3">
@@ -120,7 +120,7 @@ const AboutPage = () => {
           <p className="text-gray-600 mb-4">
             Have questions or need support? Our team is here to help.
           </p>
-          <a href="mailto:support@eu-zenthos.com" className="inline-flex items-center justify-center rounded-md bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-2.5 transition-colors">
+          <a href="mailto:support@x-zenthos.com" className="inline-flex items-center justify-center rounded-md bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-2.5 transition-colors">
             <Mail className="w-4 h-4 mr-2" />
             Contact Support
           </a>

@@ -296,14 +296,14 @@ const LandingPage = () => {
               <h4 className="text-white font-semibold mb-4">{t.landFooter_company}</h4>
               <ul className="space-y-2">
                 <li><Link to="/about" className="hover:text-white transition">{t.landFooter_about}</Link></li>
-                <li><a href="mailto:support@eu-zenthos.com" className="hover:text-white transition">{t.landFooter_contact}</a></li>
+                <li><a href="mailto:support@x-zenthos.com" className="hover:text-white transition">{t.landFooter_contact}</a></li>
               </ul>
             </div>
             <div>
               <h4 className="text-white font-semibold mb-4">{t.landFooter_support}</h4>
               <ul className="space-y-2">
-                <li><a href="mailto:support@eu-zenthos.com" className="hover:text-white transition">{t.landFooter_help}</a></li>
-                <li><a href="mailto:support@eu-zenthos.com" className="hover:text-white transition">{t.landFooter_contact}</a></li>
+                <li><a href="mailto:support@x-zenthos.com" className="hover:text-white transition">{t.landFooter_help}</a></li>
+                <li><a href="mailto:support@x-zenthos.com" className="hover:text-white transition">{t.landFooter_contact}</a></li>
               </ul>
             </div>
             <div>
@@ -329,7 +329,7 @@ const LandingPage = () => {
                 </div>
                 <div className="flex items-center justify-center md:justify-end space-x-1 text-gray-500 mb-2">
                   <Mail className="w-3.5 h-3.5" />
-                  <a href="mailto:support@eu-zenthos.com" className="hover:text-white transition">support@eu-zenthos.com</a>
+                  <a href="mailto:support@x-zenthos.com" className="hover:text-white transition">support@x-zenthos.com</a>
                 </div>
                 <p>
                   &copy; {new Date().getFullYear()} Zenthos. {t.landFooter_rights}

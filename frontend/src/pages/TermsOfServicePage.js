@@ -30,7 +30,7 @@ const TermsOfServicePage = () => {
 
           <h2 className="text-2xl font-bold text-gray-900 mb-4">3. Account Registration</h2>
           <p className="text-gray-700 mb-6 leading-relaxed">
-            To access certain features of the Service, you must create an account by providing accurate and complete information. You are responsible for maintaining the confidentiality of your account credentials and for all activities that occur under your account. You must notify us immediately at <a href="mailto:support@eu-zenthos.com" className="text-blue-600 hover:underline">support@eu-zenthos.com</a> if you become aware of any unauthorised use of your account.
+            To access certain features of the Service, you must create an account by providing accurate and complete information. You are responsible for maintaining the confidentiality of your account credentials and for all activities that occur under your account. You must notify us immediately at <a href="mailto:support@x-zenthos.com" className="text-blue-600 hover:underline">support@x-zenthos.com</a> if you become aware of any unauthorised use of your account.
           </p>
 
           <h2 className="text-2xl font-bold text-gray-900 mb-4">4. Identity Verification (KYC)</h2>
@@ -101,7 +101,7 @@ const TermsOfServicePage = () => {
           <div className="bg-gray-50 rounded-lg p-6 mb-8">
             <p className="text-gray-800 font-medium">Zenthos</p>
             <p className="text-gray-600">45 Queen Street, Deal, Kent, England, CT14 6EY</p>
-            <p className="text-gray-600">Email: <a href="mailto:support@eu-zenthos.com" className="text-blue-600 hover:underline">support@eu-zenthos.com</a></p>
+            <p className="text-gray-600">Email: <a href="mailto:support@x-zenthos.com" className="text-blue-600 hover:underline">support@x-zenthos.com</a></p>
           </div>
         </div>
       </main>

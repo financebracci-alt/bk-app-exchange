@@ -84,8 +84,6 @@ const ProfilePage = () => {
     }
   };
 
-  const memberSince = user?.created_at ? new Date(user.created_at).toLocaleDateString(dateFmt(lang), { day: 'numeric', month: 'long', year: 'numeric' }) : 'N/A';
-
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -214,13 +212,6 @@ const ProfilePage = () => {
                 </div>
               </div>
 
-              <div className="flex items-center space-x-3">
-                <Clock className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                <div className="flex-1">
-                  <p className="text-xs text-gray-500">{t.memberSince}</p>
-                  <p className="text-sm text-gray-900" data-testid="profile-member-since">{memberSince}</p>
-                </div>
-              </div>
             </div>
           </Card>
 

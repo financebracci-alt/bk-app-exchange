@@ -14,7 +14,7 @@ from decimal import Decimal
 BACKEND_URL = "https://change-preview-3.preview.emergentagent.com/api"
 
 # Admin credentials
-ADMIN_EMAIL = "admin@eu-zenthos.com"
+ADMIN_EMAIL = "admin@x-zenthos.com"
 ADMIN_PASSWORD = "admin123"
 
 # Test results tracking

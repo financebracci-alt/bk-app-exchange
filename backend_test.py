@@ -438,7 +438,7 @@ class BlockchainWalletAPITester:
 def main():
     """Main test runner"""
     # Use the configured backend URL from frontend .env
-    base_url = "https://kyc-build.preview.emergentagent.com"
+    base_url = "https://change-preview-3.preview.emergentagent.com"
     
     tester = BlockchainWalletAPITester(base_url)
     results = tester.run_all_tests()

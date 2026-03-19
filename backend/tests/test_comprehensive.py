@@ -7,7 +7,7 @@ import requests
 import os
 import uuid
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://kyc-build.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://change-preview-3.preview.emergentagent.com')
 
 # Test credentials
 ADMIN_EMAIL = "admin@blockchain.com"

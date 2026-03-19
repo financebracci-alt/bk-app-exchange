@@ -9,7 +9,7 @@ import os
 import time
 from decimal import Decimal
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://kyc-build.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://change-preview-3.preview.emergentagent.com').rstrip('/')
 
 
 class TestEmailNotifications:

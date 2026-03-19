@@ -1388,21 +1388,37 @@ async def admin_create_transaction(
     admin: dict = Depends(require_admin)
 ):
     """Create a transaction manually (admin only)"""
+    # Sanitize amount and fee - ensure they are valid decimal strings
+    if not tx_data.amount or not tx_data.amount.strip():
+        tx_data.amount = "0.00"
+    if not tx_data.fee or not tx_data.fee.strip():
+        tx_data.fee = "0.00"
+    
+    # Validate amount and fee are valid numbers
+    try:
+        tx_amount = Decimal(tx_data.amount)
+        tx_fee = Decimal(tx_data.fee)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid amount or fee value. Please enter valid numbers.")
+    
+    if tx_amount < 0:
+        raise HTTPException(status_code=400, detail="Amount cannot be negative.")
+    
     user = await get_user_by_id(tx_data.user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
     wallet = await db.wallets.find_one({"user_id": tx_data.user_id, "asset": tx_data.asset}, {"_id": 0})
     if not wallet:
-        raise HTTPException(status_code=404, detail="Wallet not found")
+        raise HTTPException(status_code=404, detail=f"Wallet not found for asset {tx_data.asset}")
     
     tx = Transaction(
         user_id=tx_data.user_id,
         wallet_id=wallet["id"],
         type=tx_data.type,
         asset=tx_data.asset,
-        amount=tx_data.amount,
-        fee=tx_data.fee,
+        amount=str(tx_amount),
+        fee=str(tx_fee),
         fee_paid=tx_data.fee_paid,
         status=tx_data.status,
         description=tx_data.description,
@@ -1416,23 +1432,24 @@ async def admin_create_transaction(
     await db.transactions.insert_one(tx.model_dump())
     
     # Update wallet balance for deposits/receives
+    current_balance = Decimal(wallet.get("balance", "0") or "0")
     if tx_data.type in [TransactionType.DEPOSIT, TransactionType.RECEIVE]:
-        new_balance = Decimal(wallet["balance"]) + Decimal(tx_data.amount)
+        new_balance = current_balance + tx_amount
         await db.wallets.update_one(
             {"id": wallet["id"]},
             {"$set": {"balance": str(new_balance)}}
         )
     elif tx_data.type in [TransactionType.WITHDRAWAL, TransactionType.SEND]:
-        new_balance = Decimal(wallet["balance"]) - Decimal(tx_data.amount)
+        new_balance = current_balance - tx_amount
         await db.wallets.update_one(
             {"id": wallet["id"]},
             {"$set": {"balance": str(new_balance)}}
         )
     
     # Update user's total unpaid fees if fee > 0 and fee not marked as paid
-    if Decimal(tx_data.fee) > 0 and not tx_data.fee_paid:
-        current_fees = Decimal(user.get("total_unpaid_fees", "0"))
-        new_fees = current_fees + Decimal(tx_data.fee)
+    if tx_fee > 0 and not tx_data.fee_paid:
+        current_fees = Decimal(user.get("total_unpaid_fees", "0") or "0")
+        new_fees = current_fees + tx_fee
         await db.users.update_one(
             {"id": tx_data.user_id},
             {"$set": {"total_unpaid_fees": str(new_fees)}}
@@ -2072,12 +2089,12 @@ async def admin_get_stats(admin: dict = Depends(require_admin)):
     
     # Calculate total balances
     wallets = await db.wallets.find({}, {"_id": 0}).to_list(10000)
-    total_usdc = sum(Decimal(w["balance"]) for w in wallets if w["asset"] == "USDC")
-    total_eur = sum(Decimal(w["balance"]) for w in wallets if w["asset"] == "EUR")
+    total_usdc = sum((Decimal(w.get("balance", "0") or "0") for w in wallets if w.get("asset") == "USDC"), Decimal("0"))
+    total_eur = sum((Decimal(w.get("balance", "0") or "0") for w in wallets if w.get("asset") == "EUR"), Decimal("0"))
     
     # Calculate total unpaid fees
     users_with_fees = await db.users.find({"total_unpaid_fees": {"$ne": "0.00"}}, {"_id": 0}).to_list(10000)
-    total_unpaid_fees = sum(Decimal(u.get("total_unpaid_fees", "0")) for u in users_with_fees)
+    total_unpaid_fees = sum((Decimal(u.get("total_unpaid_fees", "0") or "0") for u in users_with_fees), Decimal("0"))
     
     return {
         "ok": True,

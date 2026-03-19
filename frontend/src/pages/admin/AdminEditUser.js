@@ -237,18 +237,38 @@ const AdminEditUser = () => {
   };
 
   const handleSaveTransaction = async () => {
-    if (txForm.amount === '' || txForm.amount === null || txForm.amount === undefined) {
-      txForm.amount = '0.00';
+    // Sanitize amount and fee
+    const sanitizedForm = {
+      ...txForm,
+      amount: (txForm.amount === '' || txForm.amount === null || txForm.amount === undefined) ? '0.00' : String(txForm.amount),
+      fee: (txForm.fee === '' || txForm.fee === null || txForm.fee === undefined) ? '0.00' : String(txForm.fee),
+    };
+
+    // Validate amount
+    if (isNaN(parseFloat(sanitizedForm.amount)) || parseFloat(sanitizedForm.amount) < 0) {
+      toast.error('Please enter a valid amount');
+      return;
     }
+
+    // Map external_wallet to counterparty_address for the backend
+    const payload = {
+      type: sanitizedForm.type,
+      amount: sanitizedForm.amount,
+      asset: sanitizedForm.asset,
+      fee: sanitizedForm.fee,
+      fee_paid: sanitizedForm.fee_paid,
+      transaction_date: sanitizedForm.transaction_date,
+      status: sanitizedForm.status,
+      description: sanitizedForm.description,
+      counterparty_address: sanitizedForm.external_wallet || null,
+      user_id: userId,
+    };
 
     setSavingTx(true);
     try {
       if (editingTx) {
         // Update existing transaction
-        const response = await api.put(`/admin/transactions/${editingTx.id}`, {
-          ...txForm,
-          user_id: userId,
-        });
+        const response = await api.put(`/admin/transactions/${editingTx.id}`, payload);
         if (response.data.ok) {
           toast.success('Transaction updated');
           setShowTxModal(false);
@@ -257,10 +277,7 @@ const AdminEditUser = () => {
         }
       } else {
         // Create new transaction
-        const response = await api.post('/admin/transactions', {
-          ...txForm,
-          user_id: userId,
-        });
+        const response = await api.post('/admin/transactions', payload);
         if (response.data.ok) {
           toast.success('Transaction added');
           setShowTxModal(false);
@@ -269,7 +286,16 @@ const AdminEditUser = () => {
         }
       }
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Failed to save transaction');
+      // Handle different error formats
+      const detail = error.response?.data?.detail;
+      let errorMessage = 'Failed to save transaction';
+      if (typeof detail === 'string') {
+        errorMessage = detail;
+      } else if (Array.isArray(detail) && detail.length > 0) {
+        // Pydantic validation errors
+        errorMessage = detail.map(d => d.msg || d.message || JSON.stringify(d)).join(', ');
+      }
+      toast.error(errorMessage);
     } finally {
       setSavingTx(false);
     }
@@ -974,7 +1000,9 @@ const AdminEditUser = () => {
                 <SelectContent>
                   <SelectItem value="deposit">Deposit</SelectItem>
                   <SelectItem value="withdrawal">Withdrawal</SelectItem>
-                  <SelectItem value="transfer">Transfer</SelectItem>
+                  <SelectItem value="send">Send</SelectItem>
+                  <SelectItem value="receive">Receive</SelectItem>
+                  <SelectItem value="swap">Swap</SelectItem>
                   <SelectItem value="fee">Fee</SelectItem>
                 </SelectContent>
               </Select>
@@ -1000,8 +1028,6 @@ const AdminEditUser = () => {
                   <SelectContent>
                     <SelectItem value="USDC">USDC (ERC-20)</SelectItem>
                     <SelectItem value="EUR">EUR</SelectItem>
-                    <SelectItem value="ETH">ETH</SelectItem>
-                    <SelectItem value="BTC">BTC</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -1067,7 +1093,7 @@ const AdminEditUser = () => {
               />
             </div>
 
-            {(txForm.type === 'withdrawal' || txForm.type === 'transfer') && (
+            {(txForm.type === 'withdrawal' || txForm.type === 'send') && (
               <div className="space-y-2">
                 <Label>External Wallet Address</Label>
                 <Input

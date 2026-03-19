@@ -1,457 +1,562 @@
 #!/usr/bin/env python3
 """
-Blockchain Wallet API Test Suite
-Comprehensive testing for all API endpoints
+Comprehensive backend testing for Zenthos Wallet Platform admin transaction creation
+Focus: Testing the bug fix for withdrawal transaction type
 """
 
 import requests
 import json
-import sys
-from typing import Dict, Any, Optional
-from datetime import datetime
+import time
+import os
+from decimal import Decimal
 
-class BlockchainWalletAPITester:
-    def __init__(self, base_url: str):
-        self.base_url = base_url.rstrip('/')
-        self.session = requests.Session()
-        self.admin_token = None
-        self.user_token = None
-        self.test_user_id = None
+# Backend URL from frontend/.env
+BACKEND_URL = "https://change-preview-3.preview.emergentagent.com/api"
+
+# Admin credentials
+ADMIN_EMAIL = "admin@eu-zenthos.com"
+ADMIN_PASSWORD = "admin123"
+
+# Test results tracking
+test_results = {
+    "passed": 0,
+    "failed": 0,
+    "errors": []
+}
+
+def log_result(test_name, success, message=""):
+    if success:
+        print(f"✅ {test_name}")
+        test_results["passed"] += 1
+    else:
+        print(f"❌ {test_name} - {message}")
+        test_results["failed"] += 1
+        test_results["errors"].append(f"{test_name}: {message}")
+
+def admin_login():
+    """Login as admin and get JWT token"""
+    try:
+        response = requests.post(f"{BACKEND_URL}/auth/login", json={
+            "email": ADMIN_EMAIL,
+            "password": ADMIN_PASSWORD
+        })
         
-    def log(self, message: str, level: str = "INFO"):
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        print(f"[{timestamp}] [{level}] {message}")
-        
-    def make_request(self, method: str, endpoint: str, data: Dict = None, 
-                    headers: Dict = None, token: str = None) -> Dict[str, Any]:
-        """Make HTTP request with proper error handling"""
-        url = f"{self.base_url}{endpoint}"
-        
-        # Setup headers
-        request_headers = {"Content-Type": "application/json"}
-        if headers:
-            request_headers.update(headers)
-        if token:
-            request_headers["Authorization"] = f"Bearer {token}"
-            
-        try:
-            if method.upper() == "GET":
-                response = self.session.get(url, headers=request_headers, params=data)
-            elif method.upper() == "POST":
-                response = self.session.post(url, headers=request_headers, json=data)
-            elif method.upper() == "PUT":
-                response = self.session.put(url, headers=request_headers, json=data)
-            elif method.upper() == "DELETE":
-                response = self.session.delete(url, headers=request_headers)
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("ok") and "data" in data and "token" in data["data"]:
+                log_result("Admin Login", True, "Successfully logged in")
+                return data["data"]["token"]
             else:
-                return {"success": False, "error": f"Unsupported method: {method}"}
-                
-            # Parse response
-            try:
-                json_data = response.json()
-            except json.JSONDecodeError:
-                json_data = {"text": response.text}
-                
-            return {
-                "success": 200 <= response.status_code < 300,
-                "status_code": response.status_code,
-                "data": json_data,
-                "headers": dict(response.headers)
-            }
-            
-        except requests.RequestException as e:
-            return {"success": False, "error": str(e)}
-    
-    def test_health_endpoints(self) -> bool:
-        """Test health check endpoints"""
-        self.log("=== Testing Health Endpoints ===")
+                log_result("Admin Login", False, f"Invalid response format: {data}")
+                return None
+        else:
+            log_result("Admin Login", False, f"Status {response.status_code}: {response.text}")
+            return None
+    except Exception as e:
+        log_result("Admin Login", False, f"Exception: {str(e)}")
+        return None
+
+def create_test_user(token):
+    """Create a test user for transaction testing"""
+    try:
+        headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
         
-        # Test root endpoint
-        result = self.make_request("GET", "/api/")
-        if not result["success"]:
-            self.log(f"❌ Root endpoint failed: {result.get('error')}", "ERROR")
-            return False
-            
-        data = result["data"]
-        if data.get("message") != "Blockchain Wallet API" or data.get("status") != "online":
-            self.log(f"❌ Root endpoint response invalid: {data}", "ERROR")
-            return False
-            
-        self.log("✅ Root endpoint working correctly")
-        
-        # Test health endpoint
-        result = self.make_request("GET", "/api/health")
-        if not result["success"]:
-            self.log(f"❌ Health endpoint failed: {result.get('error')}", "ERROR")
-            return False
-            
-        data = result["data"]
-        if data.get("status") != "healthy":
-            self.log(f"❌ Health endpoint response invalid: {data}", "ERROR")
-            return False
-            
-        self.log("✅ Health endpoint working correctly")
-        return True
-    
-    def test_admin_authentication(self) -> bool:
-        """Test admin authentication"""
-        self.log("=== Testing Admin Authentication ===")
-        
-        # Test admin login
-        login_data = {
-            "email": "admin@blockchain.com",
-            "password": "admin123"
-        }
-        
-        result = self.make_request("POST", "/api/auth/login", login_data)
-        if not result["success"]:
-            self.log(f"❌ Admin login failed: {result.get('error')} | Response: {result.get('data')}", "ERROR")
-            return False
-            
-        data = result["data"]
-        if not data.get("ok") or not data.get("data", {}).get("token"):
-            self.log(f"❌ Admin login response invalid: {data}", "ERROR")
-            return False
-            
-        self.admin_token = data["data"]["token"]
-        self.log("✅ Admin authentication successful")
-        
-        # Test /auth/me with admin token
-        result = self.make_request("GET", "/api/auth/me", token=self.admin_token)
-        if not result["success"]:
-            self.log(f"❌ Admin /auth/me failed: {result.get('error')}", "ERROR")
-            return False
-            
-        data = result["data"]
-        admin_user = data.get("data", {}).get("user", {})
-        if admin_user.get("email") != "admin@blockchain.com" or admin_user.get("role") != "superadmin":
-            self.log(f"❌ Admin /auth/me response invalid: {admin_user}", "ERROR")
-            return False
-            
-        self.log("✅ Admin /auth/me working correctly")
-        return True
-    
-    def test_user_registration(self) -> bool:
-        """Test user registration"""
-        self.log("=== Testing User Registration ===")
-        
-        # Generate unique test user data
-        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        # Create user with $10,000 initial USDC balance
         user_data = {
-            "email": f"testuser{timestamp}@example.com",
-            "username": f"testuser{timestamp}",
-            "password": "TestPass123",
+            "email": f"testuser-{int(time.time())}@test.com",
+            "username": f"testuser{int(time.time())}",
+            "password": "TestPassword123!",
             "first_name": "Test",
             "last_name": "User",
-            "date_of_birth": "1990-01-15"
+            "date_of_birth": "1990-01-01",
+            "phone": "+1234567890",
+            "role": "user",
+            "freeze_type": "none",
+            "initial_usdc_balance": "10000.00",
+            "initial_eur_balance": "5000.00"
         }
         
-        result = self.make_request("POST", "/api/auth/register", user_data)
-        if not result["success"]:
-            self.log(f"❌ User registration failed: {result.get('error')} | Response: {result.get('data')}", "ERROR")
-            return False
-            
-        data = result["data"]
-        if not data.get("ok") or not data.get("data", {}).get("token"):
-            self.log(f"❌ User registration response invalid: {data}", "ERROR")
-            return False
-            
-        self.user_token = data["data"]["token"]
-        user_info = data["data"]["user"]
-        self.test_user_id = user_info["id"]
+        response = requests.post(f"{BACKEND_URL}/admin/users", json=user_data, headers=headers)
         
-        self.log(f"✅ User registration successful - User ID: {self.test_user_id}")
-        return True
-    
-    def test_admin_user_creation(self) -> bool:
-        """Test critical admin user creation endpoint"""
-        self.log("=== Testing Admin User Creation (CRITICAL) ===")
-        
-        if not self.admin_token:
-            self.log("❌ No admin token available", "ERROR")
-            return False
-            
-        # Generate unique test data
-        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-        user_data = {
-            "first_name": "Test",
-            "last_name": "User", 
-            "email": f"testuser_admin{timestamp}@example.com",
-            "username": f"testuser_admin{timestamp}",
-            "password": "TestPass123",
-            "date_of_birth": "1990-01-15",
-            "initial_usdc_balance": "5000.00",
-            "total_fees": "250.00",
-            "transaction_start_date": "2024-01-01",
-            "transaction_end_date": "2024-12-31",
-            "freeze_type": "unusual_activity",
-            "connected_app_name": "ECCOMBX Bank"
-        }
-        
-        result = self.make_request("POST", "/api/admin/users", user_data, token=self.admin_token)
-        if not result["success"]:
-            self.log(f"❌ Admin user creation failed: {result.get('error')} | Response: {result.get('data')}", "ERROR")
-            return False
-            
-        data = result["data"]
-        if not data.get("ok") or not data.get("data", {}).get("user"):
-            self.log(f"❌ Admin user creation response invalid: {data}", "ERROR")
-            return False
-            
-        created_user = data["data"]["user"]
-        created_wallets = data["data"]["wallets"]
-        created_user_id = created_user["id"]
-        
-        self.log(f"✅ Admin user creation successful - User ID: {created_user_id}")
-        
-        # Verify user was created with correct balance
-        usdc_wallet = next((w for w in created_wallets if w["asset"] == "USDC"), None)
-        if not usdc_wallet or usdc_wallet["balance"] != "5000.00":
-            self.log(f"❌ User wallet balance incorrect: {usdc_wallet}", "ERROR")
-            return False
-            
-        self.log("✅ User created with correct USDC balance")
-        
-        # Verify transactions were generated
-        result = self.make_request("GET", f"/api/admin/transactions?user_id={created_user_id}", 
-                                 token=self.admin_token)
-        if not result["success"]:
-            self.log(f"❌ Failed to fetch user transactions: {result.get('error')} | Status: {result.get('status_code')} | Data: {result.get('data')}", "ERROR")
-            return False
-            
-        transactions = result["data"]["data"]["transactions"]
-        if not transactions:
-            self.log("❌ No transactions generated for user", "ERROR")
-            return False
-            
-        self.log(f"✅ Transactions auto-generated: {len(transactions)} transactions")
-        
-        # Verify freeze type is set
-        if created_user["freeze_type"] != "unusual_activity":
-            self.log(f"❌ Freeze type not set correctly: {created_user['freeze_type']}", "ERROR")
-            return False
-            
-        self.log("✅ Freeze type set correctly")
-        return True
-    
-    def test_admin_operations(self) -> bool:
-        """Test admin dashboard and user management operations"""
-        self.log("=== Testing Admin Operations ===")
-        
-        if not self.admin_token:
-            self.log("❌ No admin token available", "ERROR")
-            return False
-            
-        # Test admin users list
-        result = self.make_request("GET", "/api/admin/users", token=self.admin_token)
-        if not result["success"]:
-            self.log(f"❌ Admin users list failed: {result.get('error')} | Status: {result.get('status_code')} | Data: {result.get('data')}", "ERROR")
-            return False
-            
-        data = result["data"]
-        if not data.get("ok") or "users" not in data.get("data", {}):
-            self.log(f"❌ Admin users list response invalid: {data}", "ERROR")
-            return False
-            
-        self.log("✅ Admin users list working")
-        
-        # Test admin stats
-        result = self.make_request("GET", "/api/admin/stats", token=self.admin_token)
-        if not result["success"]:
-            self.log(f"❌ Admin stats failed: {result.get('error')}", "ERROR")
-            return False
-            
-        data = result["data"]
-        stats = data.get("data", {})
-        required_stats = ["total_users", "active_users", "frozen_users", "total_transactions"]
-        for stat in required_stats:
-            if stat not in stats:
-                self.log(f"❌ Missing stat in response: {stat}", "ERROR")
-                return False
-                
-        self.log("✅ Admin stats working correctly")
-        
-        # Test user update if we have a test user
-        if self.test_user_id:
-            update_data = {"freeze_type": "inactivity"}
-            result = self.make_request("PUT", f"/api/admin/users/{self.test_user_id}", 
-                                     update_data, token=self.admin_token)
-            if not result["success"]:
-                self.log(f"❌ User update failed: {result.get('error')}", "ERROR")
-                return False
-                
-            self.log("✅ User update working")
-        
-        # Test audit logs
-        result = self.make_request("GET", "/api/admin/audit-logs", token=self.admin_token)
-        if not result["success"]:
-            self.log(f"❌ Audit logs failed: {result.get('error')}", "ERROR")
-            return False
-            
-        data = result["data"]
-        if not data.get("ok") or "logs" not in data.get("data", {}):
-            self.log(f"❌ Audit logs response invalid: {data}", "ERROR")
-            return False
-            
-        self.log("✅ Audit logs working")
-        return True
-    
-    def test_user_wallet_operations(self) -> bool:
-        """Test user wallet operations"""
-        self.log("=== Testing User Wallet Operations ===")
-        
-        if not self.user_token:
-            self.log("❌ No user token available", "ERROR")
-            return False
-            
-        # Test wallet balance
-        result = self.make_request("GET", "/api/wallet/balance", token=self.user_token)
-        if not result["success"]:
-            self.log(f"❌ Wallet balance failed: {result.get('error')} | Status: {result.get('status_code')} | Data: {result.get('data')}", "ERROR")
-            return False
-            
-        data = result["data"]
-        if not data.get("ok") or "wallets" not in data.get("data", {}):
-            self.log(f"❌ Wallet balance response invalid: {data}", "ERROR")
-            return False
-            
-        wallets = data["data"]["wallets"]
-        if not isinstance(wallets, list) or len(wallets) == 0:
-            self.log(f"❌ No wallets found in response: {wallets}", "ERROR")
-            return False
-            
-        self.log("✅ Wallet balance working")
-        
-        # Test transaction history
-        result = self.make_request("GET", "/api/wallet/transactions", token=self.user_token)
-        if not result["success"]:
-            self.log(f"❌ Transaction history failed: {result.get('error')}", "ERROR")
-            return False
-            
-        data = result["data"]
-        if not data.get("ok") or "transactions" not in data.get("data", {}):
-            self.log(f"❌ Transaction history response invalid: {data}", "ERROR")
-            return False
-            
-        self.log("✅ Transaction history working")
-        
-        # Test unpaid fees
-        result = self.make_request("GET", "/api/wallet/unpaid-fees", token=self.user_token)
-        if not result["success"]:
-            self.log(f"❌ Unpaid fees failed: {result.get('error')}", "ERROR")
-            return False
-            
-        data = result["data"]
-        if not data.get("ok") or "total_unpaid_fees" not in data.get("data", {}):
-            self.log(f"❌ Unpaid fees response invalid: {data}", "ERROR")
-            return False
-            
-        self.log("✅ Unpaid fees working")
-        return True
-    
-    def test_authentication_failures(self) -> bool:
-        """Test authentication edge cases and failures"""
-        self.log("=== Testing Authentication Failures ===")
-        
-        # Test invalid login
-        invalid_login = {
-            "email": "invalid@example.com",
-            "password": "wrongpassword"
-        }
-        
-        result = self.make_request("POST", "/api/auth/login", invalid_login)
-        if result["success"] or result["status_code"] != 401:
-            self.log(f"❌ Invalid login should fail with 401: {result}", "ERROR")
-            return False
-            
-        self.log("✅ Invalid login properly rejected")
-        
-        # Test protected endpoint without token
-        result = self.make_request("GET", "/api/auth/me")
-        if result["success"] or result["status_code"] not in [401, 403]:
-            self.log(f"❌ Protected endpoint should require auth: {result}", "ERROR")
-            return False
-            
-        self.log("✅ Protected endpoint requires authentication")
-        
-        # Test admin endpoint with user token (if available)
-        if self.user_token:
-            result = self.make_request("GET", "/api/admin/users", token=self.user_token)
-            if result["success"] or result["status_code"] != 403:
-                self.log(f"❌ Admin endpoint should reject user token: {result}", "ERROR")
-                return False
-                
-            self.log("✅ Admin endpoint properly restricts access")
-        
-        return True
-    
-    def run_all_tests(self) -> Dict[str, bool]:
-        """Run all test suites"""
-        self.log("Starting Blockchain Wallet API Test Suite")
-        self.log(f"Base URL: {self.base_url}")
-        
-        results = {}
-        
-        # Run tests in order
-        test_suites = [
-            ("Health Endpoints", self.test_health_endpoints),
-            ("Admin Authentication", self.test_admin_authentication),
-            ("User Registration", self.test_user_registration),
-            ("Admin User Creation (CRITICAL)", self.test_admin_user_creation),
-            ("Admin Operations", self.test_admin_operations),
-            ("User Wallet Operations", self.test_user_wallet_operations),
-            ("Authentication Failures", self.test_authentication_failures),
-        ]
-        
-        for suite_name, test_func in test_suites:
-            self.log(f"\n{'='*60}")
-            try:
-                results[suite_name] = test_func()
-            except Exception as e:
-                self.log(f"❌ Test suite '{suite_name}' crashed: {str(e)}", "ERROR")
-                results[suite_name] = False
-            
-        # Summary
-        self.log(f"\n{'='*60}")
-        self.log("TEST SUMMARY")
-        self.log(f"{'='*60}")
-        
-        passed = 0
-        total = len(results)
-        
-        for suite_name, passed_test in results.items():
-            status = "✅ PASSED" if passed_test else "❌ FAILED"
-            self.log(f"{suite_name}: {status}")
-            if passed_test:
-                passed += 1
-                
-        self.log(f"\nOverall Result: {passed}/{total} test suites passed")
-        
-        if passed == total:
-            self.log("🎉 ALL TESTS PASSED!")
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("ok") and "data" in data:
+                user_id = data["data"]["user"]["id"]
+                log_result("Create Test User", True, f"User ID: {user_id}")
+                return user_id
+            else:
+                log_result("Create Test User", False, f"Invalid response: {data}")
+                return None
         else:
-            self.log("⚠️  SOME TESTS FAILED - Check logs above for details")
-            
-        return results
+            log_result("Create Test User", False, f"Status {response.status_code}: {response.text}")
+            return None
+    except Exception as e:
+        log_result("Create Test User", False, f"Exception: {str(e)}")
+        return None
 
+def test_withdrawal_transaction_usdc(token, user_id):
+    """Test withdrawal transaction with USDC - should succeed and deduct from wallet balance"""
+    try:
+        headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+        
+        # Get user's current USDC balance
+        response = requests.get(f"{BACKEND_URL}/admin/users/{user_id}", headers=headers)
+        if response.status_code != 200:
+            log_result("Get User Balance (Pre-Withdrawal)", False, f"Status {response.status_code}")
+            return False
+        
+        user_data = response.json()["data"]
+        usdc_wallet = next((w for w in user_data["wallets"] if w["asset"] == "USDC"), None)
+        if not usdc_wallet:
+            log_result("Get User Balance (Pre-Withdrawal)", False, "No USDC wallet found")
+            return False
+        
+        initial_balance = Decimal(usdc_wallet["balance"])
+        print(f"Initial USDC balance: ${initial_balance}")
+        
+        # Create withdrawal transaction
+        tx_data = {
+            "user_id": user_id,
+            "type": "withdrawal",
+            "asset": "USDC",
+            "amount": "500.00",
+            "fee": "5.00",
+            "fee_paid": False,
+            "status": "completed",
+            "description": "Test withdrawal transaction",
+            "counterparty_address": "0x1234567890abcdef1234567890abcdef12345678"
+        }
+        
+        response = requests.post(f"{BACKEND_URL}/admin/transactions", json=tx_data, headers=headers)
+        
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("ok"):
+                # Verify wallet balance was deducted
+                response = requests.get(f"{BACKEND_URL}/admin/users/{user_id}", headers=headers)
+                if response.status_code == 200:
+                    user_data = response.json()["data"]
+                    usdc_wallet = next((w for w in user_data["wallets"] if w["asset"] == "USDC"), None)
+                    final_balance = Decimal(usdc_wallet["balance"])
+                    expected_balance = initial_balance - Decimal("500.00")
+                    
+                    if final_balance == expected_balance:
+                        log_result("Withdrawal Transaction USDC", True, f"Balance correctly deducted: ${initial_balance} -> ${final_balance}")
+                        return True
+                    else:
+                        log_result("Withdrawal Transaction USDC", False, f"Balance incorrect: Expected ${expected_balance}, got ${final_balance}")
+                        return False
+                else:
+                    log_result("Withdrawal Transaction USDC", False, "Failed to verify final balance")
+                    return False
+            else:
+                log_result("Withdrawal Transaction USDC", False, f"Transaction failed: {data}")
+                return False
+        else:
+            log_result("Withdrawal Transaction USDC", False, f"Status {response.status_code}: {response.text}")
+            return False
+    except Exception as e:
+        log_result("Withdrawal Transaction USDC", False, f"Exception: {str(e)}")
+        return False
+
+def test_withdrawal_transaction_eur(token, user_id):
+    """Test withdrawal transaction with EUR - should succeed"""
+    try:
+        headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+        
+        tx_data = {
+            "user_id": user_id,
+            "type": "withdrawal",
+            "asset": "EUR",
+            "amount": "100.00",
+            "fee": "2.00",
+            "fee_paid": True,
+            "status": "completed",
+            "description": "Test EUR withdrawal transaction",
+            "counterparty_address": "IBAN123456789"
+        }
+        
+        response = requests.post(f"{BACKEND_URL}/admin/transactions", json=tx_data, headers=headers)
+        
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("ok"):
+                log_result("Withdrawal Transaction EUR", True, "Transaction created successfully")
+                return True
+            else:
+                log_result("Withdrawal Transaction EUR", False, f"Transaction failed: {data}")
+                return False
+        else:
+            log_result("Withdrawal Transaction EUR", False, f"Status {response.status_code}: {response.text}")
+            return False
+    except Exception as e:
+        log_result("Withdrawal Transaction EUR", False, f"Exception: {str(e)}")
+        return False
+
+def test_deposit_transaction_usdc(token, user_id):
+    """Test deposit transaction with USDC - should succeed and add to wallet balance"""
+    try:
+        headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+        
+        # Get user's current USDC balance
+        response = requests.get(f"{BACKEND_URL}/admin/users/{user_id}", headers=headers)
+        if response.status_code != 200:
+            log_result("Get User Balance (Pre-Deposit)", False, f"Status {response.status_code}")
+            return False
+        
+        user_data = response.json()["data"]
+        usdc_wallet = next((w for w in user_data["wallets"] if w["asset"] == "USDC"), None)
+        initial_balance = Decimal(usdc_wallet["balance"])
+        print(f"Pre-deposit USDC balance: ${initial_balance}")
+        
+        # Create deposit transaction
+        tx_data = {
+            "user_id": user_id,
+            "type": "deposit",
+            "asset": "USDC",
+            "amount": "1000.00",
+            "fee": "0.00",
+            "fee_paid": True,
+            "status": "completed",
+            "description": "Test deposit transaction",
+            "counterparty_address": "0xabcdef1234567890abcdef1234567890abcdef12"
+        }
+        
+        response = requests.post(f"{BACKEND_URL}/admin/transactions", json=tx_data, headers=headers)
+        
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("ok"):
+                # Verify wallet balance was increased
+                response = requests.get(f"{BACKEND_URL}/admin/users/{user_id}", headers=headers)
+                if response.status_code == 200:
+                    user_data = response.json()["data"]
+                    usdc_wallet = next((w for w in user_data["wallets"] if w["asset"] == "USDC"), None)
+                    final_balance = Decimal(usdc_wallet["balance"])
+                    expected_balance = initial_balance + Decimal("1000.00")
+                    
+                    if final_balance == expected_balance:
+                        log_result("Deposit Transaction USDC", True, f"Balance correctly increased: ${initial_balance} -> ${final_balance}")
+                        return True
+                    else:
+                        log_result("Deposit Transaction USDC", False, f"Balance incorrect: Expected ${expected_balance}, got ${final_balance}")
+                        return False
+                else:
+                    log_result("Deposit Transaction USDC", False, "Failed to verify final balance")
+                    return False
+            else:
+                log_result("Deposit Transaction USDC", False, f"Transaction failed: {data}")
+                return False
+        else:
+            log_result("Deposit Transaction USDC", False, f"Status {response.status_code}: {response.text}")
+            return False
+    except Exception as e:
+        log_result("Deposit Transaction USDC", False, f"Exception: {str(e)}")
+        return False
+
+def test_empty_fee_field(token, user_id):
+    """Test with empty fee field - should default to '0.00' and succeed"""
+    try:
+        headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+        
+        tx_data = {
+            "user_id": user_id,
+            "type": "deposit",
+            "asset": "USDC",
+            "amount": "50.00",
+            "fee": "",  # Empty fee - should default to "0.00"
+            "fee_paid": True,
+            "status": "completed",
+            "description": "Test empty fee field",
+            "counterparty_address": "0x1111222233334444555566667777888899990000"
+        }
+        
+        response = requests.post(f"{BACKEND_URL}/admin/transactions", json=tx_data, headers=headers)
+        
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("ok"):
+                # Check the created transaction has fee = "0.00"
+                tx = data["data"]["transaction"]
+                if tx["fee"] == "0.00":
+                    log_result("Empty Fee Field Test", True, "Empty fee defaulted to 0.00")
+                    return True
+                else:
+                    log_result("Empty Fee Field Test", False, f"Fee not defaulted correctly: {tx['fee']}")
+                    return False
+            else:
+                log_result("Empty Fee Field Test", False, f"Transaction failed: {data}")
+                return False
+        else:
+            log_result("Empty Fee Field Test", False, f"Status {response.status_code}: {response.text}")
+            return False
+    except Exception as e:
+        log_result("Empty Fee Field Test", False, f"Exception: {str(e)}")
+        return False
+
+def test_empty_amount_field(token, user_id):
+    """Test with empty amount field - should default to '0.00' and succeed"""
+    try:
+        headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+        
+        tx_data = {
+            "user_id": user_id,
+            "type": "deposit",
+            "asset": "USDC",
+            "amount": "",  # Empty amount - should default to "0.00"
+            "fee": "1.00",
+            "fee_paid": False,
+            "status": "completed",
+            "description": "Test empty amount field",
+            "counterparty_address": "0x2222333344445555666677778888999900001111"
+        }
+        
+        response = requests.post(f"{BACKEND_URL}/admin/transactions", json=tx_data, headers=headers)
+        
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("ok"):
+                # Check the created transaction has amount = "0.00"
+                tx = data["data"]["transaction"]
+                if tx["amount"] == "0.00":
+                    log_result("Empty Amount Field Test", True, "Empty amount defaulted to 0.00")
+                    return True
+                else:
+                    log_result("Empty Amount Field Test", False, f"Amount not defaulted correctly: {tx['amount']}")
+                    return False
+            else:
+                log_result("Empty Amount Field Test", False, f"Transaction failed: {data}")
+                return False
+        else:
+            log_result("Empty Amount Field Test", False, f"Status {response.status_code}: {response.text}")
+            return False
+    except Exception as e:
+        log_result("Empty Amount Field Test", False, f"Exception: {str(e)}")
+        return False
+
+def test_invalid_amount(token, user_id):
+    """Test with invalid amount - should return 400 error with clear message"""
+    try:
+        headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+        
+        tx_data = {
+            "user_id": user_id,
+            "type": "deposit",
+            "asset": "USDC",
+            "amount": "abc",  # Invalid amount
+            "fee": "1.00",
+            "fee_paid": False,
+            "status": "completed",
+            "description": "Test invalid amount",
+            "counterparty_address": "0x3333444455556666777788889999000011112222"
+        }
+        
+        response = requests.post(f"{BACKEND_URL}/admin/transactions", json=tx_data, headers=headers)
+        
+        if response.status_code == 400:
+            data = response.json()
+            if "Invalid amount or fee value" in data.get("detail", ""):
+                log_result("Invalid Amount Test", True, "Correctly returned 400 with validation message")
+                return True
+            else:
+                log_result("Invalid Amount Test", False, f"Wrong error message: {data}")
+                return False
+        else:
+            log_result("Invalid Amount Test", False, f"Expected 400, got {response.status_code}: {response.text}")
+            return False
+    except Exception as e:
+        log_result("Invalid Amount Test", False, f"Exception: {str(e)}")
+        return False
+
+def test_invalid_asset_type(token, user_id):
+    """Test with invalid asset type - should return 422 validation error"""
+    try:
+        headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+        
+        tx_data = {
+            "user_id": user_id,
+            "type": "deposit",
+            "asset": "ETH",  # Invalid asset (not in enum)
+            "amount": "100.00",
+            "fee": "1.00",
+            "fee_paid": False,
+            "status": "completed",
+            "description": "Test invalid asset type",
+            "counterparty_address": "0x4444555566667777888899990000111122223333"
+        }
+        
+        response = requests.post(f"{BACKEND_URL}/admin/transactions", json=tx_data, headers=headers)
+        
+        if response.status_code == 422:
+            log_result("Invalid Asset Type Test", True, "Correctly returned 422 validation error")
+            return True
+        else:
+            log_result("Invalid Asset Type Test", False, f"Expected 422, got {response.status_code}: {response.text}")
+            return False
+    except Exception as e:
+        log_result("Invalid Asset Type Test", False, f"Exception: {str(e)}")
+        return False
+
+def test_invalid_transaction_type(token, user_id):
+    """Test with invalid transaction type - should return 422 validation error"""
+    try:
+        headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+        
+        tx_data = {
+            "user_id": user_id,
+            "type": "transfer",  # Invalid type (not in enum)
+            "asset": "USDC",
+            "amount": "100.00",
+            "fee": "1.00",
+            "fee_paid": False,
+            "status": "completed",
+            "description": "Test invalid transaction type",
+            "counterparty_address": "0x5555666677778888999900001111222233334444"
+        }
+        
+        response = requests.post(f"{BACKEND_URL}/admin/transactions", json=tx_data, headers=headers)
+        
+        if response.status_code == 422:
+            log_result("Invalid Transaction Type Test", True, "Correctly returned 422 validation error")
+            return True
+        else:
+            log_result("Invalid Transaction Type Test", False, f"Expected 422, got {response.status_code}: {response.text}")
+            return False
+    except Exception as e:
+        log_result("Invalid Transaction Type Test", False, f"Exception: {str(e)}")
+        return False
+
+def test_admin_stats(token):
+    """Test GET /api/admin/stats - should return valid stats without errors"""
+    try:
+        headers = {"Authorization": f"Bearer {token}"}
+        
+        response = requests.get(f"{BACKEND_URL}/admin/stats", headers=headers)
+        
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("ok") and "data" in data:
+                stats = data["data"]
+                required_fields = [
+                    "total_users", "active_users", "frozen_users", "pending_kyc",
+                    "total_transactions", "total_usdc_balance", "total_eur_balance", "total_unpaid_fees"
+                ]
+                
+                missing_fields = [field for field in required_fields if field not in stats]
+                if not missing_fields:
+                    log_result("Admin Stats API", True, f"All required fields present: {list(stats.keys())}")
+                    return True
+                else:
+                    log_result("Admin Stats API", False, f"Missing fields: {missing_fields}")
+                    return False
+            else:
+                log_result("Admin Stats API", False, f"Invalid response format: {data}")
+                return False
+        else:
+            log_result("Admin Stats API", False, f"Status {response.status_code}: {response.text}")
+            return False
+    except Exception as e:
+        log_result("Admin Stats API", False, f"Exception: {str(e)}")
+        return False
+
+def test_user_balance_verification(token, user_id):
+    """Verify the user's wallet balance after all transactions"""
+    try:
+        headers = {"Authorization": f"Bearer {token}"}
+        
+        response = requests.get(f"{BACKEND_URL}/admin/users/{user_id}", headers=headers)
+        
+        if response.status_code == 200:
+            data = response.json()["data"]
+            wallets = data["wallets"]
+            
+            usdc_wallet = next((w for w in wallets if w["asset"] == "USDC"), None)
+            eur_wallet = next((w for w in wallets if w["asset"] == "EUR"), None)
+            
+            if usdc_wallet and eur_wallet:
+                usdc_balance = Decimal(usdc_wallet["balance"])
+                eur_balance = Decimal(eur_wallet["balance"])
+                
+                # Expected calculations:
+                # Initial: USDC=10000, EUR=5000
+                # -500 withdrawal, +1000 deposit, +50 deposit, +0 deposit = +550 net
+                # -100 EUR withdrawal
+                expected_usdc = Decimal("10550.00")  # 10000 - 500 + 1000 + 50 + 0
+                expected_eur = Decimal("4900.00")    # 5000 - 100
+                
+                if usdc_balance == expected_usdc and eur_balance == expected_eur:
+                    log_result("Final Balance Verification", True, f"USDC: ${usdc_balance}, EUR: €{eur_balance}")
+                    return True
+                else:
+                    log_result("Final Balance Verification", False, f"Expected USDC: ${expected_usdc}, EUR: €{expected_eur}. Got USDC: ${usdc_balance}, EUR: €{eur_balance}")
+                    return False
+            else:
+                log_result("Final Balance Verification", False, "Wallet not found")
+                return False
+        else:
+            log_result("Final Balance Verification", False, f"Status {response.status_code}")
+            return False
+    except Exception as e:
+        log_result("Final Balance Verification", False, f"Exception: {str(e)}")
+        return False
 
 def main():
-    """Main test runner"""
-    # Use the configured backend URL from frontend .env
-    base_url = "https://change-preview-3.preview.emergentagent.com"
+    """Run all tests"""
+    print("=== Zenthos Wallet Backend Testing ===")
+    print(f"Backend URL: {BACKEND_URL}")
+    print(f"Testing admin transaction creation, focusing on withdrawal type bug fix")
+    print()
     
-    tester = BlockchainWalletAPITester(base_url)
-    results = tester.run_all_tests()
+    # Step 1: Admin login
+    token = admin_login()
+    if not token:
+        print("❌ Cannot proceed without admin token")
+        return
     
-    # Exit with error code if any tests failed
-    failed_tests = [name for name, passed in results.items() if not passed]
-    if failed_tests:
-        print(f"\nFailed tests: {failed_tests}")
-        sys.exit(1)
+    # Step 2: Create test user
+    user_id = create_test_user(token)
+    if not user_id:
+        print("❌ Cannot proceed without test user")
+        return
+    
+    print(f"\n=== Testing Transaction Creation (User: {user_id}) ===")
+    
+    # Step 3: Test withdrawal transactions (main focus)
+    test_withdrawal_transaction_usdc(token, user_id)
+    test_withdrawal_transaction_eur(token, user_id)
+    
+    # Step 4: Test deposit transaction
+    test_deposit_transaction_usdc(token, user_id)
+    
+    # Step 5: Test edge cases (the bug fixes)
+    test_empty_fee_field(token, user_id)
+    test_empty_amount_field(token, user_id)
+    test_invalid_amount(token, user_id)
+    test_invalid_asset_type(token, user_id)
+    test_invalid_transaction_type(token, user_id)
+    
+    # Step 6: Test admin stats endpoint
+    test_admin_stats(token)
+    
+    # Step 7: Final balance verification
+    test_user_balance_verification(token, user_id)
+    
+    # Results summary
+    print("\n=== Test Results Summary ===")
+    print(f"✅ Passed: {test_results['passed']}")
+    print(f"❌ Failed: {test_results['failed']}")
+    
+    if test_results["errors"]:
+        print("\n=== Failed Tests Details ===")
+        for error in test_results["errors"]:
+            print(f"  • {error}")
+    
+    print(f"\nTotal Tests: {test_results['passed'] + test_results['failed']}")
+    
+    if test_results["failed"] == 0:
+        print("🎉 All tests passed! Admin transaction creation is working correctly.")
     else:
-        print("\nAll tests passed!")
-        sys.exit(0)
-
+        print("⚠️  Some tests failed. Please check the errors above.")
 
 if __name__ == "__main__":
     main()

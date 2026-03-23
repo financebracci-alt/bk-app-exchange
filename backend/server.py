@@ -1104,6 +1104,7 @@ async def admin_create_user(user_data: UserCreate, request: Request, admin: dict
         connected_app_name=user_data.connected_app_name,
         connected_app_logo=user_data.connected_app_logo,
         total_unpaid_fees=user_data.total_fees or "0.00",
+        kyc_status=KYCStatus.APPROVED,
         created_by=admin["user_id"]
     )
     

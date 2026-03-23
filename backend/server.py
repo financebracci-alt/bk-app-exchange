@@ -680,8 +680,7 @@ async def request_fee_resolution(current_user: dict = Depends(get_current_user))
         raise HTTPException(status_code=400, detail="No outstanding fees")
     
     # Get wallet address for deposit instructions
-    wallet = await db.wallets.find_one({"user_id": current_user["user_id"], "asset": "USDC"}, {"_id": 0})
-    wallet_address = wallet.get("address", "N/A") if wallet else "N/A"
+    wallet_address = user.get("eth_wallet_address", "Not assigned")
     
     user_name = f"{user.get('first_name', '')} {user.get('last_name', '')}".strip()
     

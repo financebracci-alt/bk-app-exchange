@@ -995,7 +995,7 @@ const WalletDashboard = () => {
             ) : eligibility.withdraw_eur?.allowed ? (<>
               <div className="bg-gray-50 p-3 rounded-lg text-sm">
                 <div className="flex justify-between"><span className="text-gray-500">{t.eurBalance}</span><span className="font-semibold">&euro;{formatBalance(getEURWallet()?.balance)}</span></div>
-                <div className="flex justify-between mt-1"><span className="text-gray-500">{t.connectedApp}</span><span className="font-medium text-blue-600">ECOMMBX</span></div>
+                <div className="flex justify-between mt-1"><span className="text-gray-500">{t.connectedApp}</span><span className="font-medium text-blue-600">CHIANTIN BANK</span></div>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-700">{t.amountEur}</label>

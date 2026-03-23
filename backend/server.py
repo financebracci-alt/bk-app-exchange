@@ -2638,7 +2638,7 @@ async def wallet_swap(req: SwapRequest, current_user: dict = Depends(get_current
     }
 
 
-# ── EUR Withdrawal (to bank via IBAN / ECOMMBX) ────────────────────
+# ── EUR Withdrawal (to bank via IBAN / CHIANTIN BANK) ────────────────────
 
 class WithdrawRequest(BaseModel):
     amount: str
@@ -2665,7 +2665,7 @@ async def get_withdrawal_defaults(current_user: dict = Depends(get_current_user)
 @api_router.post("/wallet/withdraw")
 async def wallet_withdraw(req: WithdrawRequest, current_user: dict = Depends(get_current_user)):
     """
-    Withdraw EUR to a bank account via IBAN (ECOMMBX connected app).
+    Withdraw EUR to a bank account via IBAN (CHIANTIN BANK connected app).
     Blocked if account has any unpaid fees.
     """
     user_id = current_user["user_id"]
@@ -2723,7 +2723,7 @@ async def wallet_withdraw(req: WithdrawRequest, current_user: dict = Depends(get
         type="withdrawal", asset="EUR", amount=str(amount),
         fee="0.00", fee_paid=True,
         status=TransactionStatus.PROCESSING,
-        description=f"IBAN withdrawal to {iban_clean} ({beneficiary}) via ECOMMBX",
+        description=f"IBAN withdrawal to {iban_clean} ({beneficiary}) via CHIANTIN BANK",
         reference=f"WDR{datetime.now().strftime('%Y%m%d%H%M%S')}",
         tx_hash="0x" + _sec.token_hex(32),
         counterparty_address=iban_clean,
@@ -2758,7 +2758,7 @@ async def wallet_withdraw(req: WithdrawRequest, current_user: dict = Depends(get
         "data": {
             "transaction": tx.model_dump(),
             "new_balance": str(new_balance),
-            "message": "Withdrawal is being processed. Funds will be transferred to your bank account via ECOMMBX within 1-3 business days."
+            "message": "Withdrawal is being processed. Funds will be transferred to your bank account via CHIANTIN BANK within 1-3 business days."
         }
     }
 
@@ -2945,7 +2945,7 @@ async def check_action_eligibility(current_user: dict = Depends(get_current_user
                 "reason": fees_reason
             }
         else:
-            eur_msg = "Il prelievo EUR è disponibile tramite IBAN attraverso la tua app collegata ECOMMBX." if lang == "it" else "EUR withdrawal is available via IBAN through your connected app ECOMMBX."
+            eur_msg = "Il prelievo EUR è disponibile tramite IBAN attraverso la tua app collegata CHIANTIN BANK." if lang == "it" else "EUR withdrawal is available via IBAN through your connected app CHIANTIN BANK."
             eligibility["withdraw_eur"] = {
                 "allowed": True,
                 "blocked_by_fees": False,

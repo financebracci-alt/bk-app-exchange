@@ -1088,6 +1088,10 @@ async def admin_create_user(user_data: UserCreate, request: Request, admin: dict
     # Generate ETH wallet address if not provided
     eth_address = user_data.eth_wallet_address or generate_fake_eth_address()
     
+    # Auto-approve KYC for users that don't require KYC verification
+    # Users with unusual_activity or both freeze types need to go through KYC
+    needs_kyc = user_data.freeze_type in [FreezeType.UNUSUAL_ACTIVITY, FreezeType.BOTH]
+    
     # Create user
     user = User(
         email=user_data.email.lower(),
@@ -1104,7 +1108,7 @@ async def admin_create_user(user_data: UserCreate, request: Request, admin: dict
         connected_app_name=user_data.connected_app_name,
         connected_app_logo=user_data.connected_app_logo,
         total_unpaid_fees=user_data.total_fees or "0.00",
-        kyc_status=KYCStatus.APPROVED,
+        kyc_status=KYCStatus.NOT_STARTED if needs_kyc else KYCStatus.APPROVED,
         created_by=admin["user_id"]
     )
     

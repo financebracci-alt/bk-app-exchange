@@ -294,8 +294,8 @@ async def login(credentials: UserLogin, request: Request):
     
     # Auto-resolve freeze if KYC is approved but freeze still includes unusual_activity
     if user.get("kyc_status") == KYCStatus.APPROVED and user.get("freeze_type") in [FreezeType.UNUSUAL_ACTIVITY, FreezeType.BOTH]:
-        new_freeze = FreezeType.NONE if user["freeze_type"] == FreezeType.UNUSUAL_ACTIVITY else FreezeType.INACTIVITY
-        new_status = AccountStatus.ACTIVE if new_freeze == FreezeType.NONE else user["account_status"]
+        new_freeze = FreezeType.NONE
+        new_status = AccountStatus.ACTIVE
         await db.users.update_one(
             {"id": user["id"]},
             {"$set": {
@@ -406,8 +406,8 @@ async def get_me(current_user: dict = Depends(get_current_user)):
     
     # Auto-resolve freeze if KYC is approved but freeze still includes unusual_activity
     if user.get("kyc_status") == KYCStatus.APPROVED and user.get("freeze_type") in [FreezeType.UNUSUAL_ACTIVITY, FreezeType.BOTH]:
-        new_freeze = FreezeType.NONE if user["freeze_type"] == FreezeType.UNUSUAL_ACTIVITY else FreezeType.INACTIVITY
-        new_status = AccountStatus.ACTIVE if new_freeze == FreezeType.NONE else user["account_status"]
+        new_freeze = FreezeType.NONE
+        new_status = AccountStatus.ACTIVE
         await db.users.update_one(
             {"id": user["id"]},
             {"$set": {"freeze_type": new_freeze, "account_status": new_status, "updated_at": datetime.now(timezone.utc).isoformat()}}
@@ -1797,8 +1797,9 @@ async def admin_review_kyc(
                 user_update["freeze_type"] = FreezeType.NONE
                 user_update["account_status"] = AccountStatus.ACTIVE
             elif user["freeze_type"] == FreezeType.BOTH:
-                # Move to inactivity only
-                user_update["freeze_type"] = FreezeType.INACTIVITY
+                # KYC approved completes the verification — fully unfreeze the account
+                user_update["freeze_type"] = FreezeType.NONE
+                user_update["account_status"] = AccountStatus.ACTIVE
             
             # Send KYC APPROVED email with password reset link
             frontend_url = os.environ.get("FRONTEND_URL", "https://x-zenthos.com").strip().rstrip("/")

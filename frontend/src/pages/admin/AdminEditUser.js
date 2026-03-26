@@ -712,33 +712,7 @@ const AdminEditUser = () => {
                 <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
                   <h4 className="font-semibold text-blue-900 mb-3">Quick Actions</h4>
                   <div className="flex flex-wrap gap-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => {
-                        setTxForm({
-                          type: 'deposit',
-                          amount: '100',
-                          asset: 'USDC',
-                          fee: '0.00',
-                          fee_paid: false,
-                          transaction_date: new Date().toISOString().slice(0, 16),
-                          status: 'completed',
-                          description: 'Reactivation deposit',
-                          external_wallet: '',
-                        });
-                        setEditingTx(null);
-                        setShowTxModal(true);
-                      }}
-                      className="bg-green-50 border-green-300 text-green-700 hover:bg-green-100"
-                    >
-                      <Plus className="w-4 h-4 mr-1" />
-                      Add €100 Reactivation Deposit
-                    </Button>
                   </div>
-                  <p className="text-xs text-blue-600 mt-2">
-                    Note: Adding a deposit will automatically unfreeze an "inactivity" frozen account.
-                  </p>
                 </div>
               </CardContent>
             </Card>
@@ -1087,7 +1061,7 @@ const AdminEditUser = () => {
             <div className="space-y-2">
               <Label>Description (Optional)</Label>
               <Input
-                placeholder="e.g., Reactivation deposit"
+                placeholder="e.g., Monthly transfer"
                 value={txForm.description}
                 onChange={(e) => setTxForm({...txForm, description: e.target.value})}
               />

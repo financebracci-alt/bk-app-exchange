@@ -1476,31 +1476,6 @@ async def admin_create_transaction(
             {"$set": {"total_unpaid_fees": str(new_fees)}}
         )
     
-    # AUTO-UNFREEZE: If user has inactivity freeze and receives a deposit, unfreeze them
-    if tx_data.type in [TransactionType.DEPOSIT, TransactionType.RECEIVE]:
-        if user.get("freeze_type") == "inactivity":
-            # Unfreeze the account
-            await db.users.update_one(
-                {"id": tx_data.user_id},
-                {"$set": {
-                    "freeze_type": "none",
-                    "account_status": "active",
-                    "updated_at": datetime.now(timezone.utc).isoformat()
-                }}
-            )
-        elif user.get("freeze_type") == "both":
-            # If both, check if KYC is already approved
-            if user.get("kyc_status") == "approved" and not user.get("password_reset_required"):
-                # Fully unfreeze
-                await db.users.update_one(
-                    {"id": tx_data.user_id},
-                    {"$set": {
-                        "freeze_type": "none",
-                        "account_status": "active",
-                        "updated_at": datetime.now(timezone.utc).isoformat()
-                    }}
-                )
-    
     # ── Notification + Email for admin-created transaction ──
     try:
         lang = user.get("preferred_language", "en")

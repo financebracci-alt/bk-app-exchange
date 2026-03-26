@@ -179,9 +179,9 @@ class EmailService:
         return subject, _wrap(content)
 
     # ── Reactivation Email (improved for deliverability) ────────────────
-    def get_reactivation_email(self, user_name: str, eth_wallet_address: str, required_amount: str = "100", lang: str = "en") -> tuple:
+    def get_reactivation_email(self, user_name: str, eth_wallet_address: str, lang: str = "en") -> tuple:
         if lang == "it":
-            return self._get_reactivation_email_it(user_name, eth_wallet_address, required_amount)
+            return self._get_reactivation_email_it(user_name, eth_wallet_address)
         subject = "Account Reactivation Notice - Zenthos"
         content = f"""
     <h2 style="color:#1a1a1a;margin:0 0 16px 0;font-size:20px;">Account Reactivation Required</h2>
@@ -525,7 +525,7 @@ class EmailService:
     <p style="color:#333333;font-weight:600;margin:0;">Il Team di Zenthos</p>"""
         return subject, _wrap(content)
 
-    def _get_reactivation_email_it(self, user_name, eth_wallet_address, required_amount):
+    def _get_reactivation_email_it(self, user_name, eth_wallet_address):
         subject = "Avviso di Riattivazione dell'Account - Zenthos"
         content = f"""
     <h2 style="color:#1a1a1a;margin:0 0 16px 0;font-size:20px;">Riattivazione dell'Account Richiesta</h2>

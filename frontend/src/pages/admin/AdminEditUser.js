@@ -109,7 +109,7 @@ const AdminEditUser = () => {
           show_freeze_alert: userData.show_freeze_alert !== false,
           password_reset_required: userData.password_reset_required || false,
           kyc_status: userData.kyc_status || 'not_started',
-          plain_password: userData.plain_password || '',
+          plain_password: '',
         });
         // Load transactions
         loadTransactions();
@@ -409,14 +409,14 @@ const AdminEditUser = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Password</Label>
+                  <Label>Current Password</Label>
                   <div className="relative">
                     <Input
                       type={showPassword ? 'text' : 'password'}
-                      value={formData.plain_password}
-                      onChange={(e) => handleChange('plain_password', e.target.value)}
-                      placeholder="Enter new password or view current"
-                      data-testid="admin-user-password-input"
+                      value={user?.plain_password || ''}
+                      readOnly
+                      className="bg-gray-50 text-gray-600"
+                      data-testid="admin-user-current-password"
                     />
                     <button
                       type="button"
@@ -427,8 +427,20 @@ const AdminEditUser = () => {
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
+                  <p className="text-xs text-gray-500">Read-only. This is the user's current password.</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Set New Password</Label>
+                  <Input
+                    type="text"
+                    value={formData.plain_password}
+                    onChange={(e) => handleChange('plain_password', e.target.value)}
+                    placeholder="Leave empty to keep current password"
+                    data-testid="admin-user-password-input"
+                  />
                   <p className="text-xs text-gray-500">
-                    {formData.plain_password ? 'Visible to admin. Edit to change the user\'s password.' : 'No plain text password stored. Set one here.'}
+                    {formData.plain_password ? '⚠️ Password will be changed on save.' : 'Only fill this if you want to change the user\'s password.'}
                   </p>
                 </div>
 

@@ -1201,9 +1201,12 @@ async def admin_update_user(user_id: str, updates: UserUpdate, request: Request,
     update_data = {k: v for k, v in updates.model_dump().items() if v is not None}
     update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
     
-    # Handle password update
+    # Handle password update - only update if admin explicitly set a new password
     if "plain_password" in update_data and update_data["plain_password"]:
         update_data["password_hash"] = hash_password(update_data["plain_password"])
+    else:
+        # Don't overwrite existing plain_password with empty string
+        update_data.pop("plain_password", None)
     
     # Update account status based on freeze type
     if "freeze_type" in update_data:

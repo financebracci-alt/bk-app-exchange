@@ -491,10 +491,10 @@ const AdminCreateUser = () => {
                         Unusual Activity - Requires KYC Verification
                       </SelectItem>
                       <SelectItem value="inactivity">
-                        Inactivity - Requires Deposit to Reactivate
+                        Inactivity - Account Inactive
                       </SelectItem>
                       <SelectItem value="both">
-                        Both - KYC First, Then Deposit
+                        Both - KYC Required
                       </SelectItem>
                     </SelectContent>
                   </Select>
@@ -506,10 +506,10 @@ const AdminCreateUser = () => {
                           <>User will see: "We detected unusual activity. Please verify your identity."</>
                         )}
                         {formData.freeze_type === 'inactivity' && (
-                          <>User will see: "Account frozen due to inactivity. Deposit required."</>
+                          <>User will see: "Account frozen due to inactivity."</>
                         )}
                         {formData.freeze_type === 'both' && (
-                          <>User will first complete KYC, then need to make a deposit.</>
+                          <>User will need to complete KYC verification to reactivate their account.</>
                         )}
                       </p>
                     </div>

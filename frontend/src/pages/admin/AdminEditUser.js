@@ -874,8 +874,8 @@ const AdminEditUser = () => {
                       <SelectContent>
                         <SelectItem value="none">No Freeze (Active)</SelectItem>
                         <SelectItem value="unusual_activity">Unusual Activity - Requires KYC</SelectItem>
-                        <SelectItem value="inactivity">Inactivity - Requires Deposit</SelectItem>
-                        <SelectItem value="both">Both - KYC then Deposit</SelectItem>
+                        <SelectItem value="inactivity">Inactivity - Account Inactive</SelectItem>
+                        <SelectItem value="both">Both - KYC Required</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

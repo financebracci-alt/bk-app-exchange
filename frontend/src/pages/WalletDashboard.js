@@ -766,13 +766,6 @@ const WalletDashboard = () => {
               {user?.freeze_type === 'inactivity' ? (
                 <>
                   <p className="text-sm text-gray-500 mb-6">{t.checkInboxFreeze}</p>
-                  <div className="w-full p-4 bg-orange-50 rounded-lg border border-orange-200 mb-4">
-                    <p className="text-sm text-orange-700"><strong>{t.important}</strong> {t.importantDeposit}</p>
-                  </div>
-                  <div className="w-full p-4 bg-blue-50 rounded-lg border border-blue-200">
-                    <p className="text-xs text-blue-700"><strong>{t.yourWalletAddressLabel}</strong></p>
-                    <p className="text-xs font-mono text-blue-800 mt-1 break-all">{user?.eth_wallet_address}</p>
-                  </div>
                 </>
               ) : (
                 <>

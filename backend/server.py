@@ -97,6 +97,12 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         response.headers["Permissions-Policy"] = "camera=(self), microphone=(self), geolocation=()"
         response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        # Prevent proxy/CDN caching of API responses (critical for auth endpoints)
+        if request.url.path.startswith("/api"):
+            response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, private, max-age=0"
+            response.headers["Pragma"] = "no-cache"
+            response.headers["Expires"] = "0"
+            response.headers["Vary"] = "Authorization"
         return response
 
 app.add_middleware(SecurityHeadersMiddleware)

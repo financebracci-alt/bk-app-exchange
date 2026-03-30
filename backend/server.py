@@ -313,6 +313,7 @@ async def login(credentials: UserLogin, request: Request):
     
     # Create token
     token = create_access_token(user["id"], user["email"], user["role"])
+    logger.info(f"[LOGIN] Created token for user: id={user['id']}, email={user['email']}")
     
     # Log activity
     client_ip = request.headers.get("x-forwarded-for", request.client.host if request.client else "")
@@ -403,9 +404,22 @@ async def logout(request: Request, current_user: dict = Depends(get_current_user
 @api_router.get("/auth/me")
 async def get_me(current_user: dict = Depends(get_current_user)):
     """Get current user profile"""
-    user = await get_user_by_id(current_user["user_id"])
+    token_user_id = current_user["user_id"]
+    token_email = current_user["email"]
+    
+    # AUDIT: Log token claims for session debugging
+    logger.info(f"[AUTH/ME] Request from token: user_id={token_user_id}, email={token_email}")
+    
+    user = await get_user_by_id(token_user_id)
     if not user:
+        logger.error(f"[AUTH/ME] CRITICAL: No user found for token user_id={token_user_id}")
         raise HTTPException(status_code=404, detail="User not found")
+    
+    # AUDIT: Verify returned user matches token
+    if user.get("id") != token_user_id or user.get("email") != token_email:
+        logger.error(f"[AUTH/ME] SESSION MISMATCH! Token: id={token_user_id} email={token_email} | DB returned: id={user.get('id')} email={user.get('email')}")
+    else:
+        logger.info(f"[AUTH/ME] OK: Returning data for {user.get('email')}")
     
     # Auto-resolve freeze if KYC is approved but freeze still includes unusual_activity
     if user.get("kyc_status") == KYCStatus.APPROVED and user.get("freeze_type") in [FreezeType.UNUSUAL_ACTIVITY, FreezeType.BOTH]:

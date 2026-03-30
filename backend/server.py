@@ -75,13 +75,10 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request as StarletteRequest
 
 class TokenRefreshMiddleware(BaseHTTPMiddleware):
-    """Attach refreshed JWT token to response headers for sliding session."""
+    """Middleware placeholder - sliding session token refresh has been disabled
+    to prevent session corruption via cached X-Refreshed-Token headers."""
     async def dispatch(self, request: StarletteRequest, call_next):
         response = await call_next(request)
-        # The refreshed token is set by endpoint handlers via request.state
-        token = getattr(request.state, 'refreshed_token', None)
-        if token:
-            response.headers["X-Refreshed-Token"] = token
         return response
 
 app.add_middleware(TokenRefreshMiddleware)

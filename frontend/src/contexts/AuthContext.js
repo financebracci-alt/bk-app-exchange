@@ -26,13 +26,9 @@ api.interceptors.request.use((config) => {
   return Promise.reject(error);
 });
 
-// Handle token refresh (sliding session - 24h of inactivity)
+// Handle responses - token refresh disabled to prevent session corruption
 api.interceptors.response.use(
   (response) => {
-    const newToken = response.headers['x-refreshed-token'];
-    if (newToken) {
-      localStorage.setItem('token', newToken);
-    }
     return response;
   },
   (error) => {

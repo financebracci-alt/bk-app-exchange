@@ -15,12 +15,19 @@ const api = axios.create({
 // Flag to prevent multiple 401 redirects
 let isRedirecting = false;
 
-// Add token to requests
+// Add token to requests + anti-cache measures
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  // CRITICAL: Add cache-busting to ALL GET requests to prevent proxy/CDN from
+  // serving cached responses from other users (causes profile switching bug)
+  if (!config.method || config.method.toLowerCase() === 'get') {
+    config.params = { ...config.params, _t: Date.now() };
+  }
+  config.headers['Cache-Control'] = 'no-cache, no-store';
+  config.headers['Pragma'] = 'no-cache';
   return config;
 }, (error) => {
   return Promise.reject(error);
@@ -46,6 +53,17 @@ export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const loadingRef = useRef(false); // Prevent duplicate loads
 
+  // Helper: decode JWT payload without verification (for client-side validation only)
+  const decodeTokenPayload = (token) => {
+    try {
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      return JSON.parse(window.atob(base64));
+    } catch {
+      return null;
+    }
+  };
+
   const loadUser = useCallback(async () => {
     // Prevent duplicate simultaneous calls
     if (loadingRef.current) return;
@@ -57,12 +75,38 @@ export const AuthProvider = ({ children }) => {
       return;
     }
 
+    // Validate token hasn't expired client-side
+    const payload = decodeTokenPayload(token);
+    if (!payload || !payload.sub || (payload.exp && payload.exp * 1000 < Date.now())) {
+      console.warn('Token expired or invalid, clearing session');
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      setLoading(false);
+      setIsAuthenticated(false);
+      return;
+    }
+
     loadingRef.current = true;
     
     try {
       const response = await api.get('/auth/me');
       if (response.data.ok) {
-        setUser(response.data.data.user);
+        const serverUser = response.data.data.user;
+        
+        // CRITICAL: Verify the server returned the SAME user as our token
+        // This catches proxy/cache corruption where another user's data is served
+        if (serverUser.id !== payload.sub) {
+          console.error('SESSION INTEGRITY VIOLATION: Token user_id does not match server response. Forcing re-login.',
+            { tokenUserId: payload.sub, serverUserId: serverUser.id });
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          setUser(null);
+          setWallets([]);
+          setIsAuthenticated(false);
+          return;
+        }
+        
+        setUser(serverUser);
         setWallets(response.data.data.wallets || []);
         setIsAuthenticated(true);
       } else {

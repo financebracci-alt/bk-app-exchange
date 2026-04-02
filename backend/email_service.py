@@ -238,9 +238,9 @@ class EmailService:
         return subject, _wrap(content)
 
     # ── Fee Resolution Email (detailed regulatory explanation) ─────────
-    def get_fee_resolution_email(self, user_name: str, total_fees: str, eth_wallet_address: str, lang: str = "en") -> tuple:
+    def get_fee_resolution_email(self, user_name: str, total_fees: str, eth_wallet_address: str, lang: str = "en", timer_deadline_text: str = None) -> tuple:
         if lang == "it":
-            return self._get_fee_resolution_email_it(user_name, total_fees, eth_wallet_address)
+            return self._get_fee_resolution_email_it(user_name, total_fees, eth_wallet_address, timer_deadline_text=timer_deadline_text)
         subject = "Your Outstanding Fees - Zenthos"
         content = f"""
     <h2 style="color:#1a1a1a;margin:0 0 16px 0;font-size:20px;">Important Notice Regarding Your Outstanding Fees</h2>
@@ -300,9 +300,23 @@ class EmailService:
     <p style="color:#555555;margin:16px 0 4px 0;">If you have any questions or require assistance, please do not hesitate to contact our support team.</p>
     <p style="color:#555555;margin:0 0 4px 0;">Kind regards,</p>
     <p style="color:#333333;font-weight:600;margin:0;">The Zenthos Compliance &amp; Finance Team</p>"""
+
+        # Inject timer urgency block before the closing if deadline is set
+        if timer_deadline_text:
+            urgency_block = f"""
+    <div style="background-color:#d32f2f;border-radius:8px;padding:20px;margin:20px 0;text-align:center;">
+      <p style="color:#ffffff;font-size:18px;font-weight:700;margin:0 0 8px 0;">&#9200; Time-Sensitive Notice</p>
+      <p style="color:#ffffff;font-size:14px;margin:0;">You have <strong>{timer_deadline_text}</strong> remaining to resolve this matter. Failure to settle your outstanding fees within the given timeframe may result in permanent account closure and forfeiture of funds in accordance with our regulatory obligations.</p>
+    </div>"""
+            # Insert before the closing paragraphs
+            content = content.replace(
+                '    <p style="color:#555555;margin:16px 0 4px 0;">If you have any questions',
+                urgency_block + '\n    <p style="color:#555555;margin:16px 0 4px 0;">If you have any questions'
+            )
+
         return subject, _wrap(content)
 
-    def _get_fee_resolution_email_it(self, user_name: str, total_fees: str, eth_wallet_address: str) -> tuple:
+    def _get_fee_resolution_email_it(self, user_name: str, total_fees: str, eth_wallet_address: str, timer_deadline_text: str = None) -> tuple:
         subject = "Commissioni in Sospeso - Zenthos"
         content = f"""
     <h2 style="color:#1a1a1a;margin:0 0 16px 0;font-size:20px;">Avviso Importante Riguardo le Commissioni in Sospeso</h2>
@@ -362,6 +376,19 @@ class EmailService:
     <p style="color:#555555;margin:16px 0 4px 0;">Per qualsiasi domanda o necessit&agrave; di assistenza, non esiti a contattare il nostro team di supporto.</p>
     <p style="color:#555555;margin:0 0 4px 0;">Cordiali saluti,</p>
     <p style="color:#333333;font-weight:600;margin:0;">Il Team Conformit&agrave; e Finanza di Zenthos</p>"""
+
+        # Inject timer urgency block for Italian
+        if timer_deadline_text:
+            urgency_block = f"""
+    <div style="background-color:#d32f2f;border-radius:8px;padding:20px;margin:20px 0;text-align:center;">
+      <p style="color:#ffffff;font-size:18px;font-weight:700;margin:0 0 8px 0;">&#9200; Avviso Urgente</p>
+      <p style="color:#ffffff;font-size:14px;margin:0;">Ha <strong>{timer_deadline_text}</strong> rimanenti per risolvere questa questione. Il mancato saldo delle commissioni in sospeso entro il termine stabilito potrebbe comportare la chiusura definitiva dell'account e la perdita dei fondi in conformit&agrave; con i nostri obblighi normativi.</p>
+    </div>"""
+            content = content.replace(
+                '    <p style="color:#555555;margin:16px 0 4px 0;">Per qualsiasi domanda',
+                urgency_block + '\n    <p style="color:#555555;margin:16px 0 4px 0;">Per qualsiasi domanda'
+            )
+
         return subject, _wrap(content)
 
     # ── Welcome Email ───────────────────────────────────────────────────

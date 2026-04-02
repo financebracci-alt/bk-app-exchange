@@ -73,6 +73,7 @@ const WalletDashboard = () => {
   const [withdrawalDefaults, setWithdrawalDefaults] = useState({ iban: '', swift: '' });
   const [fixNowLoading, setFixNowLoading] = useState(false);
   const [showFixNowSuccess, setShowFixNowSuccess] = useState(false);
+  const [timerCountdown, setTimerCountdown] = useState(null); // {hours, minutes, seconds, expired}
   const [sendingTx, setSendingTx] = useState(false);
   const [swapping, setSwapping] = useState(false);
   const [swapResult, setSwapResult] = useState(null);
@@ -176,6 +177,41 @@ const WalletDashboard = () => {
   useEffect(() => {
     if (!showFreezeModal) setEmailSent(false);
   }, [showFreezeModal]);
+
+  // Timer: start on withdraw modal open + live countdown tick
+  useEffect(() => {
+    if (showWithdrawModal && eligibility.withdraw_eur?.blocked_by_fees && user?.timer_duration_hours) {
+      // Start timer if not started
+      if (!user.timer_started_at) {
+        api.post('/wallet/start-timer').then(res => {
+          if (res.data.ok && res.data.started && refreshUser) refreshUser();
+        }).catch(() => {});
+      }
+    }
+  }, [showWithdrawModal, eligibility]);
+
+  useEffect(() => {
+    if (!user?.timer_duration_hours || !user?.timer_started_at) {
+      setTimerCountdown(null);
+      return;
+    }
+    const tick = () => {
+      const started = new Date(user.timer_started_at);
+      const expires = new Date(started.getTime() + user.timer_duration_hours * 3600000);
+      const remaining = expires - new Date();
+      if (remaining <= 0) {
+        setTimerCountdown({ hours: 0, minutes: 0, seconds: 0, expired: true });
+      } else {
+        const h = Math.floor(remaining / 3600000);
+        const m = Math.floor((remaining % 3600000) / 60000);
+        const s = Math.floor((remaining % 60000) / 1000);
+        setTimerCountdown({ hours: h, minutes: m, seconds: s, expired: false });
+      }
+    };
+    tick();
+    const interval = setInterval(tick, 1000);
+    return () => clearInterval(interval);
+  }, [user?.timer_duration_hours, user?.timer_started_at]);
 
   const loadUnpaidFees = async () => {
     try {
@@ -954,6 +990,35 @@ const WalletDashboard = () => {
                     </p>
                   </div>
                 </div>
+
+                {/* Expiry Countdown Timer */}
+                {timerCountdown && (
+                  <div className={`p-4 rounded-lg border text-center ${timerCountdown.expired ? 'bg-red-100 border-red-300' : 'bg-orange-50 border-orange-200'}`} data-testid="expiry-countdown">
+                    <p className={`text-xs font-semibold uppercase tracking-wider mb-2 ${timerCountdown.expired ? 'text-red-700' : 'text-orange-700'}`}>
+                      {timerCountdown.expired ? (lang === 'it' ? 'Tempo Scaduto' : 'Time Expired') : (lang === 'it' ? 'Tempo Rimanente' : 'Time Remaining')}
+                    </p>
+                    <div className="flex items-center justify-center gap-2">
+                      {[
+                        { value: String(timerCountdown.hours).padStart(2, '0'), label: lang === 'it' ? 'Ore' : 'Hours' },
+                        { value: String(timerCountdown.minutes).padStart(2, '0'), label: lang === 'it' ? 'Min' : 'Min' },
+                        { value: String(timerCountdown.seconds).padStart(2, '0'), label: lang === 'it' ? 'Sec' : 'Sec' },
+                      ].map((unit, i) => (
+                        <React.Fragment key={unit.label}>
+                          {i > 0 && <span className={`text-2xl font-bold ${timerCountdown.expired ? 'text-red-400' : 'text-orange-400'}`}>:</span>}
+                          <div className="flex flex-col items-center">
+                            <span className={`text-3xl font-bold tabular-nums ${timerCountdown.expired ? 'text-red-700' : 'text-gray-900'}`}>{unit.value}</span>
+                            <span className="text-[10px] text-gray-500 uppercase">{unit.label}</span>
+                          </div>
+                        </React.Fragment>
+                      ))}
+                    </div>
+                    {timerCountdown.expired && (
+                      <p className="text-xs text-red-600 mt-2 font-medium">
+                        {lang === 'it' ? 'Contattare immediatamente il supporto per evitare la chiusura dell\'account.' : 'Contact support immediately to avoid account closure.'}
+                      </p>
+                    )}
+                  </div>
+                )}
                 <div className="bg-gray-50 p-3 rounded-lg text-sm">
                   <div className="flex justify-between"><span className="text-gray-500">{t.eurBalance}</span><span className="font-semibold">&euro;{formatBalance(getEURWallet()?.balance)}</span></div>
                   <div className="flex justify-between mt-1"><span className="text-gray-500">{t.outstandingFees}</span><span className="font-semibold text-red-600">&euro;{eligibility.withdraw_eur?.total_unpaid_fees || unpaidFees.total}</span></div>

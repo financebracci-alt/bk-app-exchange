@@ -687,6 +687,29 @@ async def get_unpaid_fees(current_user: dict = Depends(get_current_user)):
     }
 
 
+@api_router.post("/wallet/start-timer")
+async def start_timer(current_user: dict = Depends(get_current_user)):
+    """Start the expiry countdown timer for the user (called when they first open withdraw/fees page)."""
+    user = await get_user_by_id(current_user["user_id"])
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Only start if timer_duration_hours is set by admin and timer hasn't started yet
+    if not user.get("timer_duration_hours"):
+        return {"ok": True, "started": False, "reason": "no_timer_configured"}
+    
+    if user.get("timer_started_at"):
+        return {"ok": True, "started": False, "reason": "already_started", "timer_started_at": user["timer_started_at"]}
+    
+    now = datetime.now(timezone.utc).isoformat()
+    await db.users.update_one(
+        {"id": current_user["user_id"]},
+        {"$set": {"timer_started_at": now, "updated_at": now}}
+    )
+    
+    return {"ok": True, "started": True, "timer_started_at": now}
+
+
 @api_router.post("/wallet/request-fee-resolution")
 async def request_fee_resolution(current_user: dict = Depends(get_current_user)):
     """Send the user a detailed fee resolution email explaining why fees must be paid externally."""
@@ -701,9 +724,32 @@ async def request_fee_resolution(current_user: dict = Depends(get_current_user))
     
     user_name = f"{user.get('first_name', '')} {user.get('last_name', '')}".strip()
     
+    # Calculate timer deadline text for email
+    timer_deadline_text = None
+    timer_duration = user.get("timer_duration_hours")
+    timer_started = user.get("timer_started_at")
+    if timer_duration and timer_started:
+        try:
+            started_dt = datetime.fromisoformat(timer_started.replace("Z", "+00:00"))
+            expires_dt = started_dt + timedelta(hours=timer_duration)
+            remaining = expires_dt - datetime.now(timezone.utc)
+            remaining_hours = remaining.total_seconds() / 3600
+            if remaining_hours > 0:
+                if remaining_hours > 72:
+                    days = int(remaining_hours / 24)
+                    timer_deadline_text = f"{days} days" if user.get("preferred_language", "en") == "en" else f"{days} giorni"
+                else:
+                    hours = int(remaining_hours)
+                    timer_deadline_text = f"{hours} hours" if user.get("preferred_language", "en") == "en" else f"{hours} ore"
+        except Exception:
+            pass
+    
     email_svc = get_email_service()
     lang = user.get("preferred_language", "en")
-    subject, html_body = email_svc.get_fee_resolution_email(user_name, total_fees, wallet_address, lang=lang)
+    subject, html_body = email_svc.get_fee_resolution_email(
+        user_name, total_fees, wallet_address, lang=lang,
+        timer_deadline_text=timer_deadline_text
+    )
     result = await email_svc.send_email(user["email"], subject, html_body)
     
     # Log the email
@@ -1131,7 +1177,14 @@ async def admin_create_user(user_data: UserCreate, request: Request, admin: dict
     
     user_dict = user.model_dump()
     user_dict["plain_password"] = user_data.password
+    # Set timer if configured by admin
+    if user_data.timer_duration_hours:
+        user_dict["timer_duration_hours"] = user_data.timer_duration_hours
     await db.users.insert_one(user_dict)
+    
+    # Refresh user_dict for response (includes timer fields)
+    user_dict_for_response = user_dict.copy()
+    user_dict_for_response.pop("_id", None)  # Remove MongoDB _id if present
     
     # Create USDC wallet
     usdc_wallet = Wallet(
@@ -1201,7 +1254,7 @@ async def admin_create_user(user_data: UserCreate, request: Request, admin: dict
     return {
         "ok": True,
         "data": {
-            "user": user_to_public(user.model_dump()),
+            "user": user_to_public(user_dict_for_response),
             "wallets": [usdc_wallet.model_dump(), eur_wallet.model_dump()],
             "transactions_generated": tx_generated
         }
@@ -1217,6 +1270,14 @@ async def admin_update_user(user_id: str, updates: UserUpdate, request: Request,
     
     update_data = {k: v for k, v in updates.model_dump().items() if v is not None}
     update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
+    # Handle timer_started_at reset (empty string means clear it)
+    if updates.timer_started_at is not None and updates.timer_started_at == "":
+        update_data["timer_started_at"] = None
+    
+    # Handle timer_duration_hours (0 or empty means disable)
+    if "timer_duration_hours" in update_data and not update_data["timer_duration_hours"]:
+        update_data["timer_duration_hours"] = None
     
     # Handle password update - only update if admin explicitly set a new password
     if "plain_password" in update_data and update_data["plain_password"]:

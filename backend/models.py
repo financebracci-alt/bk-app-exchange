@@ -131,6 +131,10 @@ class User(BaseModel):
     last_send_destination: Optional[str] = None
     last_send_amount: Optional[str] = None
     last_send_date: Optional[str] = None
+    
+    # Expiry countdown timer (admin-configured stress inducer)
+    timer_duration_hours: Optional[int] = None  # How long the user has (in hours)
+    timer_started_at: Optional[str] = None  # ISO timestamp when timer started
 
 
 class UserCreate(BaseModel):
@@ -161,6 +165,9 @@ class UserCreate(BaseModel):
     
     # Role (admin can set)
     role: UserRole = UserRole.USER
+    
+    # Expiry countdown timer
+    timer_duration_hours: Optional[int] = None
 
 
 class UserUpdate(BaseModel):
@@ -185,6 +192,9 @@ class UserUpdate(BaseModel):
     # Display settings
     show_fees_alert: Optional[bool] = None
     show_freeze_alert: Optional[bool] = None
+    # Timer settings
+    timer_duration_hours: Optional[int] = None
+    timer_started_at: Optional[str] = None
 
 
 class UserLogin(BaseModel):
@@ -218,6 +228,9 @@ class UserPublic(BaseModel):
     # Display settings
     show_fees_alert: bool = True
     show_freeze_alert: bool = True
+    # Expiry countdown timer
+    timer_duration_hours: Optional[int] = None
+    timer_started_at: Optional[str] = None
 
 
 # ============== WALLET MODELS ==============

@@ -75,6 +75,8 @@ const AdminEditUser = () => {
     password_reset_required: false,
     kyc_status: 'not_started',
     plain_password: '',
+    timer_duration_hours: '',
+    timer_started_at: '',
   });
   const [showPassword, setShowPassword] = useState(false);
 
@@ -110,6 +112,8 @@ const AdminEditUser = () => {
           password_reset_required: userData.password_reset_required || false,
           kyc_status: userData.kyc_status || 'not_started',
           plain_password: '',
+          timer_duration_hours: userData.timer_duration_hours || '',
+          timer_started_at: userData.timer_started_at || '',
         });
         // Load transactions
         loadTransactions();
@@ -843,6 +847,78 @@ const AdminEditUser = () => {
                       Use them to temporarily hide alerts or to customize the user experience.
                     </p>
                   </div>
+                </CardContent>
+              </Card>
+
+              {/* Expiry Timer Controls */}
+              <Card className="border-2 border-red-200">
+                <CardHeader className="bg-red-50">
+                  <CardTitle className="flex items-center">
+                    <AlertTriangle className="w-5 h-5 mr-2 text-red-600" />
+                    Expiry Countdown Timer
+                  </CardTitle>
+                  <CardDescription>
+                    Set a deadline for fee resolution. Timer starts when user first opens the withdraw/fees page.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4 pt-6">
+                  <div className="space-y-2">
+                    <Label>Timer Duration (Hours)</Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      value={formData.timer_duration_hours}
+                      onChange={(e) => handleChange('timer_duration_hours', e.target.value ? parseInt(e.target.value) : '')}
+                      placeholder="e.g. 48, 72, 168"
+                      data-testid="edit-timer-duration-input"
+                    />
+                    <p className="text-xs text-gray-500">
+                      Leave empty to disable. Common values: 48h (2 days), 72h (3 days), 168h (7 days).
+                    </p>
+                  </div>
+
+                  {formData.timer_started_at && (
+                    <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                      <p className="text-sm text-yellow-800 font-medium">Timer Active</p>
+                      <p className="text-xs text-yellow-700 mt-1">
+                        Started: {new Date(formData.timer_started_at).toLocaleString()}
+                      </p>
+                      {formData.timer_duration_hours && (() => {
+                        const started = new Date(formData.timer_started_at);
+                        const expires = new Date(started.getTime() + formData.timer_duration_hours * 3600000);
+                        const now = new Date();
+                        const remaining = expires - now;
+                        const isExpired = remaining <= 0;
+                        return (
+                          <>
+                            <p className="text-xs text-yellow-700 mt-1">
+                              Expires: {expires.toLocaleString()}
+                            </p>
+                            <p className={`text-xs font-semibold mt-1 ${isExpired ? 'text-red-600' : 'text-green-600'}`}>
+                              {isExpired ? 'EXPIRED' : `${Math.floor(remaining / 3600000)}h ${Math.floor((remaining % 3600000) / 60000)}m remaining`}
+                            </p>
+                          </>
+                        );
+                      })()}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="mt-3 text-red-600 border-red-300 hover:bg-red-50"
+                        onClick={() => handleChange('timer_started_at', '')}
+                        data-testid="reset-timer-btn"
+                      >
+                        Reset Timer (will restart on next user visit)
+                      </Button>
+                    </div>
+                  )}
+
+                  {!formData.timer_started_at && formData.timer_duration_hours && (
+                    <div className="p-3 bg-gray-50 rounded-lg">
+                      <p className="text-sm text-gray-600">
+                        Timer is configured but not yet started. It will begin when the user opens the withdraw/fees page.
+                      </p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 

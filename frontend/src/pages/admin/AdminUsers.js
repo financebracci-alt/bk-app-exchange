@@ -24,7 +24,8 @@ import {
   Mail,
   UserCheck,
   UserX,
-  RefreshCw
+  RefreshCw,
+  Clock
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -204,19 +205,20 @@ const AdminUsers = () => {
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">KYC</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Freeze</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Unpaid Fees</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Timer</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center">
+                  <td colSpan={9} className="px-4 py-8 text-center">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
                   </td>
                 </tr>
               ) : users.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
+                  <td colSpan={9} className="px-4 py-8 text-center text-gray-500">
                     No users found
                   </td>
                 </tr>
@@ -253,6 +255,35 @@ const AdminUsers = () => {
                       <span className={`text-sm font-medium ${parseFloat(user.total_unpaid_fees) > 0 ? 'text-orange-600' : 'text-gray-500'}`}>
                         &euro;{user.total_unpaid_fees}
                       </span>
+                    </td>
+                    <td className="px-4 py-3" data-testid={`user-timer-${user.id}`}>
+                      {user.timer_duration_hours ? (() => {
+                        if (!user.timer_started_at) {
+                          return <span className="text-xs text-gray-400">Not started</span>;
+                        }
+                        const started = new Date(user.timer_started_at);
+                        const expires = new Date(started.getTime() + user.timer_duration_hours * 3600000);
+                        const now = new Date();
+                        const remaining = expires - now;
+                        const isExpired = remaining <= 0;
+                        if (isExpired) {
+                          return (
+                            <Badge className="bg-red-100 text-red-700 flex items-center gap-1 w-fit" data-testid={`timer-expired-${user.id}`}>
+                              <Clock className="w-3 h-3" />
+                              Expired
+                            </Badge>
+                          );
+                        }
+                        const hrs = Math.floor(remaining / 3600000);
+                        const mins = Math.floor((remaining % 3600000) / 60000);
+                        return (
+                          <span className="text-xs text-yellow-700 font-medium">
+                            {hrs}h {mins}m
+                          </span>
+                        );
+                      })() : (
+                        <span className="text-xs text-gray-400">-</span>
+                      )}
                     </td>
                     <td className="px-4 py-3">
                       <DropdownMenu>

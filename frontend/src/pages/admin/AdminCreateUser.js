@@ -50,6 +50,7 @@ const AdminCreateUser = () => {
     connected_app_name: '',
     connected_app_logo: '',
     role: 'user',
+    timer_duration_hours: '',
   });
 
   const handleChange = (field, value) => {
@@ -97,6 +98,7 @@ const AdminCreateUser = () => {
         connected_app_name: formData.connected_app_name || null,
         connected_app_logo: formData.connected_app_logo || null,
         role: formData.role,
+        timer_duration_hours: formData.timer_duration_hours ? parseInt(formData.timer_duration_hours) : null,
       };
 
       const response = await api.post('/admin/users', payload);
@@ -554,6 +556,22 @@ const AdminCreateUser = () => {
                       <SelectItem value="superadmin">Super Admin</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="timer_duration_hours">Expiry Timer (Hours)</Label>
+                  <Input
+                    id="timer_duration_hours"
+                    type="number"
+                    min="1"
+                    value={formData.timer_duration_hours}
+                    onChange={(e) => handleChange('timer_duration_hours', e.target.value)}
+                    placeholder="e.g. 48, 72, 168"
+                    data-testid="timer-duration-input"
+                  />
+                  <p className="text-xs text-gray-500">
+                    Set a countdown deadline (in hours) for fee resolution. Leave empty for no timer.
+                  </p>
                 </div>
 
                 {/* Summary */}

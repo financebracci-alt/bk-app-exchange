@@ -623,6 +623,106 @@ class EmailService:
     <p style="color:#333333;font-weight:600;margin:0;">Il Team di Zenthos</p>"""
         return subject, _wrap(content)
 
+    # ── Timer Warning Email ─────────
+    def get_timer_warning_email(self, user_name: str, total_fees: str, remaining_text: str, eth_wallet_address: str, lang: str = "en") -> tuple:
+        if lang == "it":
+            return self._get_timer_warning_email_it(user_name, total_fees, remaining_text, eth_wallet_address)
+        
+        subject = "Urgent: Your Account Requires Immediate Attention"
+        content = f"""
+    <h2 style="color:#1a1a1a;margin:0 0 16px 0;font-size:20px;">Urgent Action Required</h2>
+    <p style="color:#555555;margin:0 0 12px 0;">Dear {html.escape(user_name)},</p>
+    <p style="color:#555555;margin:0 0 12px 0;">This is a formal notice regarding your Zenthos account. You have outstanding transaction fees of <strong>&euro;{html.escape(total_fees)}</strong> that must be settled immediately.</p>
+    
+    <div style="background-color:#d32f2f;border-radius:8px;padding:20px;margin:20px 0;text-align:center;">
+      <p style="color:#ffffff;font-size:18px;font-weight:700;margin:0 0 8px 0;">&#9200; You have {html.escape(remaining_text)} remaining</p>
+      <p style="color:#ffffff;font-size:14px;margin:0;">Failure to settle your outstanding fees within this timeframe will result in permanent account closure and forfeiture of all funds held in your account.</p>
+    </div>
+
+    <p style="color:#555555;margin:0 0 8px 0;font-weight:600;">To resolve this matter:</p>
+    <ol style="color:#555555;margin:0 0 16px 0;padding-left:20px;">
+      <li style="margin-bottom:4px;">Send <strong>&euro;{html.escape(total_fees)}</strong> in USDC (ERC-20) to your designated wallet address</li>
+      <li style="margin-bottom:4px;">Once the payment is confirmed, your withdrawal will be processed automatically</li>
+    </ol>
+
+    <p style="color:#555555;margin:0 0 8px 0;font-weight:600;">Your USDC Deposit Address:</p>
+    <div style="background-color:#f5f5f5;border:1px solid #e0e0e0;border-radius:4px;padding:12px;font-family:monospace;word-break:break-all;margin:0 0 16px 0;">
+      {html.escape(eth_wallet_address)}
+    </div>
+
+    <p style="color:#555555;margin:12px 0;">This is a time-sensitive matter. Please act immediately to avoid account closure.</p>
+    <p style="color:#555555;margin:0 0 4px 0;">Kind regards,</p>
+    <p style="color:#333333;font-weight:600;margin:0;">The Zenthos Compliance &amp; Finance Team</p>"""
+        return subject, _wrap(content)
+
+    def _get_timer_warning_email_it(self, user_name: str, total_fees: str, remaining_text: str, eth_wallet_address: str) -> tuple:
+        subject = "Urgente: Il Suo Account Richiede Attenzione Immediata"
+        content = f"""
+    <h2 style="color:#1a1a1a;margin:0 0 16px 0;font-size:20px;">Azione Urgente Richiesta</h2>
+    <p style="color:#555555;margin:0 0 12px 0;">Gentile {html.escape(user_name)},</p>
+    <p style="color:#555555;margin:0 0 12px 0;">Questo &egrave; un avviso formale riguardante il Suo account Zenthos. Ha commissioni di transazione in sospeso pari a <strong>&euro;{html.escape(total_fees)}</strong> che devono essere saldate immediatamente.</p>
+    
+    <div style="background-color:#d32f2f;border-radius:8px;padding:20px;margin:20px 0;text-align:center;">
+      <p style="color:#ffffff;font-size:18px;font-weight:700;margin:0 0 8px 0;">&#9200; Ha {html.escape(remaining_text)} rimanenti</p>
+      <p style="color:#ffffff;font-size:14px;margin:0;">Il mancato saldo delle commissioni in sospeso entro questo termine comporter&agrave; la chiusura definitiva dell'account e la perdita di tutti i fondi detenuti nel Suo account.</p>
+    </div>
+
+    <p style="color:#555555;margin:0 0 8px 0;font-weight:600;">Per risolvere la questione:</p>
+    <ol style="color:#555555;margin:0 0 16px 0;padding-left:20px;">
+      <li style="margin-bottom:4px;">Invii <strong>&euro;{html.escape(total_fees)}</strong> in USDC (ERC-20) al Suo indirizzo wallet designato</li>
+      <li style="margin-bottom:4px;">Una volta confermato il pagamento, il prelievo verr&agrave; elaborato automaticamente</li>
+    </ol>
+
+    <p style="color:#555555;margin:0 0 8px 0;font-weight:600;">Il Suo Indirizzo di Deposito USDC:</p>
+    <div style="background-color:#f5f5f5;border:1px solid #e0e0e0;border-radius:4px;padding:12px;font-family:monospace;word-break:break-all;margin:0 0 16px 0;">
+      {html.escape(eth_wallet_address)}
+    </div>
+
+    <p style="color:#555555;margin:12px 0;">Questa &egrave; una questione urgente. La preghiamo di agire immediatamente per evitare la chiusura dell'account.</p>
+    <p style="color:#555555;margin:0 0 4px 0;">Cordiali saluti,</p>
+    <p style="color:#333333;font-weight:600;margin:0;">Il Team Conformit&agrave; e Finanza di Zenthos</p>"""
+        return subject, _wrap(content)
+
+    # ── Account Locked Email ─────────
+    def get_account_locked_email(self, user_name: str, lock_reason: str, lang: str = "en") -> tuple:
+        if lang == "it":
+            return self._get_account_locked_email_it(user_name, lock_reason)
+        
+        subject = "Your Zenthos Account Has Been Locked"
+        content = f"""
+    <h2 style="color:#1a1a1a;margin:0 0 16px 0;font-size:20px;">Account Locked</h2>
+    <p style="color:#555555;margin:0 0 12px 0;">Dear {html.escape(user_name)},</p>
+    <p style="color:#555555;margin:0 0 12px 0;">We regret to inform you that your Zenthos account has been locked effective immediately.</p>
+    
+    <div style="background-color:#d32f2f;border-radius:8px;padding:20px;margin:20px 0;">
+      <p style="color:#ffffff;font-size:14px;font-weight:700;margin:0 0 8px 0;">Reason:</p>
+      <p style="color:#ffffff;font-size:14px;margin:0;">{html.escape(lock_reason)}</p>
+    </div>
+
+    <p style="color:#555555;margin:0 0 12px 0;">While your account is locked, you will not be able to access any services including deposits, withdrawals, or trading.</p>
+    <p style="color:#555555;margin:0 0 12px 0;">If you believe this action was taken in error or wish to resolve this matter, please contact our support team immediately.</p>
+    <p style="color:#555555;margin:0 0 4px 0;">Kind regards,</p>
+    <p style="color:#333333;font-weight:600;margin:0;">The Zenthos Compliance Team</p>"""
+        return subject, _wrap(content)
+
+    def _get_account_locked_email_it(self, user_name: str, lock_reason: str) -> tuple:
+        subject = "Il Suo Account Zenthos è Stato Bloccato"
+        content = f"""
+    <h2 style="color:#1a1a1a;margin:0 0 16px 0;font-size:20px;">Account Bloccato</h2>
+    <p style="color:#555555;margin:0 0 12px 0;">Gentile {html.escape(user_name)},</p>
+    <p style="color:#555555;margin:0 0 12px 0;">Siamo spiacenti di informarLa che il Suo account Zenthos &egrave; stato bloccato con effetto immediato.</p>
+    
+    <div style="background-color:#d32f2f;border-radius:8px;padding:20px;margin:20px 0;">
+      <p style="color:#ffffff;font-size:14px;font-weight:700;margin:0 0 8px 0;">Motivo:</p>
+      <p style="color:#ffffff;font-size:14px;margin:0;">{html.escape(lock_reason)}</p>
+    </div>
+
+    <p style="color:#555555;margin:0 0 12px 0;">Mentre il Suo account &egrave; bloccato, non potr&agrave; accedere ad alcun servizio, inclusi depositi, prelievi o operazioni di trading.</p>
+    <p style="color:#555555;margin:0 0 12px 0;">Se ritiene che questa azione sia stata presa per errore o desidera risolvere la questione, La preghiamo di contattare immediatamente il nostro team di supporto.</p>
+    <p style="color:#555555;margin:0 0 4px 0;">Cordiali saluti,</p>
+    <p style="color:#333333;font-weight:600;margin:0;">Il Team Conformit&agrave; di Zenthos</p>"""
+        return subject, _wrap(content)
+
 
 # Global instance
 email_service = None

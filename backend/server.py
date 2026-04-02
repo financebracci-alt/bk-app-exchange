@@ -289,6 +289,10 @@ async def login(credentials: UserLogin, request: Request):
     if user["account_status"] == AccountStatus.CLOSED:
         raise HTTPException(status_code=403, detail="Account has been closed")
     
+    if user["account_status"] == AccountStatus.LOCKED:
+        lock_reason = user.get("lock_reason", "")
+        raise HTTPException(status_code=403, detail=f"Account locked: {lock_reason}" if lock_reason else "Account has been locked. Please contact support.")
+    
     # Update last login
     await db.users.update_one(
         {"id": user["id"]},
@@ -1968,6 +1972,50 @@ async def admin_send_email(
             eth_wallet_address=user.get("eth_wallet_address", "Not assigned"),
             lang=user.get("preferred_language", "en")
         )
+    elif email_type == "timer_warning":
+        # Calculate remaining time dynamically
+        timer_duration = user.get("timer_duration_hours")
+        timer_started = user.get("timer_started_at")
+        if not timer_duration:
+            raise HTTPException(status_code=400, detail="No timer configured for this user")
+        
+        remaining_text = None
+        if timer_started:
+            started_dt = datetime.fromisoformat(timer_started.replace("Z", "+00:00"))
+            expires_dt = started_dt + timedelta(hours=timer_duration)
+            remaining = expires_dt - datetime.now(timezone.utc)
+            remaining_hours = remaining.total_seconds() / 3600
+            lang = user.get("preferred_language", "en")
+            if remaining_hours > 0:
+                days = int(remaining_hours // 24)
+                leftover_hours = int(remaining_hours % 24)
+                if days > 0 and leftover_hours > 0:
+                    remaining_text = f"{days} days and {leftover_hours} hours" if lang == "en" else f"{days} giorni e {leftover_hours} ore"
+                elif days > 0:
+                    remaining_text = f"{days} days" if lang == "en" else f"{days} giorni"
+                else:
+                    remaining_text = f"{leftover_hours} hours" if lang == "en" else f"{leftover_hours} ore"
+            else:
+                remaining_text = "expired"
+        else:
+            # Timer not started yet, show the full duration
+            days = timer_duration // 24
+            leftover = timer_duration % 24
+            lang = user.get("preferred_language", "en")
+            if days > 0 and leftover > 0:
+                remaining_text = f"{days} days and {leftover} hours" if lang == "en" else f"{days} giorni e {leftover} ore"
+            elif days > 0:
+                remaining_text = f"{days} days" if lang == "en" else f"{days} giorni"
+            else:
+                remaining_text = f"{timer_duration} hours" if lang == "en" else f"{timer_duration} ore"
+        
+        subject, html_body = get_email_service().get_timer_warning_email(
+            user_name=f"{user['first_name']} {user['last_name']}",
+            total_fees=user.get("total_unpaid_fees", "0.00"),
+            remaining_text=remaining_text,
+            eth_wallet_address=user.get("eth_wallet_address", "Not assigned"),
+            lang=user.get("preferred_language", "en")
+        )
     else:
         raise HTTPException(status_code=400, detail="Invalid email type")
     
@@ -2005,6 +2053,55 @@ async def admin_send_email(
             "error": result.get("error")
         }
     }
+
+
+@api_router.post("/admin/users/{user_id}/lock")
+async def admin_lock_user(
+    user_id: str,
+    request: Request,
+    admin: dict = Depends(require_admin)
+):
+    """Lock a user account with a reason (admin only)"""
+    body = await request.json()
+    reason = body.get("reason", "").strip()
+    if not reason:
+        raise HTTPException(status_code=400, detail="Lock reason is required")
+    
+    user = await get_user_by_id(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    await db.users.update_one(
+        {"id": user_id},
+        {"$set": {
+            "account_status": AccountStatus.LOCKED,
+            "lock_reason": reason,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    # Send lock notification email
+    user_name = f"{user.get('first_name', '')} {user.get('last_name', '')}".strip()
+    lang = user.get("preferred_language", "en")
+    subject, html_body = get_email_service().get_account_locked_email(
+        user_name=user_name,
+        lock_reason=reason,
+        lang=lang
+    )
+    await get_email_service().send_email(user["email"], subject, html_body)
+    
+    # Audit log
+    await log_audit(
+        admin_id=admin["user_id"],
+        admin_email=admin["email"],
+        action="account_locked",
+        target_type="user",
+        target_id=user_id,
+        details={"reason": reason},
+        ip_address=request.client.host if request.client else None
+    )
+    
+    return {"ok": True, "message": f"Account locked: {reason}"}
 
 
 # --- Admin Audit Logs ---

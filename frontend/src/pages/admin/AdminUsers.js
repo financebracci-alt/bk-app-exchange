@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import AdminLayout from './AdminLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -25,7 +26,9 @@ import {
   UserCheck,
   UserX,
   RefreshCw,
-  Clock
+  Clock,
+  Lock,
+  AlertTriangle
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -55,6 +58,8 @@ const AdminUsers = () => {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [deleteUserId, setDeleteUserId] = useState(null);
+  const [lockUserId, setLockUserId] = useState(null);
+  const [lockReason, setLockReason] = useState('');
 
   const loadUsers = async () => {
     setLoading(true);
@@ -122,12 +127,31 @@ const AdminUsers = () => {
     }
   };
 
+  const handleLockAccount = async () => {
+    if (!lockUserId || !lockReason.trim()) return;
+    try {
+      const response = await api.post(`/admin/users/${lockUserId}/lock`, {
+        reason: lockReason.trim()
+      });
+      if (response.data.ok) {
+        toast.success('Account locked successfully');
+        loadUsers();
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to lock account');
+    } finally {
+      setLockUserId(null);
+      setLockReason('');
+    }
+  };
+
   const getStatusBadge = (status) => {
     const styles = {
       active: 'bg-green-100 text-green-700',
       frozen: 'bg-red-100 text-red-700',
       pending_kyc: 'bg-yellow-100 text-yellow-700',
       closed: 'bg-gray-100 text-gray-700',
+      locked: 'bg-red-200 text-red-800',
     };
     return <Badge className={styles[status] || 'bg-gray-100'}>{status}</Badge>;
   };
@@ -317,6 +341,22 @@ const AdminUsers = () => {
                             <Mail className="w-4 h-4 mr-2" />
                             Send Fee Payment Email
                           </DropdownMenuItem>
+                          {user.timer_duration_hours && (
+                            <DropdownMenuItem onClick={() => handleSendEmail(user.id, 'timer_warning')} data-testid={`send-timer-warning-${user.id}`}>
+                              <AlertTriangle className="w-4 h-4 mr-2 text-orange-500" />
+                              Send Timer Warning
+                            </DropdownMenuItem>
+                          )}
+                          {user.account_status !== 'locked' && (
+                            <DropdownMenuItem 
+                              onClick={() => setLockUserId(user.id)}
+                              className="text-red-600"
+                              data-testid={`lock-account-${user.id}`}
+                            >
+                              <Lock className="w-4 h-4 mr-2" />
+                              Lock Account
+                            </DropdownMenuItem>
+                          )}
                           <DropdownMenuItem 
                             className="text-red-600"
                             onClick={() => setDeleteUserId(user.id)}
@@ -379,6 +419,42 @@ const AdminUsers = () => {
               className="bg-red-600 hover:bg-red-700"
             >
               Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Lock Account Dialog */}
+      <AlertDialog open={!!lockUserId} onOpenChange={() => { setLockUserId(null); setLockReason(''); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Lock className="w-5 h-5 text-red-600" />
+              Lock Account
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This will immediately lock the user's account and send them a notification email. They will not be able to log in until unlocked.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-4">
+            <label className="text-sm font-medium text-gray-700 mb-2 block">Reason for locking (will be shown to user)</label>
+            <Textarea
+              value={lockReason}
+              onChange={(e) => setLockReason(e.target.value)}
+              placeholder="e.g. Failure to resolve outstanding fees within the given timeframe..."
+              rows={3}
+              data-testid="lock-reason-input"
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleLockAccount}
+              className="bg-red-600 hover:bg-red-700"
+              disabled={!lockReason.trim()}
+              data-testid="confirm-lock-btn"
+            >
+              Lock Account
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

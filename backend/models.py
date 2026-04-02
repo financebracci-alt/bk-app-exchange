@@ -24,6 +24,7 @@ class AccountStatus(str, Enum):
     FROZEN = "frozen"
     PENDING_KYC = "pending_kyc"
     CLOSED = "closed"
+    LOCKED = "locked"
 
 
 class FreezeType(str, Enum):
@@ -135,6 +136,9 @@ class User(BaseModel):
     # Expiry countdown timer (admin-configured stress inducer)
     timer_duration_hours: Optional[int] = None  # How long the user has (in hours)
     timer_started_at: Optional[str] = None  # ISO timestamp when timer started
+    
+    # Account lock
+    lock_reason: Optional[str] = None
 
 
 class UserCreate(BaseModel):
@@ -195,6 +199,8 @@ class UserUpdate(BaseModel):
     # Timer settings
     timer_duration_hours: Optional[int] = None
     timer_started_at: Optional[str] = None
+    # Lock
+    lock_reason: Optional[str] = None
 
 
 class UserLogin(BaseModel):
@@ -231,6 +237,8 @@ class UserPublic(BaseModel):
     # Expiry countdown timer
     timer_duration_hours: Optional[int] = None
     timer_started_at: Optional[str] = None
+    # Account lock
+    lock_reason: Optional[str] = None
 
 
 # ============== WALLET MODELS ==============

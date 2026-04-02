@@ -10,7 +10,7 @@ Build a professional wallet/exchange platform with polished UI/UX, full internat
 - **Integrations**: Resend (email), Cloudinary (KYC images/video)
 
 ## Core Features (Implemented)
-- User registration, login, JWT auth with 7-day tokens (no sliding sessions due to CDN cache issue)
+- User registration, login, JWT auth with 7-day tokens
 - Full KYC flow (document upload, video selfie, proof of address)
 - Wallet dashboard with USDC/EUR balances
 - Deposit, Send, Swap, Withdraw flows
@@ -20,73 +20,46 @@ Build a professional wallet/exchange platform with polished UI/UX, full internat
 - Forgot Password flow
 - Error Boundary for crash prevention
 - PWA support
-- Expiry Countdown Timer (stress inducer)
+- Expiry Countdown Timer (stress inducer) with Days/Hours/Min/Sec format
+- Timer Warning Email (admin sends personalized warning with remaining time)
+- Lock Account with custom reason (admin locks + notification email + login block)
 
 ## What's Been Implemented
 
+### Apr 2026 - Timer Warning Email + Lock Account
+- **Backend**: `POST /api/admin/users/{user_id}/send-email?email_type=timer_warning` — sends personalized email with dynamic remaining time (X days and Y hours)
+- **Backend**: `POST /api/admin/users/{user_id}/lock` — locks account with admin-typed reason, sends notification email
+- **Backend**: Login blocks locked users with 403 + reason message
+- **Backend**: Added `LOCKED` to AccountStatus enum, `lock_reason` to User/UserUpdate/UserPublic models
+- **Email**: Timer Warning Email template (EN+IT) with red urgency block showing exact remaining time
+- **Email**: Account Locked Email template (EN+IT) with reason displayed
+- **Frontend Admin**: "Send Timer Warning" dropdown option (only for users with timer configured)
+- **Frontend Admin**: "Lock Account" dropdown option with reason dialog (only for non-locked users)
+- **Frontend Admin**: `locked` status badge (red-200/red-800) in user list
+- **Files**: `server.py`, `email_service.py`, `models.py`, `AdminUsers.js`
+
 ### Apr 2026 - Expiry Countdown Timer Feature
-- **Backend**: Added `timer_duration_hours` and `timer_started_at` fields to User, UserCreate, UserUpdate, UserPublic models
-- **Backend**: New `POST /api/wallet/start-timer` endpoint - starts countdown when user opens withdraw/fees page
-- **Backend**: `POST /api/wallet/request-fee-resolution` now includes urgency text with countdown deadline in email (>72h = days, ≤72h = hours)
-- **Backend**: Admin create/update user endpoints handle timer configuration and reset
-- **Frontend Admin**: Timer duration input in Create User (Step 4) and Edit User (Actions tab)
-- **Frontend Admin**: Timer column in Users list showing status (-, Not started, Xh Ym, Expired badge)
-- **Frontend Admin**: Edit User shows timer details (started, expires, remaining/expired, reset button)
-- **Frontend User**: Live countdown (HH:MM:SS) in withdraw modal when fees are blocked and timer is active
-- **Email**: Italian and English urgency blocks with time-sensitive notice injected into fee resolution emails
-- **Files**: `models.py`, `server.py`, `email_service.py`, `AdminCreateUser.js`, `AdminEditUser.js`, `AdminUsers.js`, `WalletDashboard.js`
-
-### Mar 2026 - Full Rebrand to Zenthos
-- Complete brand migration, regulatory compliance, email templates, PWA metadata, database, i18n
-
-### Mar 2026 - User Activity Log
-- Activity tracking, admin-only Activity tab, logout tracking
-
-### Mar 2026 - Anti-Phishing Compliance & Legal Pages
-- Privacy Policy, Terms of Service, About Us, security headers, footer updates
-
-### Mar 2026 - KYC iOS 12 Compatibility Fix
-- Replaced programmatic .click() with native label approach for iOS 12
+- Timer duration (hours) configurable per user by admin
+- Live countdown (Days:Hours:Min:Sec) on withdraw/fees page
+- Timer starts when user opens withdraw modal with fees blocked
+- Admin Users list Timer column (e.g. "6d 23h", "Expired" badge)
+- Email urgency blocks with "X days and Y hours" format (>72h=days+hours)
+- Admin Edit User: timer config, status display, reset button
+- Admin Create User: timer duration input
 
 ### Previous Sessions
-- KYC Robustness Improvements, Forgot Password, KYC fixes, auto-unfreeze logic, admin badge fixes, email link fixes, health endpoint
+- Complete brand migration, KYC flows, admin panel, i18n, security headers
 - Domain migration eu-zenthos.com → x-zenthos.com
 - Bank rename ECOMMBX → CHIANTIN BANK
 - 100 EUR reactivation deposit removal
-- Admin edit user password bug fix
 - CDN session leakage fix (TokenRefreshMiddleware removed)
-
-## Architecture
-```
-/app
-├── backend/
-│   ├── server.py          # Main API server (~3100 lines)
-│   ├── email_service.py   # Zenthos-branded email templates
-│   ├── models.py          # Data models
-│   ├── auth.py            # JWT auth
-│   └── tests/
-│       └── test_expiry_timer.py
-└── frontend/
-    └── src/
-        ├── pages/
-        │   ├── admin/AdminCreateUser.js
-        │   ├── admin/AdminEditUser.js
-        │   ├── admin/AdminUsers.js
-        │   ├── WalletDashboard.js
-        │   ├── KYCPage.js
-        │   ├── ForgotPasswordPage.js
-        │   └── LandingPage.js
-        ├── components/ErrorBoundary.js
-        ├── contexts/AuthContext.js
-        └── i18n.js
-```
 
 ## Key Credentials
 - Admin: admin@x-zenthos.com / admin123
 
 ## Prioritized Backlog
 ### P1
-- Refactor backend/server.py into modular FastAPI routers
+- Refactor backend/server.py into modular FastAPI routers (~3200 lines)
 
 ### P2
 - Further PWA enhancements

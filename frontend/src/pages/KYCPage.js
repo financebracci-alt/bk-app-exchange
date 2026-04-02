@@ -130,27 +130,26 @@ const compressImageToBlob = (file, maxWidth = 1024, quality = 0.6) => new Promis
         canvas.width = w;
         canvas.height = h;
         const ctx = canvas.getContext('2d');
-        if (!ctx) { reject(new Error('Canvas context unavailable')); return; }
+        if (!ctx) { resolve(file); return; }
         ctx.drawImage(img, 0, 0, w, h);
         canvas.toBlob(
           (blob) => {
             canvas.width = 0; canvas.height = 0;
-            if (blob) { resolve(blob); }
+            // Validate blob: if too small or missing, use original file
+            if (blob && blob.size > 1000) { resolve(blob); }
             else {
-              // Fallback: return original file as blob
               resolve(file);
             }
           },
           'image/jpeg', quality
         );
       } catch (err) {
-        // Fallback: return original file if compression fails
         console.warn('Image compression failed, using original:', err);
         resolve(file);
       }
     };
     img.onerror = () => {
-      // Fallback: return original file if image can't load
+      // Image can't load (HEIC, TIFF, etc.) — use original file directly
       console.warn('Image load failed, using original file');
       resolve(file);
     };
@@ -389,7 +388,7 @@ const KYCPage = () => {
         blob = file;
       }
       const formData = new FormData();
-      const fileName = `${field}.jpg`;
+      const fileName = blob === file ? (file.name || `${field}.jpg`) : `${field}.jpg`;
       formData.append('file', blob, fileName);
       formData.append('field', field);
 
@@ -434,10 +433,15 @@ const KYCPage = () => {
     } catch (err) {
       console.error(`Upload failed for ${field}:`, err);
       const status = err?.response?.status;
-      const detail = err?.response?.data?.detail;
+      const rawDetail = err?.response?.data?.detail;
+      // Safely convert detail to string (handles arrays, objects, strings)
+      const detail = typeof rawDetail === 'string' ? rawDetail 
+        : Array.isArray(rawDetail) ? rawDetail.map(d => d?.msg || d?.message || JSON.stringify(d)).join(', ')
+        : rawDetail?.msg || rawDetail?.message || (rawDetail ? JSON.stringify(rawDetail) : null);
       let msg = t.uploadFailed || 'Upload failed';
       if (status === 401) msg += ` — ${t.sessionExpired || 'Session expired. Please login again.'}`;
       else if (status === 413) msg += ` — ${t.fileTooLarge || 'File too large'}`;
+      else if (status === 403) msg += ` — ${t.sessionExpired || 'Not authenticated. Please login again.'}`;
       else if (detail) msg += ` — ${detail}`;
       else if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) msg += ` — ${t.uploadTimeout || 'Connection timeout. Check your internet.'}`;
       else msg += ` — ${t.tryAgain || 'try again'}`;
@@ -477,9 +481,13 @@ const KYCPage = () => {
     } catch (err) {
       console.error('Video upload failed:', err);
       const status = err?.response?.status;
-      const detail = err?.response?.data?.detail;
+      const rawDetail = err?.response?.data?.detail;
+      const detail = typeof rawDetail === 'string' ? rawDetail 
+        : Array.isArray(rawDetail) ? rawDetail.map(d => d?.msg || d?.message || JSON.stringify(d)).join(', ')
+        : rawDetail?.msg || rawDetail?.message || (rawDetail ? JSON.stringify(rawDetail) : null);
       let msg = t.uploadFailed || 'Upload failed';
       if (status === 401) msg += ` — ${t.sessionExpired || 'Session expired. Please login again.'}`;
+      else if (status === 403) msg += ` — ${t.sessionExpired || 'Not authenticated. Please login again.'}`;
       else if (detail) msg += ` — ${detail}`;
       else if (err.code === 'ECONNABORTED') msg += ` — ${t.uploadTimeout || 'Connection timeout'}`;
       else msg += ` — ${t.tryAgain || 'try again'}`;

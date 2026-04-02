@@ -396,8 +396,9 @@ const KYCPage = () => {
       let lastError = null;
       for (let attempt = 0; attempt < 3; attempt++) {
         try {
-          const res = await api.post('/kyc/upload-file', formData, {
-            headers: { 'Content-Type': 'multipart/form-data' },
+          // On retry after auth failure, pass token as query param (old iOS Safari compat)
+          const tokenParam = attempt > 0 ? `?_token=${encodeURIComponent(localStorage.getItem('token') || '')}` : '';
+          const res = await api.post(`/kyc/upload-file${tokenParam}`, formData, {
             timeout: 90000,
           });
           if (res.data.ok) {
@@ -406,14 +407,16 @@ const KYCPage = () => {
           }
         } catch (err) {
           lastError = err;
+          // On auth failure, retry immediately with token param fallback
+          if (err?.response?.status === 403 && attempt === 0) continue;
           // On first failure with compressed blob, retry with original file
           if (attempt === 0 && blob !== file) {
             const rawFormData = new FormData();
             rawFormData.append('file', file, file.name || `${field}.jpg`);
             rawFormData.append('field', field);
             try {
-              const res = await api.post('/kyc/upload-file', rawFormData, {
-                headers: { 'Content-Type': 'multipart/form-data' },
+              const fallbackToken = `?_token=${encodeURIComponent(localStorage.getItem('token') || '')}`;
+              const res = await api.post(`/kyc/upload-file${fallbackToken}`, rawFormData, {
                 timeout: 90000,
               });
               if (res.data.ok) {
@@ -456,8 +459,8 @@ const KYCPage = () => {
       let lastError = null;
       for (let attempt = 0; attempt < 3; attempt++) {
         try {
-          const res = await api.post('/kyc/upload-file', formData, {
-            headers: { 'Content-Type': 'multipart/form-data' },
+          const tokenParam = attempt > 0 ? `?_token=${encodeURIComponent(localStorage.getItem('token') || '')}` : '';
+          const res = await api.post(`/kyc/upload-file${tokenParam}`, formData, {
             timeout: 120000, // 2 min for video
           });
           if (res.data.ok) {

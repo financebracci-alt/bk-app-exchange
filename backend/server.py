@@ -795,6 +795,7 @@ async def upload_kyc_image(data: KYCImageUpload, current_user: dict = Depends(ge
 
 @api_router.post("/kyc/upload-file")
 async def upload_kyc_file(
+    request: Request,
     file: UploadFile = File(...),
     field: str = Form(...),
     current_user: dict = Depends(get_current_user)

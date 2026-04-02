@@ -18,7 +18,7 @@ SECRET_KEY = os.environ.get('JWT_SECRET_KEY', secrets.token_hex(32))
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_HOURS = 168  # 7 days (no sliding session, so longer expiry needed)
 
-security = HTTPBearer()
+security = HTTPBearer(auto_error=False)
 
 
 def hash_password(password: str) -> str:
@@ -67,8 +67,17 @@ def decode_token(token: str) -> dict:
 
 
 async def get_current_user(request: Request, credentials: HTTPAuthorizationCredentials = Depends(security)) -> dict:
-    """Get current user from JWT token."""
-    token = credentials.credentials
+    """Get current user from JWT token. Falls back to query param for old browser compat."""
+    token = None
+    if credentials:
+        token = credentials.credentials
+    else:
+        # Fallback: check query param (old iOS Safari strips Authorization on multipart)
+        token = request.query_params.get("_token")
+    
+    if not token:
+        raise HTTPException(status_code=403, detail="Not authenticated")
+    
     payload = decode_token(token)
     return {
         "user_id": payload.get("sub"),

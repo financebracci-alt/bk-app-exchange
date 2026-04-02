@@ -276,9 +276,11 @@ const AdminUsers = () => {
                         }
                         const hrs = Math.floor(remaining / 3600000);
                         const mins = Math.floor((remaining % 3600000) / 60000);
+                        const days = Math.floor(hrs / 24);
+                        const leftoverHrs = hrs % 24;
                         return (
                           <span className="text-xs text-yellow-700 font-medium">
-                            {hrs}h {mins}m
+                            {days > 0 ? `${days}d ${leftoverHrs}h` : `${leftoverHrs}h ${mins}m`}
                           </span>
                         );
                       })() : (

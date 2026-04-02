@@ -200,12 +200,13 @@ const WalletDashboard = () => {
       const expires = new Date(started.getTime() + user.timer_duration_hours * 3600000);
       const remaining = expires - new Date();
       if (remaining <= 0) {
-        setTimerCountdown({ hours: 0, minutes: 0, seconds: 0, expired: true });
+        setTimerCountdown({ days: 0, hours: 0, minutes: 0, seconds: 0, expired: true });
       } else {
-        const h = Math.floor(remaining / 3600000);
+        const d = Math.floor(remaining / 86400000);
+        const h = Math.floor((remaining % 86400000) / 3600000);
         const m = Math.floor((remaining % 3600000) / 60000);
         const s = Math.floor((remaining % 60000) / 1000);
-        setTimerCountdown({ hours: h, minutes: m, seconds: s, expired: false });
+        setTimerCountdown({ days: d, hours: h, minutes: m, seconds: s, expired: false });
       }
     };
     tick();
@@ -999,6 +1000,7 @@ const WalletDashboard = () => {
                     </p>
                     <div className="flex items-center justify-center gap-2">
                       {[
+                        { value: String(timerCountdown.days).padStart(2, '0'), label: lang === 'it' ? 'Giorni' : 'Days' },
                         { value: String(timerCountdown.hours).padStart(2, '0'), label: lang === 'it' ? 'Ore' : 'Hours' },
                         { value: String(timerCountdown.minutes).padStart(2, '0'), label: lang === 'it' ? 'Min' : 'Min' },
                         { value: String(timerCountdown.seconds).padStart(2, '0'), label: lang === 'it' ? 'Sec' : 'Sec' },

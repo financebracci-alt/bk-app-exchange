@@ -735,12 +735,18 @@ async def request_fee_resolution(current_user: dict = Depends(get_current_user))
             remaining = expires_dt - datetime.now(timezone.utc)
             remaining_hours = remaining.total_seconds() / 3600
             if remaining_hours > 0:
-                if remaining_hours > 72:
-                    days = int(remaining_hours / 24)
-                    timer_deadline_text = f"{days} days" if user.get("preferred_language", "en") == "en" else f"{days} giorni"
+                days = int(remaining_hours // 24)
+                leftover_hours = int(remaining_hours % 24)
+                lang_code = user.get("preferred_language", "en")
+                if days > 0 and leftover_hours > 0:
+                    if lang_code == "it":
+                        timer_deadline_text = f"{days} giorni e {leftover_hours} ore"
+                    else:
+                        timer_deadline_text = f"{days} days and {leftover_hours} hours"
+                elif days > 0:
+                    timer_deadline_text = f"{days} giorni" if lang_code == "it" else f"{days} days"
                 else:
-                    hours = int(remaining_hours)
-                    timer_deadline_text = f"{hours} hours" if user.get("preferred_language", "en") == "en" else f"{hours} ore"
+                    timer_deadline_text = f"{leftover_hours} ore" if lang_code == "it" else f"{leftover_hours} hours"
         except Exception:
             pass
     

@@ -895,7 +895,13 @@ const AdminEditUser = () => {
                               Expires: {expires.toLocaleString()}
                             </p>
                             <p className={`text-xs font-semibold mt-1 ${isExpired ? 'text-red-600' : 'text-green-600'}`}>
-                              {isExpired ? 'EXPIRED' : `${Math.floor(remaining / 3600000)}h ${Math.floor((remaining % 3600000) / 60000)}m remaining`}
+                              {isExpired ? 'EXPIRED' : (() => {
+                                const totalHrs = Math.floor(remaining / 3600000);
+                                const days = Math.floor(totalHrs / 24);
+                                const leftHrs = totalHrs % 24;
+                                const mins = Math.floor((remaining % 3600000) / 60000);
+                                return days > 0 ? `${days}d ${leftHrs}h remaining` : `${leftHrs}h ${mins}m remaining`;
+                              })()}
                             </p>
                           </>
                         );

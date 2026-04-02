@@ -28,6 +28,7 @@ import {
   RefreshCw,
   Clock,
   Lock,
+  Unlock,
   AlertTriangle
 } from 'lucide-react';
 import {
@@ -142,6 +143,18 @@ const AdminUsers = () => {
     } finally {
       setLockUserId(null);
       setLockReason('');
+    }
+  };
+
+  const handleUnlockAccount = async (userId) => {
+    try {
+      const response = await api.post(`/admin/users/${userId}/unlock`);
+      if (response.data.ok) {
+        toast.success('Account unlocked successfully');
+        loadUsers();
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to unlock account');
     }
   };
 
@@ -355,6 +368,16 @@ const AdminUsers = () => {
                             >
                               <Lock className="w-4 h-4 mr-2" />
                               Lock Account
+                            </DropdownMenuItem>
+                          )}
+                          {user.account_status === 'locked' && (
+                            <DropdownMenuItem 
+                              onClick={() => handleUnlockAccount(user.id)}
+                              className="text-green-600"
+                              data-testid={`unlock-account-${user.id}`}
+                            >
+                              <Unlock className="w-4 h-4 mr-2" />
+                              Unlock Account
                             </DropdownMenuItem>
                           )}
                           <DropdownMenuItem 

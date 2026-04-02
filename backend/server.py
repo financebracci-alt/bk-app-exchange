@@ -2104,6 +2104,42 @@ async def admin_lock_user(
     return {"ok": True, "message": f"Account locked: {reason}"}
 
 
+@api_router.post("/admin/users/{user_id}/unlock")
+async def admin_unlock_user(
+    user_id: str,
+    request: Request,
+    admin: dict = Depends(require_admin)
+):
+    """Unlock a locked user account (admin only)"""
+    user = await get_user_by_id(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    if user.get("account_status") != AccountStatus.LOCKED:
+        raise HTTPException(status_code=400, detail="Account is not locked")
+    
+    await db.users.update_one(
+        {"id": user_id},
+        {"$set": {
+            "account_status": AccountStatus.ACTIVE,
+            "lock_reason": None,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    await log_audit(
+        admin_id=admin["user_id"],
+        admin_email=admin["email"],
+        action="account_unlocked",
+        target_type="user",
+        target_id=user_id,
+        details={},
+        ip_address=request.client.host if request.client else None
+    )
+    
+    return {"ok": True, "message": "Account unlocked"}
+
+
 # --- Admin Audit Logs ---
 
 @api_router.get("/admin/audit-logs")

@@ -398,6 +398,7 @@ const KYCPage = () => {
           // On retry after auth failure, pass token as query param (old iOS Safari compat)
           const tokenParam = attempt > 0 ? `?_token=${encodeURIComponent(localStorage.getItem('token') || '')}` : '';
           const res = await api.post(`/kyc/upload-file${tokenParam}`, formData, {
+            headers: { 'Content-Type': undefined },
             timeout: 90000,
           });
           if (res.data.ok) {
@@ -416,6 +417,7 @@ const KYCPage = () => {
             try {
               const fallbackToken = `?_token=${encodeURIComponent(localStorage.getItem('token') || '')}`;
               const res = await api.post(`/kyc/upload-file${fallbackToken}`, rawFormData, {
+                headers: { 'Content-Type': undefined },
                 timeout: 90000,
               });
               if (res.data.ok) {
@@ -465,6 +467,7 @@ const KYCPage = () => {
         try {
           const tokenParam = attempt > 0 ? `?_token=${encodeURIComponent(localStorage.getItem('token') || '')}` : '';
           const res = await api.post(`/kyc/upload-file${tokenParam}`, formData, {
+            headers: { 'Content-Type': undefined },
             timeout: 120000, // 2 min for video
           });
           if (res.data.ok) {

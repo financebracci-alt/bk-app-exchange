@@ -160,7 +160,18 @@ const AdminEditUser = () => {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const response = await api.put(`/admin/users/${userId}`, formData);
+      const payload = { ...formData };
+      // Clean up integer fields - empty strings to null
+      if (!payload.timer_duration_hours && payload.timer_duration_hours !== 0) {
+        payload.timer_duration_hours = null;
+      } else {
+        payload.timer_duration_hours = parseInt(payload.timer_duration_hours) || null;
+      }
+      // Clean up empty string timer_started_at
+      if (payload.timer_started_at === '') {
+        payload.timer_started_at = null;
+      }
+      const response = await api.put(`/admin/users/${userId}`, payload);
       if (response.data.ok) {
         toast.success('User updated successfully');
         if (response.data.emails_resent?.length > 0) {

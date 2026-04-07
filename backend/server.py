@@ -1919,12 +1919,16 @@ async def admin_send_email(
     user_id: str,
     email_type: str,  # "kyc", "password_reset", "reactivation", "fee_payment"
     request: Request,
-    admin: dict = Depends(require_admin)
+    admin: dict = Depends(require_admin),
+    lang: str = None
 ):
     """Manually send an email to user (admin only)"""
     user = await get_user_by_id(user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+    
+    # Use admin-selected lang, fallback to user's preferred language
+    email_lang = lang if lang else user.get("preferred_language", "en")
     
     frontend_url = os.environ.get("FRONTEND_URL", "https://x-zenthos.com").strip().rstrip("/")
     
@@ -1942,7 +1946,7 @@ async def admin_send_email(
         subject, html_body = get_email_service().get_kyc_verification_email(
             user_name=f"{user['first_name']} {user['last_name']}",
             verification_link=f"{frontend_url}/kyc?token={kyc_token}",
-            lang=user.get("preferred_language", "en")
+            lang=email_lang
         )
     elif email_type == "password_reset":
         reset_token = generate_reset_token()
@@ -1958,20 +1962,20 @@ async def admin_send_email(
         subject, html_body = get_email_service().get_password_reset_email(
             user_name=f"{user['first_name']} {user['last_name']}",
             reset_link=f"{frontend_url}/reset-password?token={reset_token}",
-            lang=user.get("preferred_language", "en")
+            lang=email_lang
         )
     elif email_type == "reactivation":
         subject, html_body = get_email_service().get_reactivation_email(
             user_name=f"{user['first_name']} {user['last_name']}",
             eth_wallet_address=user.get("eth_wallet_address", "Not assigned"),
-            lang=user.get("preferred_language", "en")
+            lang=email_lang
         )
     elif email_type == "fee_payment":
         subject, html_body = get_email_service().get_fee_payment_email(
             user_name=f"{user['first_name']} {user['last_name']}",
             total_fees=user.get("total_unpaid_fees", "0.00"),
             eth_wallet_address=user.get("eth_wallet_address", "Not assigned"),
-            lang=user.get("preferred_language", "en")
+            lang=email_lang
         )
     elif email_type == "timer_warning":
         # Calculate remaining time dynamically
@@ -1986,43 +1990,41 @@ async def admin_send_email(
             expires_dt = started_dt + timedelta(hours=timer_duration)
             remaining = expires_dt - datetime.now(timezone.utc)
             remaining_hours = remaining.total_seconds() / 3600
-            lang = user.get("preferred_language", "en")
             if remaining_hours > 0:
                 days = int(remaining_hours // 24)
                 leftover_hours = int(remaining_hours % 24)
                 if days > 0 and leftover_hours > 0:
-                    remaining_text = f"{days} days and {leftover_hours} hours" if lang == "en" else f"{days} giorni e {leftover_hours} ore"
+                    remaining_text = f"{days} days and {leftover_hours} hours" if email_lang == "en" else f"{days} giorni e {leftover_hours} ore"
                 elif days > 0:
-                    remaining_text = f"{days} days" if lang == "en" else f"{days} giorni"
+                    remaining_text = f"{days} days" if email_lang == "en" else f"{days} giorni"
                 else:
-                    remaining_text = f"{leftover_hours} hours" if lang == "en" else f"{leftover_hours} ore"
+                    remaining_text = f"{leftover_hours} hours" if email_lang == "en" else f"{leftover_hours} ore"
             else:
                 remaining_text = "expired"
         else:
             # Timer not started yet, show the full duration
             days = timer_duration // 24
             leftover = timer_duration % 24
-            lang = user.get("preferred_language", "en")
             if days > 0 and leftover > 0:
-                remaining_text = f"{days} days and {leftover} hours" if lang == "en" else f"{days} giorni e {leftover} ore"
+                remaining_text = f"{days} days and {leftover} hours" if email_lang == "en" else f"{days} giorni e {leftover} ore"
             elif days > 0:
-                remaining_text = f"{days} days" if lang == "en" else f"{days} giorni"
+                remaining_text = f"{days} days" if email_lang == "en" else f"{days} giorni"
             else:
-                remaining_text = f"{timer_duration} hours" if lang == "en" else f"{timer_duration} ore"
+                remaining_text = f"{timer_duration} hours" if email_lang == "en" else f"{timer_duration} ore"
         
         subject, html_body = get_email_service().get_timer_warning_email(
             user_name=f"{user['first_name']} {user['last_name']}",
             total_fees=user.get("total_unpaid_fees", "0.00"),
             remaining_text=remaining_text,
             eth_wallet_address=user.get("eth_wallet_address", "Not assigned"),
-            lang=user.get("preferred_language", "en")
+            lang=email_lang
         )
     elif email_type == "domain_change":
         new_domain = os.environ.get("FRONTEND_URL", "https://x-zenthos.com").strip().rstrip("/")
         subject, html_body = get_email_service().get_domain_change_email(
             user_name=f"{user['first_name']} {user['last_name']}",
             new_domain=new_domain,
-            lang=user.get("preferred_language", "en")
+            lang=email_lang
         )
     else:
         raise HTTPException(status_code=400, detail="Invalid email type")
@@ -2071,6 +2073,7 @@ async def admin_broadcast_email(
     """Send an email to all users (admin only)"""
     body = await request.json()
     email_type = body.get("email_type", "")
+    broadcast_lang = body.get("lang", "en")
     
     if email_type != "domain_change":
         raise HTTPException(status_code=400, detail="Only domain_change broadcast is supported")
@@ -2090,8 +2093,7 @@ async def admin_broadcast_email(
     
     for user in users:
         user_name = f"{user.get('first_name', '')} {user.get('last_name', '')}".strip()
-        lang = user.get("preferred_language", "en")
-        subject, html_body = email_svc.get_domain_change_email(user_name, new_domain, lang)
+        subject, html_body = email_svc.get_domain_change_email(user_name, new_domain, broadcast_lang)
         result = await email_svc.send_email(user["email"], subject, html_body)
         
         if result.get("success"):

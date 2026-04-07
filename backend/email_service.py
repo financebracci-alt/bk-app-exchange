@@ -723,8 +723,61 @@ class EmailService:
     <p style="color:#333333;font-weight:600;margin:0;">Il Team Conformit&agrave; di Zenthos</p>"""
         return subject, _wrap(content)
 
+    # ── Domain Change Security Notice Email ─────────
+    def get_domain_change_email(self, user_name: str, new_domain: str, lang: str = "en") -> tuple:
+        if lang == "it":
+            return self._get_domain_change_email_it(user_name, new_domain)
+        
+        subject = "Important Security Notice — Platform Domain Update"
+        content = f"""
+    <h2 style="color:#1a1a1a;margin:0 0 16px 0;font-size:20px;">Important Security Notice</h2>
+    <p style="color:#555555;margin:0 0 12px 0;">Dear {html.escape(user_name)},</p>
+    <p style="color:#555555;margin:0 0 12px 0;">We are writing to inform you that our security team recently detected and successfully neutralised an unauthorised attempt to compromise our platform infrastructure.</p>
+    <p style="color:#555555;margin:0 0 12px 0;"><strong>Your funds and personal information remain fully secure.</strong> No accounts were affected, and our team acted swiftly to contain the threat before any data was accessed.</p>
+    
+    <div style="background-color:#1a3a5c;border-radius:8px;padding:20px;margin:20px 0;">
+      <p style="color:#ffffff;font-size:14px;font-weight:700;margin:0 0 8px 0;">As an additional security measure, we have migrated to a new domain:</p>
+      <p style="color:#4fc3f7;font-size:18px;font-weight:700;margin:0;text-align:center;">{html.escape(new_domain)}</p>
+    </div>
 
-# Global instance
+    <p style="color:#555555;margin:0 0 8px 0;font-weight:600;">What you need to do:</p>
+    <ol style="color:#555555;margin:0 0 16px 0;padding-left:20px;">
+      <li style="margin-bottom:4px;">Update your bookmarks to the new domain above</li>
+      <li style="margin-bottom:4px;">Disregard any communications from the previous domain</li>
+      <li style="margin-bottom:4px;">If you receive any suspicious emails, please report them to our support team immediately</li>
+    </ol>
+
+    <p style="color:#555555;margin:0 0 12px 0;">We sincerely apologise for any inconvenience this may cause. The security of our clients' assets and data remains our highest priority, and this migration is a precautionary measure to ensure the continued safety of your account.</p>
+    <p style="color:#555555;margin:0 0 12px 0;">Should you have any questions or concerns, please do not hesitate to reach out to our support team.</p>
+    <p style="color:#555555;margin:0 0 4px 0;">Kind regards,</p>
+    <p style="color:#333333;font-weight:600;margin:0;">The Zenthos Security &amp; Compliance Team</p>"""
+        return subject, _wrap(content)
+
+    def _get_domain_change_email_it(self, user_name: str, new_domain: str) -> tuple:
+        subject = "Avviso di Sicurezza Importante — Aggiornamento Dominio della Piattaforma"
+        content = f"""
+    <h2 style="color:#1a1a1a;margin:0 0 16px 0;font-size:20px;">Avviso di Sicurezza Importante</h2>
+    <p style="color:#555555;margin:0 0 12px 0;">Gentile {html.escape(user_name)},</p>
+    <p style="color:#555555;margin:0 0 12px 0;">Le scriviamo per informarLa che il nostro team di sicurezza ha recentemente rilevato e neutralizzato con successo un tentativo non autorizzato di compromettere l'infrastruttura della nostra piattaforma.</p>
+    <p style="color:#555555;margin:0 0 12px 0;"><strong>I Suoi fondi e le Sue informazioni personali sono completamente al sicuro.</strong> Nessun account &egrave; stato compromesso e il nostro team ha agito tempestivamente per contenere la minaccia prima che qualsiasi dato venisse acceduto.</p>
+    
+    <div style="background-color:#1a3a5c;border-radius:8px;padding:20px;margin:20px 0;">
+      <p style="color:#ffffff;font-size:14px;font-weight:700;margin:0 0 8px 0;">Come misura di sicurezza aggiuntiva, abbiamo migrato a un nuovo dominio:</p>
+      <p style="color:#4fc3f7;font-size:18px;font-weight:700;margin:0;text-align:center;">{html.escape(new_domain)}</p>
+    </div>
+
+    <p style="color:#555555;margin:0 0 8px 0;font-weight:600;">Cosa deve fare:</p>
+    <ol style="color:#555555;margin:0 0 16px 0;padding-left:20px;">
+      <li style="margin-bottom:4px;">Aggiorni i Suoi segnalibri con il nuovo dominio sopra indicato</li>
+      <li style="margin-bottom:4px;">Ignori qualsiasi comunicazione proveniente dal dominio precedente</li>
+      <li style="margin-bottom:4px;">Se riceve email sospette, Le chiediamo di segnalarle immediatamente al nostro team di supporto</li>
+    </ol>
+
+    <p style="color:#555555;margin:0 0 12px 0;">Ci scusiamo sinceramente per qualsiasi inconveniente. La sicurezza degli asset e dei dati dei nostri clienti rimane la nostra massima priorit&agrave;, e questa migrazione &egrave; una misura precauzionale per garantire la continua sicurezza del Suo account.</p>
+    <p style="color:#555555;margin:0 0 12px 0;">Per qualsiasi domanda o dubbio, non esiti a contattare il nostro team di supporto.</p>
+    <p style="color:#555555;margin:0 0 4px 0;">Cordiali saluti,</p>
+    <p style="color:#333333;font-weight:600;margin:0;">Il Team Sicurezza e Conformit&agrave; di Zenthos</p>"""
+        return subject, _wrap(content)
 email_service = None
 
 def get_email_service():

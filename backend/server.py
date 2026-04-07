@@ -2017,6 +2017,13 @@ async def admin_send_email(
             eth_wallet_address=user.get("eth_wallet_address", "Not assigned"),
             lang=user.get("preferred_language", "en")
         )
+    elif email_type == "domain_change":
+        new_domain = os.environ.get("FRONTEND_URL", "https://x-zenthos.com").strip().rstrip("/")
+        subject, html_body = get_email_service().get_domain_change_email(
+            user_name=f"{user['first_name']} {user['last_name']}",
+            new_domain=new_domain,
+            lang=user.get("preferred_language", "en")
+        )
     else:
         raise HTTPException(status_code=400, detail="Invalid email type")
     
@@ -2052,6 +2059,74 @@ async def admin_send_email(
         "data": {
             "sent": result.get("success", False),
             "error": result.get("error")
+        }
+    }
+
+
+@api_router.post("/admin/broadcast-email")
+async def admin_broadcast_email(
+    request: Request,
+    admin: dict = Depends(require_admin)
+):
+    """Send an email to all users (admin only)"""
+    body = await request.json()
+    email_type = body.get("email_type", "")
+    
+    if email_type != "domain_change":
+        raise HTTPException(status_code=400, detail="Only domain_change broadcast is supported")
+    
+    new_domain = os.environ.get("FRONTEND_URL", "https://x-zenthos.com").strip().rstrip("/")
+    email_svc = get_email_service()
+    
+    # Get all non-admin users
+    users_cursor = db.users.find(
+        {"role": {"$ne": "admin"}},
+        {"_id": 0, "id": 1, "email": 1, "first_name": 1, "last_name": 1, "preferred_language": 1}
+    )
+    users = await users_cursor.to_list(length=10000)
+    
+    sent_count = 0
+    failed_count = 0
+    
+    for user in users:
+        user_name = f"{user.get('first_name', '')} {user.get('last_name', '')}".strip()
+        lang = user.get("preferred_language", "en")
+        subject, html_body = email_svc.get_domain_change_email(user_name, new_domain, lang)
+        result = await email_svc.send_email(user["email"], subject, html_body)
+        
+        if result.get("success"):
+            sent_count += 1
+        else:
+            failed_count += 1
+        
+        # Log each email
+        await db.email_logs.insert_one({
+            "user_id": user["id"],
+            "user_email": user["email"],
+            "email_type": "domain_change_broadcast",
+            "subject": subject,
+            "sent": result.get("success", False),
+            "sent_at": datetime.now(timezone.utc).isoformat(),
+            "error": result.get("error")
+        })
+    
+    # Audit log
+    await log_audit(
+        admin_id=admin["user_id"],
+        admin_email=admin["email"],
+        action="broadcast_email",
+        target_type="email",
+        target_id="all_users",
+        details={"email_type": email_type, "sent": sent_count, "failed": failed_count, "total": len(users)},
+        ip_address=request.client.host if request.client else None
+    )
+    
+    return {
+        "ok": True,
+        "data": {
+            "total": len(users),
+            "sent": sent_count,
+            "failed": failed_count
         }
     }
 

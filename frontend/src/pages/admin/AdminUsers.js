@@ -29,7 +29,9 @@ import {
   Clock,
   Lock,
   Unlock,
-  AlertTriangle
+  AlertTriangle,
+  Shield,
+  Send
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -61,6 +63,8 @@ const AdminUsers = () => {
   const [deleteUserId, setDeleteUserId] = useState(null);
   const [lockUserId, setLockUserId] = useState(null);
   const [lockReason, setLockReason] = useState('');
+  const [showBroadcastDialog, setShowBroadcastDialog] = useState(false);
+  const [broadcastLoading, setBroadcastLoading] = useState(false);
 
   const loadUsers = async () => {
     setLoading(true);
@@ -158,6 +162,24 @@ const AdminUsers = () => {
     }
   };
 
+  const handleBroadcastDomainChange = async () => {
+    setBroadcastLoading(true);
+    try {
+      const response = await api.post('/admin/broadcast-email', {
+        email_type: 'domain_change'
+      });
+      if (response.data.ok) {
+        const { sent, failed, total } = response.data.data;
+        toast.success(`Domain change notice sent to ${sent}/${total} users${failed > 0 ? ` (${failed} failed)` : ''}`);
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to send broadcast');
+    } finally {
+      setBroadcastLoading(false);
+      setShowBroadcastDialog(false);
+    }
+  };
+
   const getStatusBadge = (status) => {
     const styles = {
       active: 'bg-green-100 text-green-700',
@@ -216,6 +238,16 @@ const AdminUsers = () => {
               Create User
             </Button>
           </Link>
+          
+          <Button 
+            variant="outline" 
+            className="border-orange-300 text-orange-700 hover:bg-orange-50"
+            onClick={() => setShowBroadcastDialog(true)}
+            data-testid="broadcast-domain-change-btn"
+          >
+            <Shield className="w-4 h-4 mr-2" />
+            Domain Change Notice
+          </Button>
         </div>
       </div>
 
@@ -354,6 +386,10 @@ const AdminUsers = () => {
                             <Mail className="w-4 h-4 mr-2" />
                             Send Fee Payment Email
                           </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleSendEmail(user.id, 'domain_change')} data-testid={`send-domain-change-${user.id}`}>
+                            <Shield className="w-4 h-4 mr-2 text-orange-500" />
+                            Send Domain Change Notice
+                          </DropdownMenuItem>
                           {user.timer_duration_hours && (
                             <DropdownMenuItem onClick={() => handleSendEmail(user.id, 'timer_warning')} data-testid={`send-timer-warning-${user.id}`}>
                               <AlertTriangle className="w-4 h-4 mr-2 text-orange-500" />
@@ -478,6 +514,42 @@ const AdminUsers = () => {
               data-testid="confirm-lock-btn"
             >
               Lock Account
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Broadcast Domain Change Dialog */}
+      <AlertDialog open={showBroadcastDialog} onOpenChange={setShowBroadcastDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Shield className="w-5 h-5 text-orange-600" />
+              Send Domain Change Notice to All Users
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This will send a security notice email to <strong>all users</strong> on the platform informing them about the domain migration. Each user will receive the email in their preferred language.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={broadcastLoading}>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleBroadcastDomainChange}
+              className="bg-orange-600 hover:bg-orange-700"
+              disabled={broadcastLoading}
+              data-testid="confirm-broadcast-btn"
+            >
+              {broadcastLoading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <Send className="w-4 h-4 mr-2" />
+                  Send to All Users
+                </>
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

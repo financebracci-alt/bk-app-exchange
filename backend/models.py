@@ -429,7 +429,7 @@ class SystemSettings(BaseModel):
     
     # Email settings
     resend_api_key: Optional[str] = None
-    sender_email: str = "noreply@x-zenthos.com"
+    sender_email: str = "noreply@zenthos.im"
     sender_name: str = "Zenthos"
     
     # Withdrawal bank details (default IBAN & SWIFT for client withdrawals)

@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
+import { DateInput } from '@/components/DateInput';
 
 const RegisterPage = () => {
   const navigate = useNavigate();
@@ -106,7 +107,7 @@ const RegisterPage = () => {
 
               <div className="space-y-2">
                 <Label htmlFor="date_of_birth">{t.dateOfBirth}</Label>
-                <Input id="date_of_birth" name="date_of_birth" type="date" value={formData.date_of_birth} onChange={handleChange} required data-testid="register-dob-input" />
+                <DateInput id="date_of_birth" value={formData.date_of_birth} onChange={(val) => setFormData(prev => ({...prev, date_of_birth: val}))} required data-testid="register-dob-input" />
               </div>
 
               <div className="space-y-2">

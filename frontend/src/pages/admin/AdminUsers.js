@@ -312,7 +312,7 @@ const AdminUsers = () => {
                     <td className="px-4 py-3 text-sm" data-testid={`user-registered-${user.id}`}>
                       {user.created_at ? (
                         <>
-                          <div>{new Date(user.created_at).toLocaleDateString()}</div>
+                          <div>{new Date(user.created_at).toLocaleDateString('en-GB')}</div>
                           <div className="text-xs text-gray-400">{new Date(user.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
                         </>
                       ) : (

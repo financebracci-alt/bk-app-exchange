@@ -150,7 +150,7 @@ const AdminTransactions = () => {
                 transactions.map((tx) => (
                   <tr key={tx.id} className="hover:bg-gray-50">
                     <td className="px-4 py-3 text-sm" data-testid={`tx-date-${tx.id}`}>
-                      <div>{new Date(tx.transaction_date).toLocaleDateString()}</div>
+                      <div>{new Date(tx.transaction_date).toLocaleDateString('en-GB')}</div>
                       <div className="text-xs text-gray-400">{new Date(tx.transaction_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
                     </td>
                     <td className="px-4 py-3 text-sm" data-testid={`tx-user-${tx.id}`}>

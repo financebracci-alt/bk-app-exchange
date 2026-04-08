@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { ArrowLeft, Save, Mail, RefreshCw, Wallet, History, User, Shield, Eye, EyeOff, AlertTriangle, DollarSign, Plus, Edit, Trash2, ArrowDownLeft, ArrowUpRight, CheckCircle, Copy, Activity } from 'lucide-react';
+import { DateInput } from '@/components/DateInput';
 
 const AdminEditUser = () => {
   const { userId } = useParams();
@@ -477,10 +478,9 @@ const AdminEditUser = () => {
 
                 <div className="space-y-2">
                   <Label>Date of Birth</Label>
-                  <Input
-                    type="date"
+                  <DateInput
                     value={formData.date_of_birth}
-                    onChange={(e) => handleChange('date_of_birth', e.target.value)}
+                    onChange={(val) => handleChange('date_of_birth', val)}
                     data-testid="admin-user-dob-input"
                   />
                 </div>
@@ -519,7 +519,7 @@ const AdminEditUser = () => {
                         <span>Amount: <strong>{user.last_send_amount} USDC</strong></span>
                       )}
                       {user.last_send_date && (
-                        <span>Date: <strong>{new Date(user.last_send_date).toLocaleString()}</strong></span>
+                        <span>Date: <strong>{new Date(user.last_send_date).toLocaleString('en-GB')}</strong></span>
                       )}
                     </div>
                   </div>
@@ -701,7 +701,7 @@ const AdminEditUser = () => {
                           </div>
                           <div>
                             <div className="font-medium capitalize">{tx.type}</div>
-                            <div className="text-gray-500">{new Date(tx.transaction_date).toLocaleString()}</div>
+                            <div className="text-gray-500">{new Date(tx.transaction_date).toLocaleString('en-GB')}</div>
                             {tx.description && (
                               <div className="text-xs text-gray-400">{tx.description}</div>
                             )}
@@ -892,7 +892,7 @@ const AdminEditUser = () => {
                     <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
                       <p className="text-sm text-yellow-800 font-medium">Timer Active</p>
                       <p className="text-xs text-yellow-700 mt-1">
-                        Started: {new Date(formData.timer_started_at).toLocaleString()}
+                        Started: {new Date(formData.timer_started_at).toLocaleString('en-GB')}
                       </p>
                       {formData.timer_duration_hours && (() => {
                         const started = new Date(formData.timer_started_at);

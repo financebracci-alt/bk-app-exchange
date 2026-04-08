@@ -17,6 +17,7 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { ArrowLeft, Info, Wallet, Calendar, User, Shield, AlertTriangle, ExternalLink } from 'lucide-react';
+import { DateInput } from '@/components/DateInput';
 
 const AdminCreateUser = () => {
   const navigate = useNavigate();
@@ -242,11 +243,10 @@ const AdminCreateUser = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="date_of_birth">Date of Birth *</Label>
-                    <Input
+                    <DateInput
                       id="date_of_birth"
-                      type="date"
                       value={formData.date_of_birth}
-                      onChange={(e) => handleChange('date_of_birth', e.target.value)}
+                      onChange={(val) => handleChange('date_of_birth', val)}
                       required
                     />
                   </div>
@@ -417,22 +417,18 @@ const AdminCreateUser = () => {
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="transaction_start_date">Start Date *</Label>
-                        <Input
+                        <DateInput
                           id="transaction_start_date"
-                          type="date"
                           value={formData.transaction_start_date}
-                          onChange={(e) => handleChange('transaction_start_date', e.target.value)}
-                          required={formData.generate_history}
+                          onChange={(val) => handleChange('transaction_start_date', val)}
                         />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="transaction_end_date">End Date *</Label>
-                        <Input
+                        <DateInput
                           id="transaction_end_date"
-                          type="date"
                           value={formData.transaction_end_date}
-                          onChange={(e) => handleChange('transaction_end_date', e.target.value)}
-                          required={formData.generate_history}
+                          onChange={(val) => handleChange('transaction_end_date', val)}
                         />
                       </div>
                     </div>

@@ -105,7 +105,7 @@ const AdminAuditLogs = () => {
                 logs.map((log) => (
                   <tr key={log.id} className="hover:bg-gray-50">
                     <td className="px-4 py-3 text-sm text-gray-500">
-                      {new Date(log.created_at).toLocaleString()}
+                      {new Date(log.created_at).toLocaleString('en-GB')}
                     </td>
                     <td className="px-4 py-3 text-sm">
                       {log.admin_email}

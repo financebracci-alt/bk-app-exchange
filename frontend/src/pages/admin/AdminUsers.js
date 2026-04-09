@@ -68,6 +68,7 @@ const AdminUsers = () => {
   const [emailDialog, setEmailDialog] = useState(null); // {userId, emailType}
   const [emailLang, setEmailLang] = useState('en');
   const [broadcastLang, setBroadcastLang] = useState('en');
+  const [timerFilter, setTimerFilter] = useState('all');
 
   const loadUsers = async () => {
     setLoading(true);
@@ -207,6 +208,33 @@ const AdminUsers = () => {
     return <Badge className={styles[status] || 'bg-gray-100'}>{status}</Badge>;
   };
 
+  // Timer filter & sort
+  const getTimerRemaining = (user) => {
+    if (!user.timer_duration_hours || !user.timer_started_at) return null;
+    const started = new Date(user.timer_started_at);
+    const expires = new Date(started.getTime() + user.timer_duration_hours * 3600000);
+    return expires - new Date();
+  };
+
+  const filteredUsers = React.useMemo(() => {
+    let result = [...users];
+    if (timerFilter === 'expired') {
+      result = result.filter(u => {
+        const rem = getTimerRemaining(u);
+        return rem !== null && rem <= 0;
+      });
+    } else if (timerFilter === 'expiring_soon') {
+      result = result.filter(u => {
+        const rem = getTimerRemaining(u);
+        return rem !== null && rem > 0;
+      });
+      result.sort((a, b) => getTimerRemaining(a) - getTimerRemaining(b));
+    } else if (timerFilter === 'has_timer') {
+      result = result.filter(u => u.timer_duration_hours);
+    }
+    return result;
+  }, [users, timerFilter]);
+
   return (
     <AdminLayout title="Users">
       {/* Actions Bar */}
@@ -233,8 +261,21 @@ const AdminUsers = () => {
               <SelectItem value="all">All Status</SelectItem>
               <SelectItem value="active">Active</SelectItem>
               <SelectItem value="frozen">Frozen</SelectItem>
+              <SelectItem value="locked">Locked</SelectItem>
               <SelectItem value="pending_kyc">Pending KYC</SelectItem>
               <SelectItem value="closed">Closed</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={timerFilter} onValueChange={(v) => setTimerFilter(v)}>
+            <SelectTrigger className="w-[160px]" data-testid="timer-filter">
+              <SelectValue placeholder="Timer" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Timers</SelectItem>
+              <SelectItem value="expired">Expired</SelectItem>
+              <SelectItem value="expiring_soon">Expiring Soon</SelectItem>
+              <SelectItem value="has_timer">Has Timer</SelectItem>
             </SelectContent>
           </Select>
           
@@ -291,14 +332,14 @@ const AdminUsers = () => {
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
                   </td>
                 </tr>
-              ) : users.length === 0 ? (
+              ) : filteredUsers.length === 0 ? (
                 <tr>
                   <td colSpan={9} className="px-4 py-8 text-center text-gray-500">
                     No users found
                   </td>
                 </tr>
               ) : (
-                users.map((user) => (
+                filteredUsers.map((user) => (
                   <tr key={user.id} className="hover:bg-gray-50">
                     <td className="px-4 py-3">
                       <div>

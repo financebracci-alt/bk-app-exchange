@@ -28,9 +28,27 @@ export const DateInput = ({ value, onChange, ...props }) => {
     let raw = e.target.value.replace(/[^0-9/]/g, '');
     // Auto-insert slashes
     const digits = raw.replace(/\//g, '');
-    if (digits.length <= 2) raw = digits;
-    else if (digits.length <= 4) raw = digits.slice(0, 2) + '/' + digits.slice(2);
-    else raw = digits.slice(0, 2) + '/' + digits.slice(2, 4) + '/' + digits.slice(4, 8);
+    if (digits.length <= 2) {
+      // Clamp day to 31
+      let d = parseInt(digits, 10);
+      if (digits.length === 2 && d > 31) raw = '31';
+      else if (digits.length === 1 && d > 3) raw = '0' + d;
+      else raw = digits;
+    } else if (digits.length <= 4) {
+      let d = digits.slice(0, 2);
+      let m = digits.slice(2);
+      if (parseInt(d, 10) > 31) d = '31';
+      if (m.length === 2 && parseInt(m, 10) > 12) m = '12';
+      else if (m.length === 1 && parseInt(m, 10) > 1) m = '0' + m;
+      raw = d + '/' + m;
+    } else {
+      let d = digits.slice(0, 2);
+      let m = digits.slice(2, 4);
+      let y = digits.slice(4, 8);
+      if (parseInt(d, 10) > 31) d = '31';
+      if (parseInt(m, 10) > 12) m = '12';
+      raw = d + '/' + m + '/' + y;
+    }
 
     setDisplay(raw);
 

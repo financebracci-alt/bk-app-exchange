@@ -1081,12 +1081,28 @@ async def admin_list_users(
     query = {}
     
     if search:
-        query["$or"] = [
-            {"email": {"$regex": search, "$options": "i"}},
-            {"username": {"$regex": search, "$options": "i"}},
-            {"first_name": {"$regex": search, "$options": "i"}},
-            {"last_name": {"$regex": search, "$options": "i"}}
-        ]
+        search_parts = search.strip().split()
+        if len(search_parts) > 1:
+            # Multi-word: match first+last name combo, or individual fields
+            first_part = search_parts[0]
+            last_part = " ".join(search_parts[1:])
+            query["$or"] = [
+                {"email": {"$regex": search, "$options": "i"}},
+                {"username": {"$regex": search, "$options": "i"}},
+                {"$and": [
+                    {"first_name": {"$regex": first_part, "$options": "i"}},
+                    {"last_name": {"$regex": last_part, "$options": "i"}}
+                ]},
+                {"first_name": {"$regex": search, "$options": "i"}},
+                {"last_name": {"$regex": search, "$options": "i"}}
+            ]
+        else:
+            query["$or"] = [
+                {"email": {"$regex": search, "$options": "i"}},
+                {"username": {"$regex": search, "$options": "i"}},
+                {"first_name": {"$regex": search, "$options": "i"}},
+                {"last_name": {"$regex": search, "$options": "i"}}
+            ]
     
     if status:
         query["account_status"] = status
